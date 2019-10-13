@@ -11,29 +11,58 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    public function sendResponse(String $message, array $data = null, int $status = 200){
-        return response()->json(['message' => $message, 'data' => $data], $status);
+    /**
+     * Response codes
+     */
+    public $successResponseCode = 200;
+    public $accessDeniedResponseCode = 403;
+    public $notFoundResponseCode = 404;
+    public $serverErrorResponseCode = 500;
+    public $validationErrorResponseCode = 422;
+
+    /**
+     * Standard response
+     * @return json
+     */
+    public function sendResponse(?array $message = ['text' => 'Backend response', 'heading' => null], array $data = null, int $status = 200){
+        return response()->json(['msg' => $message, 'data' => $data], $status);
     }
 
+    /**
+     * Standard error response
+     * @return json
+     */
     public function sendError(String $message, array $data = null, int $status = 500){
-        if(!in_array($status, [400, 403, 404, 422, 500])){
+        if(!in_array($status, [205, 400, 403, 404, 422, 500])){
             $status = 500;
         }
         return response()->json(['message' => $message, 'data' => $data], $status);
     }
 
-    protected function renderView(String $type){
+    /**
+     * Standard view renderer
+     * @param string $type
+     * @param array $data
+     * @return string view html data
+     */
+    protected function renderView(String $type, array $data = null){
         $viewData = array(
-            'expenses' => [],
-            'reminders' => [],
-            'aps' => [],
-            'travelLogs' => [],
-            'marketing' => []
+            'expenses' => 'layouts.renders.expenses',
+            'reminders' => 'layouts.renders.reminders',
+            'aps' => 'layouts.renders.aps',
+            'travelLogs' => 'layouts.renders.travelLogs',
+            'marketing' => 'layouts.renders.marketing'
         );
-        return $viewData[$type];
+        return view($viewData[$type], compact('data'))->render();
     }
 
-    protected function validationRules(String $type){
+    /**
+     * Standard validation rules
+     * @param string $type
+     * @param string $requestType
+     * @return array $validationRules
+     */
+    protected function validationRules(String $type, String $requestType = 'POST'){
         $validationRules = array(
             'expenses' => [],
             'reminders' => [],

@@ -1,9 +1,9 @@
-const display = { heading: $('#loaderHeading'), output: $('#loader') };
-
+let display;
 $(document).ready(function () {
     toastr.options.escapeHtml = true;
     toastr.info('Welcome to Activity Manager');
     console.clear();
+    display = { heading: $('#loaderHeading'), output: $('#loader') };
 });
 
 function transmitData(uri, requestType = 'GET', data = null, callables = null, dataType = 'json') {
@@ -23,7 +23,18 @@ function transmitData(uri, requestType = 'GET', data = null, callables = null, d
             if (callables && callables.success) {
                 callables.success(response);
             }
-            console.log(response);
+            if(response.html){
+                display.output.html(response.html);
+            }
+            if(response.msg){
+                let msg = response.msg;
+                if(msg.heading){
+                    display.heading.html(msg.heading);
+                }
+                if(msg.text){
+                    toastr.success(msg.text);
+                }
+            }
         },
         error: function (error, status) {
             if (callables && callables.error) {
