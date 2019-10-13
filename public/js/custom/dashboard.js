@@ -1,4 +1,5 @@
 let display;
+
 $(document).ready(function () {
     toastr.options.escapeHtml = true;
     toastr.info('Welcome to Activity Manager');
@@ -40,8 +41,19 @@ function transmitData(uri, requestType = 'GET', data = null, callables = null, d
             if (callables && callables.error) {
                 callables.error(error, status);
             }
+            if(error.status === 422){
+                if(error.responseJSON){
+                    if(error.responseJSON.data){
+                        $.each(error.responseJSON.data, function(field, msgs){
+                            $.each(msgs, function(index, msg){
+                                toastr.error(msg, 'Validation error: '+field+' -> '+(index+1));
+                            });
+                        });
+                    }
+                }
+            }
             else {
-                alert('Data transmission error => ' + error.status + ': ' + error.statusText);
+                toastr.error(status, 'Data transmission error');
                 console.log(error, status);
             }
         },

@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Validator;
 
 class Controller extends BaseController
 {
@@ -21,10 +22,30 @@ class Controller extends BaseController
     public $validationErrorResponseCode = 422;
 
     /**
+     * Validation error messages
+     */
+    public $validationFailedMsg = 'Validation failed';
+
+    /**
+     * Validate data
+     * @param array $data
+     * @param array $rules
+     * @param array $messages
+     * @return object validation status
+     */
+    public function validateData(array $data, array $rules = [], array $messages = []){
+        $data = array_filter($data, function($packet){
+            return !empty($packet);
+        });
+        $validate = Validator::make($data, $rules, $messages);
+        return (object)['failed' => $validate->fails(), 'messages' => $validate->getMessageBag()];
+    }
+
+    /**
      * Standard response
      * @return json
      */
-    public function sendResponse(?array $message = ['text' => 'Backend response', 'heading' => null], array $data = null, int $status = 200){
+    public function sendResponse(array $message = ['text' => 'Backend response', 'heading' => null], array $data = null, int $status = 200){
         return response()->json(['msg' => $message, 'data' => $data], $status);
     }
 
@@ -32,7 +53,7 @@ class Controller extends BaseController
      * Standard error response
      * @return json
      */
-    public function sendError(String $message, array $data = null, int $status = 500){
+    public function sendError(String $message, $data = null, int $status = 500){
         if(!in_array($status, [205, 400, 403, 404, 422, 500])){
             $status = 500;
         }
@@ -63,16 +84,34 @@ class Controller extends BaseController
      * @return array $validationRules
      */
     protected function validationRules(String $type, String $requestType = 'POST'){
-        $validationRules = array(
-            'expenses' => [],
-            'reminders' => [],
-            'aps' => [],
-            'travelLogs' => [],
-            'marketing' => []
-        );
+        if($requestType === 'GET'){
+            $validationRules = array(
+                'expenses' => [
+                    'test' => 'required|integer'
+                ],
+                'reminders' => [],
+                'aps' => [],
+                'travelLogs' => [],
+                'marketing' => []
+            );
+        }
+        else{
+            $validationRules = array(
+                'expenses' => [],
+                'reminders' => [],
+                'aps' => [],
+                'travelLogs' => [],
+                'marketing' => []
+            );
+        }
         return $validationRules[$type];
     }
 
+    /**
+     * House chores basic functions: start
+     * @param array $data
+     * @return array $data
+     */
     protected function expenses(array $data = null){
         dd($data);
     }
@@ -92,4 +131,7 @@ class Controller extends BaseController
     protected function marketing(array $data = null){
         dd($data);
     }
+    /**
+     * House chores basic functions: end
+     */
 }
