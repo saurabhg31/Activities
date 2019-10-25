@@ -33,7 +33,7 @@ class Controller extends BaseController
      * @param array $messages
      * @return object validation status
      */
-    public function validateData(array $data, array $rules = [], array $messages = []){
+    protected function validateData(array $data, array $rules = [], array $messages = []){
         $data = array_filter($data, function($packet){
             return !empty($packet);
         });
@@ -42,10 +42,14 @@ class Controller extends BaseController
     }
 
     /**
+     * Allowed operation types
+     */
+
+    /**
      * Standard response
      * @return json
      */
-    public function sendResponse(array $message = ['text' => 'Backend response', 'heading' => null], array $data = null, int $status = 200){
+    protected function sendResponse(array $message = ['text' => 'Backend response', 'heading' => 'Output'], $data = null, int $status = 200){
         return response()->json(['msg' => $message, 'data' => $data], $status);
     }
 
@@ -53,7 +57,7 @@ class Controller extends BaseController
      * Standard error response
      * @return json
      */
-    public function sendError(String $message, $data = null, int $status = 500){
+    protected function sendError(String $message, $data = null, int $status = 500){
         if(!in_array($status, [205, 400, 403, 404, 422, 500])){
             $status = 500;
         }
@@ -86,9 +90,7 @@ class Controller extends BaseController
     protected function validationRules(String $type, String $requestType = 'POST'){
         if($requestType === 'GET'){
             $validationRules = array(
-                'expenses' => [
-                    'test' => 'required|integer'
-                ],
+                'expenses' => [],
                 'reminders' => [],
                 'aps' => [],
                 'travelLogs' => [],
