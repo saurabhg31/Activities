@@ -13,12 +13,10 @@ class Expenses extends Model
     /**
      * List all expenses
      */
-    protected static function list(array &$ids = null, array &$fields = null, int &$paginate = null){
+    protected static function list(array &$ids = null, array &$fields = ['*'], int &$paginate = null){
         $list = self::when($ids, function($query) use ($ids){
             return $query->whereIn('id', $ids);
-        })->when($fields, function($query2) use ($fields){
-            return $query2->selectRaw(implode(',', $fields));
-        });
+        })->selectRaw(implode(',', $fields));
         if($paginate){
             return $list->paginate($paginate);
         }

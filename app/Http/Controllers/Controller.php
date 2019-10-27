@@ -49,8 +49,8 @@ class Controller extends BaseController
      * Standard response
      * @return json
      */
-    protected function sendResponse(array $message = ['text' => 'Backend response', 'heading' => 'Output'], $data = null, int $status = 200){
-        return response()->json(['msg' => $message, 'data' => $data], $status);
+    protected function sendResponse(array $message = ['text' => 'Backend response', 'heading' => 'Output'], $data = null, string $html = null, int $status = 200){
+        return response()->json(['msg' => $message, 'data' => $data, 'html' => $html], $status);
     }
 
     /**
@@ -76,9 +76,30 @@ class Controller extends BaseController
             'reminders' => 'layouts.renders.reminders',
             'aps' => 'layouts.renders.aps',
             'travelLogs' => 'layouts.renders.travelLogs',
-            'marketing' => 'layouts.renders.marketing'
+            'marketing' => 'layouts.renders.marketing',
+            'imagesAdd' => 'layouts.renders.addImages'
         );
         return view($viewData[$type], compact('data'))->render();
+    }
+
+    /**
+     * generate heading
+     */
+    protected function generateHeading(string $type){
+        $headingData = array(
+            'imagesAdd' => 'Add images'
+        );
+        return $headingData[$type];
+    }
+
+    /**
+     * genrate text
+     */
+    protected function generateText(string $type){
+        $textData = array(
+            'imagesAdd' => 'Please add images to add wallpapers'
+        );
+        return $textData[$type];
     }
 
     /**
@@ -94,7 +115,8 @@ class Controller extends BaseController
                 'reminders' => [],
                 'aps' => [],
                 'travelLogs' => [],
-                'marketing' => []
+                'marketing' => [],
+                'imagesAdd' => []
             );
         }
         else{
@@ -103,7 +125,11 @@ class Controller extends BaseController
                 'reminders' => [],
                 'aps' => [],
                 'travelLogs' => [],
-                'marketing' => []
+                'marketing' => [],
+                'imagesAdd' => [
+                    'images' => 'required|array',
+                    'images.*' => 'required|image'
+                ]
             );
         }
         return $validationRules[$type];

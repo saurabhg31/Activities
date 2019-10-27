@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Expenses;
 use Exception;
 use Illuminate\Http\Request;
 
@@ -22,7 +21,7 @@ class Operations extends Controller
                 if($validateData->failed){
                     return $this->sendError($this->validationFailedMsg, $validateData->messages, $this->validationErrorResponseCode);
                 }
-                return $this->sendResponse(['message' => 'Loading expenses list...', ['heading' => 'Expenses']],Expenses::list());
+                return $this->sendResponse(['text' => $this->generateText($type), 'heading' => $this->generateHeading($type)], null, $this->renderView($type));
             }
             elseif ($request->isMethod('POST')){
                 $validateData = $this->validateData($request->all(), $this->validationRules($type, 'POST'));
