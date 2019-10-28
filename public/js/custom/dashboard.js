@@ -11,7 +11,10 @@ $(document).ready(function () {
     };
 });
 
-function transmitData(uri, requestType = 'GET', data = null, callables = null, dataType = 'json') {
+function transmitData(uri, requestType = 'GET', data = null, submitButton = null, callables = null, dataType = 'json') {
+    if(submitButton){
+        submitButtonHtml = submitButton.html();
+    }
     $.ajax({
         url: APP_URL + uri,
         data: data ? data : null,
@@ -19,6 +22,23 @@ function transmitData(uri, requestType = 'GET', data = null, callables = null, d
         processData: false,
         contentType: false,
         type: requestType,
+        xhr: function ()
+        {
+            var jqXHR = null;
+            if ( window.ActiveXObject )
+                jqXHR = new window.ActiveXObject( "Microsoft.XMLHTTP" );
+            else
+                jqXHR = new window.XMLHttpRequest();
+            jqXHR.upload.addEventListener( "progress", function ( evt )
+            {
+                if (evt.lengthComputable)
+                {
+                    var percentComplete = Math.round((evt.loaded*100)/evt.total);
+                    submitButton.html(percentComplete+' % uploaded')
+                }
+            }, false );
+            return jqXHR;
+        },
         beforeSend: function () {
             if (callables && callables.beforeSend) {
                 callables.beforeSend();
@@ -82,10 +102,32 @@ function transmitData(uri, requestType = 'GET', data = null, callables = null, d
             if (callables && callables.complete) {
                 callables.complete();
             }
+            if(submitButton){
+                submitButton.html(submitButtonHtml);
+            }
         }
     });
 }
 
-$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd', function (e) {
+function submitFormData(form){
+    transmitData(form.attr('action'), form.attr('method'), new FormData(form[0]), form.find('button[type="submit"]'));
+    return false;
+}
+
+function removeImage(imageId, imageParagraph){
+    $.get(APP_URL+'removeImage?imageId='+imageId, function(response){
+        if(response.data){
+            imageParagraph.remove();
+            imageCount = parseInt($('#imageCount').html());
+            $('#imageCount').html(imageCount-1);
+            toastr.info('Image deleted');
+        }
+        else{
+            toastr.error('Unable to delete image!');
+        }
+    });
+}
+
+$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers', function (e) {
     return transmitData('operation/' + this.id);
 });

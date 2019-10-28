@@ -17,6 +17,7 @@ class Images extends Migration
             $table->increments('id');
             $table->enum('type', ['WALLPAPER', 'RESOURCE'])->default('WALLPAPER');
             $table->binary('image');
+            $table->string('imageType', 10);
             $table->timestamps();
         });
     }

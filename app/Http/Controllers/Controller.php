@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Images;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 
 class Controller extends BaseController
@@ -49,7 +51,7 @@ class Controller extends BaseController
      * Standard response
      * @return json
      */
-    protected function sendResponse(array $message = ['text' => 'Backend response', 'heading' => 'Output'], $data = null, string $html = null, int $status = 200){
+    protected function sendResponse($data = null, string $html = null, array $message = ['text' => 'Backend response', 'heading' => 'Output'], int $status = 200){
         return response()->json(['msg' => $message, 'data' => $data, 'html' => $html], $status);
     }
 
@@ -77,7 +79,8 @@ class Controller extends BaseController
             'aps' => 'layouts.renders.aps',
             'travelLogs' => 'layouts.renders.travelLogs',
             'marketing' => 'layouts.renders.marketing',
-            'imagesAdd' => 'layouts.renders.addImages'
+            'imagesAdd' => 'layouts.renders.addImages',
+            'truncateWallpapers' => 'layouts.renders.addImages'
         );
         return view($viewData[$type], compact('data'))->render();
     }
@@ -89,7 +92,7 @@ class Controller extends BaseController
         $headingData = array(
             'imagesAdd' => 'Add images'
         );
-        return $headingData[$type];
+        return isset($headingData[$type]) ? $headingData[$type] : null;
     }
 
     /**
@@ -99,7 +102,17 @@ class Controller extends BaseController
         $textData = array(
             'imagesAdd' => 'Please add images to add wallpapers'
         );
-        return $textData[$type];
+        return isset($textData[$type]) ? $textData[$type] : null;
+    }
+
+    /**
+     * generate message bag
+     */
+    protected function generateMsgBag(string $type, string $text = null, string $heading = null){
+        return [
+            'text' => $text ? $text : $this->generateText($type),
+            'heading' => $heading ? $heading : $this->generateHeading($type)
+        ];
     }
 
     /**
@@ -116,7 +129,11 @@ class Controller extends BaseController
                 'aps' => [],
                 'travelLogs' => [],
                 'marketing' => [],
-                'imagesAdd' => []
+                'imagesAdd' => [],
+                'truncateWallpapers' => [],
+                'removeImage' => [
+                    'imageId' => 'required|integer|min:1|exists:images,id'
+                ]
             );
         }
         else{
@@ -129,10 +146,39 @@ class Controller extends BaseController
                 'imagesAdd' => [
                     'images' => 'required|array',
                     'images.*' => 'required|image'
+                ],
+                'truncateWallpapers' => [
+                    'ids' => 'required|array',
+                    'id.*' => 'required|integer|min:1|exists:images,id'
                 ]
             );
         }
         return $validationRules[$type];
+    }
+
+    /**
+     * add wallpapers or resource images
+     * @param array $images
+     * @param string $type
+     * @return boolean true
+     * TODO: resolve extension issue
+     */
+    protected function addImages(array $images, string $type = 'WALLPAPER'){
+        if(strtoupper($type) === 'WALLPAPER'){
+            foreach($images as $image){
+                $contents = fread(fopen($image, 'rb'), filesize($image));
+                $extension = File::extension($image);
+                $imageData = array(
+                    'type' => $type,
+                    'image' => base64_encode($contents),
+                    'imageType' => $extension ? $extension : 'png'
+                );
+                if(!Images::where($imageData)->exists()){
+                    Images::create($imageData);
+                }
+            }
+        }
+        return true;
     }
 
     /**

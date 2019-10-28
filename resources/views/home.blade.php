@@ -17,17 +17,18 @@
                         <button class="btn btn-light" id="aps">Arithmetic Problem Solver</button>
                         <button class="btn btn-dark" id="travelLogs">Travel Logs</button>
                         <button class="btn btn-secondary" id="marketing">Marketing</button>
-                        <button class="btn btn-success" id="imagesAdd">Add Images</button>
+                        <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>
+                        <button class="btn btn-danger" id="truncateWallpapers">Delete all wallpapers</button>
                     </div>
                 </div>
             </div>
-            <div class="card text-center" style="margin-top: 2%;">
-                <div class="card-header text-center loaderHeading">Display</div>
-                <div class="custom-block text-center loader" style="max-height: 308px; max-width: 728px; overflow:auto;">
-                    <legend>Dynamic interactive screen</legend>
-                </div>
-            </div>
         </div>
+    </div>
+</div>
+<div class="card text-center" style="margin-top: 2%; margin-left: 2%; margin-right: 2%;">
+    <div class="card-header text-center loaderHeading">Display</div>
+    <div class="text-center loader" style="max-height: 630px; max-width: 1400px; overflow:auto;">
+        <legend>Dynamic interactive screen</legend>
     </div>
 </div>
 @endsection
