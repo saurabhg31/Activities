@@ -12,13 +12,17 @@
                         </div>
                     @endif
                     <div class="custom-block text-center">
-                        <button class="btn btn-primary" id="expenses">Expenses</button>
-                        <button class="btn btn-success" id="reminders">Reminders</button>
-                        <button class="btn btn-light" id="aps">Arithmetic Problem Solver</button>
-                        <button class="btn btn-dark" id="travelLogs">Travel Logs</button>
-                        <button class="btn btn-secondary" id="marketing">Marketing</button>
-                        <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>
-                        <button class="btn btn-danger" id="truncateWallpapers">Delete all wallpapers</button>
+                        <div class="form-inline" style="margin-left: 9%;">
+                            <button class="btn btn-primary" id="expenses">Expenses</button>
+                            <button class="btn btn-success" id="reminders">Reminders</button>
+                            <button class="btn btn-light" id="aps">Arithmetic Problem Solver</button>
+                            <button class="btn btn-dark" id="travelLogs">Travel Logs</button>
+                            <button class="btn btn-secondary" id="marketing">Marketing</button>
+                        </div>
+                        <div class="form-inline" style="margin-top: 1%; margin-left: 23%;">
+                            <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>
+                            <button class="btn btn-danger" id="truncateWallpapers">Delete all wallpapers</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -32,6 +36,18 @@
     </div>
 </div>
 @endsection
+<div id="myModal" class="modal fade" role="dialog" style="width: 100%;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title"></h4>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer"></div>
+        </div>
+    </div>
+</div>
 @section('scripts')
 <script type="text/javascript" src="{{asset('js/custom/dashboard.js')}}"></script>
 @endsection

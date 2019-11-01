@@ -145,7 +145,8 @@ class Controller extends BaseController
                 'marketing' => [],
                 'imagesAdd' => [
                     'images' => 'required|array',
-                    'images.*' => 'required|image'
+                    'images.*' => 'required|image',
+                    'tags' => 'nullable|string|min:3|max:10000'
                 ],
                 'truncateWallpapers' => [
                     'ids' => 'required|array',
@@ -163,7 +164,7 @@ class Controller extends BaseController
      * @return boolean true
      * TODO: resolve extension issue
      */
-    protected function addImages(array $images, string $type = 'WALLPAPER'){
+    protected function addImages(array $images, string $tags = null, string $type = 'WALLPAPER'){
         if(strtoupper($type) === 'WALLPAPER'){
             foreach($images as $image){
                 $contents = fread(fopen($image, 'rb'), filesize($image));
@@ -171,7 +172,8 @@ class Controller extends BaseController
                 $imageData = array(
                     'type' => $type,
                     'image' => base64_encode($contents),
-                    'imageType' => $extension ? $extension : 'png'
+                    'imageType' => $extension ? $extension : 'png',
+                    'tags' => $tags
                 );
                 if(!Images::where($imageData)->exists()){
                     Images::create($imageData);

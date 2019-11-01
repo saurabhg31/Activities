@@ -115,6 +115,9 @@ function submitFormData(form){
 }
 
 function removeImage(imageId, imageParagraph){
+    if(!confirm('Are you sure you want to delete this image from database?')){
+        return false;
+    }
     $.get(APP_URL+'removeImage?imageId='+imageId, function(response){
         if(response.data){
             imageParagraph.remove();
@@ -128,6 +131,48 @@ function removeImage(imageId, imageParagraph){
     });
 }
 
+function openImageInModal(image){
+    let imageHtml = '<img src="'+image.attr('src')+'" title="'+image.attr('title')+'" style="width: 100%;"/>';
+    let modal = $('#myModal');
+    modal.find('div[class="modal-body"]').html(imageHtml);
+    modal.modal('show');
+}
+
+/**
+ * BytesConverter from https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
+ * @param {Integer} bytes 
+ * @param {Integer} decimals 
+ */
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function listFileNames(input){
+    let output = $('#fileListOutput');
+    let file, totalBytes = 0;
+    output.html(null);
+    for (var i = 0; i < input.get(0).files.length; ++i) {
+        file = input.get(0).files[i];
+        output.html(output.html()+'<li>Name: '+file.name+',&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Size: '+formatBytes(file.size)+'</li>');
+        totalBytes += file.size
+    }
+    output.append('<p style="margin-top: 2%;"><b>Total size: '+formatBytes(totalBytes)+'</b></p>');
+}
+
 $(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers', function (e) {
     return transmitData('operation/' + this.id);
+});
+
+$(document).on('click', '.page-link', function(event){
+    event.preventDefault();
+    return transmitData($(this).attr('href').split(APP_URL).pop(), 'GET', null, null, {
+        success: function(){
+            display.output.scrollTop(275);
+        }
+    });
 });
