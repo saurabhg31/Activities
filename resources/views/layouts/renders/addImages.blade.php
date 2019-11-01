@@ -26,7 +26,7 @@
     @endif
         <div class="col-sm-3">
             <img src="data:image/{{$image->imageType}};base64, {{$image->image}}" title="Type: {{$image->type}} || Tags: {{$image->tags}}" style="height: 250px; cursor: pointer;" onclick="openImageInModal($(this))"/><br>
-            <label>Uploaded on: {{gmdate('d M, Y h:i a', strtotime($image->created_at))}}</label>
+            <label>Uploaded on: {{gmdate('d M, Y h:i a', strtotime($image->created_at)+19800)}}</label>
             <button class="btn btn-danger" onclick="removeImage({{$image->id}}, $(this).parent())">Delete</button>
         </div>
     @php($count++)
@@ -36,4 +36,4 @@
     @endif
 @endforeach
 @endif
-<div style="margin-left: 43%;">{{$data['images']->links()}}</div>
+<div style="margin-left: 1%;">{{$data['images']->links()}}</div>
