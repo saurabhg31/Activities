@@ -172,19 +172,17 @@ class Controller extends BaseController
      * TODO: resolve extension issue
      */
     protected function addImages(array $images, string $tags = null, string $type = 'WALLPAPER'){
-        if(strtoupper($type) === 'WALLPAPER'){
-            foreach($images as $image){
-                $contents = fread(fopen($image, 'rb'), filesize($image));
-                $extension = File::extension($image);
-                $imageData = array(
-                    'type' => $type,
-                    'image' => base64_encode($contents),
-                    'imageType' => $extension ? $extension : 'png',
-                    'tags' => $tags
-                );
-                if(!Images::where($imageData)->exists()){
-                    Images::create($imageData);
-                }
+        foreach($images as $image){
+            $contents = fread(fopen($image, 'rb'), filesize($image));
+            $extension = File::extension($image);
+            $imageData = array(
+                'type' => $type,
+                'image' => base64_encode($contents),
+                'imageType' => $extension ? $extension : 'png',
+                'tags' => $tags
+            );
+            if(!Images::where($imageData)->exists()){
+                Images::create($imageData);
             }
         }
         return true;

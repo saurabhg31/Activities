@@ -191,9 +191,15 @@ $(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#image
 
 $(document).on('click', '.page-link', function(event){
     event.preventDefault();
-    return transmitData($(this).attr('href').split(APP_URL).pop(), 'GET', null, null, {
-        success: function(){
-            display.output.scrollTop(275);
-        }
-    });
+    if($(this).attr('href').includes('operation/searchImages')){
+        let form = $('#searchImagesForm');
+        return transmitData($(this).attr('href').split(APP_URL).pop(), form.attr('method'), new FormData(form[0]), form.find('button[type="submit"]'));
+    }
+    else{
+        return transmitData($(this).attr('href').split(APP_URL).pop(), 'GET', null, null, {
+            success: function(){
+                display.output.scrollTop(275);
+            }
+        });
+    }
 });

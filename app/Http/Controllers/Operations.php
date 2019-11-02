@@ -59,7 +59,10 @@ class Operations extends Controller
                     case 'imagesAdd':
                         return $this->sendResponse(
                             $this->addImages($request->images, $request->tags, $request->type) ? null : 'Unable to add images',
-                            $this->renderView($type, ['images' => Images::list()]),
+                            $this->renderView($type, [
+                                'images' => Images::list(),
+                                'types' => Images::imageTypes()
+                            ]),
                             $this->generateMsgBag($type, 'Images added', 'Current images')
                         );
                     case 'searchImages':
@@ -79,7 +82,7 @@ class Operations extends Controller
                 }
             }
         }
-        catch(Exception $error){
+        catch(QueryException $error){
             return $this->sendError('Something went wrong', ['msg' => $error->getMessage()]);
         }
     }

@@ -1,4 +1,4 @@
-<form action="operation/searchImages" method="POST" enctype="multipart/form-data" onsubmit="submitFormData($(this)); return false;">
+<form id="searchImagesForm" action="operation/searchImages" method="POST" onsubmit="submitFormData($(this)); return false;">
     @csrf
     <div class="form-inline" style="margin-top: 2%;">
         <div class="col-sm-4">
