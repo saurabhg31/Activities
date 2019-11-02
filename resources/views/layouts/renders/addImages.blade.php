@@ -2,7 +2,7 @@
     @csrf
     <div class="form-inline">
         <div class="col-sm-4">
-            <input type="file" name="images[]" class="form-control" multiple style="margin-top: -18%;" onchange="listFileNames($(this));">
+            <input type="file" name="images[]" class="form-control" multiple style="margin-top: -25%;margin-left:-18%;" onchange="listFileNames($(this));">
         </div>
         <div class="col-sm-8">
             <label for="fileListOutput" style="float: left;">File list:</label><br>
@@ -10,8 +10,15 @@
         </div>
     </div>
     <div class="col-sm-4">
-        <label for="imageTags" style="float: left; margin-top: -8%;">Tags:</label>
-        <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4" placeholder="Add tags to this/these image/images" style="margin-top: -110.3125px; margin-bottom: 0px; height: 110px;"></textarea>
+        <select name="type" class="form-control" style="margin-top: -9%;">
+            <option value="">Select image type</option>
+            @foreach ($data['types'] as $type)
+                <option value="{{$type->type}}" @if(isset($data['selectedType']) && $data['selectedType'] === $type->type) selected @endif>{{$type->type}}</option>
+            @endforeach
+        </select>
+        <br>
+        <label for="imageTags" style="float: left; margin-top: -50%;">Tags:</label>
+        <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4" placeholder="Add tags to this/these image/images" style="margin-top: -175.3125px; margin-bottom: 12%; height: 110px;"></textarea>
     </div>
     <div class="col-sm-12" style="float: center; margin-top: 2%;">
         <button type="submit" class="btn btn-success">Upload Images</button>

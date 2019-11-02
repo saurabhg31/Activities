@@ -3,7 +3,7 @@
     <div class="form-inline" style="margin-top: 2%;">
         <div class="col-sm-4">
             <select class="form-control" name="types" style="width: 100%;">
-                <option>Select image type</option>
+                <option value="">Select image type</option>
                 @foreach ($data['types'] as $type)
                     <option value="{{$type->type}}" @if(isset($data['selectedType']) && $data['selectedType'] === $type->type) selected @endif>{{$type->type}}</option>
                 @endforeach

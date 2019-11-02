@@ -9,6 +9,11 @@ $(document).ready(function () {
         heading: $('.loaderHeading'),
         parent: $('.loader').parent()
     };
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
 });
 
 function transmitData(uri, requestType = 'GET', data = null, submitButton = null, callables = null, dataType = 'json') {
@@ -165,7 +170,23 @@ function listFileNames(input){
 }
 
 $(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages', function (e) {
-    return transmitData('operation/' + this.id);
+    if(this.id === 'truncateWallpapers'){
+        let proceedPass = prompt('Are you sure to delete all images ? Enter password to confirm');
+        if(proceedPass){
+            $.post(APP_URL+'authorizeCriticalOperation', {password: proceedPass}, function(){
+                toastr.success('Authorized. Proceeding...');
+                return transmitData('operation/' + this.id);
+            }).fail(function(response){
+                if(response.status === 403){
+                    toastr.error('Not Authorized.');
+                    return false;
+                }
+            });
+        }
+    }
+    else{
+        return transmitData('operation/' + this.id);
+    }
 });
 
 $(document).on('click', '.page-link', function(event){

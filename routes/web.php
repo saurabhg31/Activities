@@ -19,4 +19,5 @@ Route::middleware(['verified'])->group(function(){
     Route::get('/home', 'HomeController@index')->name('home');
     Route::any('/operation/{type}', 'Operations@processActivity');
     Route::get('/removeImage', 'Operations@removeImage');
+    Route::post('/authorizeCriticalOperation', 'Auth\VerificationController@authorizeCriticalOperation');
 });

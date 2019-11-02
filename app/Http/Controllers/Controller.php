@@ -149,7 +149,7 @@ class Controller extends BaseController
                     'images' => 'required|array',
                     'images.*' => 'required|image',
                     'tags' => 'nullable|string|min:3|max:10000',
-                    'type' => 'nullable|string|min:3|max:255'
+                    'type' => 'required|string|min:3|max:255'
                 ],
                 'truncateWallpapers' => [
                     'ids' => 'required|array',
@@ -157,7 +157,7 @@ class Controller extends BaseController
                 ],
                 'searchImages' => [
                     'tags' => 'nullable|string',
-                    'types' => 'nullable|string'
+                    'types' => 'required|string'
                 ]
             );
         }

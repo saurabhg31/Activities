@@ -34,7 +34,10 @@ class Operations extends Controller
                     case 'imagesAdd':
                         return $this->sendResponse(
                             null,
-                            $this->renderView($type, ['images' => Images::list()]),
+                            $this->renderView($type, [
+                                'images' => Images::list(),
+                                'types' => Images::imageTypes()
+                            ]),
                             $this->generateMsgBag($type)
                         );
                     case 'searchImages':
@@ -55,7 +58,7 @@ class Operations extends Controller
                 switch($type){
                     case 'imagesAdd':
                         return $this->sendResponse(
-                            $this->addImages($request->images, $request->tags) ? null : 'Unable to add images',
+                            $this->addImages($request->images, $request->tags, $request->type) ? null : 'Unable to add images',
                             $this->renderView($type, ['images' => Images::list()]),
                             $this->generateMsgBag($type, 'Images added', 'Current images')
                         );

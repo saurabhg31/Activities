@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\VerifiesEmails;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class VerificationController extends Controller
 {
@@ -37,5 +40,15 @@ class VerificationController extends Controller
         $this->middleware('auth');
         $this->middleware('signed')->only('verify');
         $this->middleware('throttle:6,1')->only('verify', 'resend');
+    }
+
+    /**
+     * authorize critical requests
+     */
+    protected function authorizeCriticalOperation(Request $request){
+        if(Hash::check($request->password, Auth::user()->password)){
+            return $this->sendResponse();
+        }
+        return $this->sendError('Not Authorized', null, $this->accessDeniedResponseCode);
     }
 }

@@ -22,6 +22,7 @@ class Images extends Model
     /**
      * search images
      * TODO: change type search to multiple
+     * TODO: solve multiple pagination issue
      */
     protected static function search(array &$params = null){
         $search = self::when(isset($params['types']), function($query) use ($params){
@@ -41,6 +42,6 @@ class Images extends Model
      * list image types
      */
     protected static function imageTypes(){
-        return self::select('type')->get()->unique();
+        return self::select('type')->distinct('type')->get();
     }
 }
