@@ -19,7 +19,8 @@
                             <button class="btn btn-dark" id="travelLogs">Travel Logs</button>
                             <button class="btn btn-secondary" id="marketing">Marketing</button>
                         </div>
-                        <div class="form-inline" style="margin-top: 1%; margin-left: 23%;">
+                        <div class="form-inline" style="margin-top: 1%; margin-left: 16%;">
+                            <button class="btn btn-warning" id="searchImages">Search Images</button>
                             <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>
                             <button class="btn btn-danger" id="truncateWallpapers">Delete all wallpapers</button>
                         </div>

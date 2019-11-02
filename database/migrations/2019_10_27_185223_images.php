@@ -15,7 +15,7 @@ class Images extends Migration
     {
         Schema::create('images', function(Blueprint $table){
             $table->increments('id');
-            $table->enum('type', ['WALLPAPER', 'RESOURCE'])->default('WALLPAPER');
+            $table->string('type')->default('WALLPAPER');
             $table->binary('image');
             $table->string('imageType', 10);
             $table->timestamps();

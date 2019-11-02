@@ -37,6 +37,12 @@ class Operations extends Controller
                             $this->renderView($type, ['images' => Images::list()]),
                             $this->generateMsgBag($type)
                         );
+                    case 'searchImages':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, ['search' => Images::list(), 'types' => Images::imageTypes()]),
+                            $this->generateMsgBag($type, 'Ready to search', 'Search Images')
+                        );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }
@@ -52,6 +58,18 @@ class Operations extends Controller
                             $this->addImages($request->images, $request->tags) ? null : 'Unable to add images',
                             $this->renderView($type, ['images' => Images::list()]),
                             $this->generateMsgBag($type, 'Images added', 'Current images')
+                        );
+                    case 'searchImages':
+                        $search = Images::search($request->all());
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'search' => $search,
+                                'types' => Images::imageTypes(),
+                                'selectedType' => $request->types,
+                                'selectedTags' => $request->tags
+                            ]),
+                            $this->generateMsgBag($type, $search->response)
                         );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);

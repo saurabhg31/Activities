@@ -80,7 +80,8 @@ class Controller extends BaseController
             'travelLogs' => 'layouts.renders.travelLogs',
             'marketing' => 'layouts.renders.marketing',
             'imagesAdd' => 'layouts.renders.addImages',
-            'truncateWallpapers' => 'layouts.renders.addImages'
+            'truncateWallpapers' => 'layouts.renders.addImages',
+            'searchImages' => 'layouts.renders.searchImages'
         );
         return view($viewData[$type], compact('data'))->render();
     }
@@ -133,7 +134,8 @@ class Controller extends BaseController
                 'truncateWallpapers' => [],
                 'removeImage' => [
                     'imageId' => 'required|integer|min:1|exists:images,id'
-                ]
+                ],
+                'searchImages' => []
             );
         }
         else{
@@ -146,11 +148,16 @@ class Controller extends BaseController
                 'imagesAdd' => [
                     'images' => 'required|array',
                     'images.*' => 'required|image',
-                    'tags' => 'nullable|string|min:3|max:10000'
+                    'tags' => 'nullable|string|min:3|max:10000',
+                    'type' => 'nullable|string|min:3|max:255'
                 ],
                 'truncateWallpapers' => [
                     'ids' => 'required|array',
                     'id.*' => 'required|integer|min:1|exists:images,id'
+                ],
+                'searchImages' => [
+                    'tags' => 'nullable|string',
+                    'types' => 'nullable|string'
                 ]
             );
         }

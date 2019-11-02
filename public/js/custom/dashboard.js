@@ -164,7 +164,7 @@ function listFileNames(input){
     output.append('<p style="margin-top: 2%;"><b>Total size: '+formatBytes(totalBytes)+'</b></p>');
 }
 
-$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers', function (e) {
+$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages', function (e) {
     return transmitData('operation/' + this.id);
 });
 
