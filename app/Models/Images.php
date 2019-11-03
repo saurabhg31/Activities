@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class Images extends Model
 {
@@ -17,6 +18,16 @@ class Images extends Model
     protected static function list(array &$types = null){
         return self::when($types, function($query) use ($types){
             return $query->whereIn('type', $types);
+        })->when(Session::has('domain'), function($query2){
+            $domain = Session::get('domain');
+            if($domain === 'private'){
+                return $query2->where('user_id', Auth::id());
+            }
+            else{
+                return $query2->where('user_id', NULL);
+            }
+        })->when(!Session::has('domain'), function($query3){
+            return $query3->where('user_id', NULL);
         })->orderBy('created_at', 'desc')->paginate(env('PAGINATION', 20));
     }
 
@@ -34,6 +45,16 @@ class Images extends Model
                 $query2->where('tags', 'like', '%'.$tag.'%');
             }
             return $query2;
+        })->when(Session::has('domain'), function($query3){
+            $domain = Session::get('domain');
+            if($domain === 'private'){
+                return $query3->where('user_id', Auth::id());
+            }
+            else{
+                return $query3->where('user_id', NULL);
+            }
+        })->when(!Session::has('domain'), function($query4){
+            return $query4->where('user_id', NULL);
         })->orderBy('created_at', 'desc')->paginate(env('PAGINATION', 20));
         $search->response = 'Search complete';
         return $search;

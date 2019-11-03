@@ -123,6 +123,26 @@ function submitFormData(form){
     return false;
 }
 
+function toggleDomain(key = null, button = $('#switchDomainButt')){
+    let domainField = $('#domain');
+    if(!key){
+        domainField.attr('type', 'password').attr('disabled', false).attr('placeholder', 'Enter account password & press change domain ').css('width', '100%').val(null);
+        button.show('fast');
+    }else{
+        $.post(APP_URL+'switchDomain', {password: key}, function(response){
+            toastr.info('Switched domain. Entering private space...');
+            domainField.val('Domain: '+response);
+            $('#imagesAdd').trigger('click');
+        }).fail(function(){
+            domainField.val('Domain: PUBLIC').attr('type', 'text').attr('disabled', true).attr('style', null);
+            button.hide('fast');
+        }).done(function(){
+            domainField.val('Domain: PUBLIC').attr('type', 'password').attr('disabled', true).attr('style', null);
+            button.hide('fast');
+        });
+    }
+}
+
 function removeImage(imageId, imageParagraph){
     if(!confirm('Are you sure you want to delete this image from database?')){
         return false;

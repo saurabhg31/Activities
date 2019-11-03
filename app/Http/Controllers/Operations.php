@@ -67,7 +67,7 @@ class Operations extends Controller
                 switch($type){
                     case 'imagesAdd':
                         return $this->sendResponse(
-                            $this->addImages($request->images, $request->tags, $request->type) ? null : 'Unable to add images',
+                            $this->addImages($request->images, $request->tags, $request->type, $request->domain) ? null : 'Unable to add images',
                             $this->renderView($type, [
                                 'images' => Images::list(),
                                 'types' => Images::imageTypes()

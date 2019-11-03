@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 
@@ -22,6 +23,7 @@ class Controller extends BaseController
     public $notFoundResponseCode = 404;
     public $serverErrorResponseCode = 500;
     public $validationErrorResponseCode = 422;
+    public $imageDomains = ['private', 'public'];
 
     /**
      * Validation error messages
@@ -149,7 +151,8 @@ class Controller extends BaseController
                     'images' => 'required|array',
                     'images.*' => 'required|image',
                     'tags' => 'nullable|string|min:3|max:10000',
-                    'type' => 'required|string|min:3|max:255'
+                    'type' => 'required|string|min:3|max:255',
+                    'domain' => 'required|string|in:'.implode(',', $this->imageDomains)
                 ],
                 'truncateWallpapers' => [
                     'ids' => 'required|array',
@@ -171,7 +174,7 @@ class Controller extends BaseController
      * @return boolean true
      * TODO: resolve extension issue
      */
-    protected function addImages(array $images, string $tags = null, string $type = 'WALLPAPER'){
+    protected function addImages(array $images, string $tags = null, string $type = 'WALLPAPER', string $domain = 'public'){
         foreach($images as $image){
             $contents = fread(fopen($image, 'rb'), filesize($image));
             $extension = File::extension($image);
@@ -179,7 +182,8 @@ class Controller extends BaseController
                 'type' => $type,
                 'image' => base64_encode($contents),
                 'imageType' => $extension ? $extension : 'png',
-                'tags' => $tags
+                'tags' => $tags,
+                'user_id' => $domain === 'private' ? Auth::id() : NULL
             );
             if(!Images::where($imageData)->exists()){
                 Images::create($imageData);

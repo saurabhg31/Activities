@@ -53,4 +53,25 @@ class VerificationController extends Controller
         }
         return $this->sendError('Not Authorized', null, $this->accessDeniedResponseCode);
     }
+
+    /**
+     * switch domain
+     */
+    protected function switchDomain(Request $request){
+        if(!$request->filled('password')){
+            return $this->sendError('Please enter your password', null, $this->accessDeniedResponseCode);
+        }
+        if(Hash::check($request->password, Auth::user()->password)){
+            if(Session::has('domain')){
+                if(Session::get('domain') === 'public'){
+                    Session::put('domain', 'private');
+                    return 'PRIVATE';
+                }
+            }
+            Session::put('domain', 'private');
+            return 'PRIVATE';
+        }
+        Session::put('domain', 'public');
+        return 'PUBLIC';
+    }
 }

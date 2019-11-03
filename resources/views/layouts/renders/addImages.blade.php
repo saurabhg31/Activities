@@ -10,6 +10,10 @@
         </div>
     </div>
     <div class="col-sm-4">
+        <select name="domain" class="form-control" style="margin-top: -19%;">
+            <option value="public">Public</option>
+            <option value="private" @if(Session::has('domain') && Session::get('domain') === 'private') selected @endif>Private</option>
+        </select>
         <div class="form-inline">
             <select name="type" id="typeSelect" class="form-control" style="width:78%;">
                 <option value="">Select image type</option>
@@ -20,11 +24,21 @@
             <button id="addNewType" class="btn btn-success">Add New</button>
         </div>
         <br>
-        <label for="imageTags" style="float: left; margin-top: -50%;">Tags:</label>
-        <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4" placeholder="Add tags to this/these image/images" style="margin-top: -175.3125px; margin-bottom: 12%; height: 110px;"></textarea>
+        <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4" placeholder="Add tags to this/these image/images. eg: #cats, #nature etc." style="margin-top: -47%; margin-bottom: 12%; height: 50%;"></textarea>
     </div>
-    <div class="col-sm-12" style="float: center; margin-top: 2%;">
-        <button type="submit" class="btn btn-success">Upload Images</button>
+    <div class="col-sm-12" style="float: center; margin-top: 6%;">
+        <div class="form-inline">
+            <div class="col-sm-4">
+                <button class="btn btn-primary" type="button" onclick="toggleDomain()">Switch domain</button>
+            </div>
+            <div class="col-sm-4">
+                <input id="domain" value="Domain: {{Session::has('domain') ? strtoupper(Session::get('domain')) : 'PUBLIC'}}" class="form-control" disabled>
+                <button class="btn btn-success" id="switchDomainButt" type="button" onclick="toggleDomain($(this).prev().val(), $(this))" style="display:none;">Switch</button>
+            </div>
+            <div class="col-sm-4">
+                <button type="submit" class="btn btn-success" style="margin-top: 3%;">Upload Images</button>
+            </div>
+        </div>
     </div>
 </form>
 @if(isset($data['images']))
