@@ -6,6 +6,8 @@ use App\Models\Images;
 use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class Operations extends Controller
 {
@@ -26,11 +28,18 @@ class Operations extends Controller
                 }
                 switch($type){
                     case 'truncateWallpapers':
-                        return $this->sendResponse(
-                            Images::where('type', 'WALLPAPER')->delete(),
-                            $this->renderView($type, ['images' => Images::list()]),
-                            $this->generateMsgBag($type, 'Images deleted', 'Current images')
-                        );
+                        if(Session::has('authorizeCriticalOperation') && Session::get('authorizeCriticalOperation') === Auth::id()){
+                            Session::forget('authorizeCriticalOperation');
+                            return $this->sendResponse(
+                                // Images::delete(),
+                                null,
+                                $this->renderView($type, ['images' => Images::list()]),
+                                $this->generateMsgBag($type, 'Images deleted', 'Current images')
+                            );
+                        }
+                        else{
+                            return $this->sendError('You are not authorized for this operation', null, $this->accessDeniedResponseCode);
+                        }
                     case 'imagesAdd':
                         return $this->sendResponse(
                             null,
@@ -96,7 +105,7 @@ class Operations extends Controller
             return $this->sendError($this->validationFailedMsg, $validateData->messages, $this->validationErrorResponseCode);
         }
         try{
-            return $this->sendResponse(Images::findOrFail($request->imageId)->delete(), null);
+            return $this->sendResponse(Images::deleteImages([$request->imageId]), null);
         }
         catch(QueryException $error){
             return $this->sendError($error->getMessage());

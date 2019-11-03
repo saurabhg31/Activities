@@ -16,6 +16,7 @@ $(document).ready(function () {
     });
 });
 
+
 function transmitData(uri, requestType = 'GET', data = null, submitButton = null, callables = null, dataType = 'json') {
     if(submitButton){
         submitButtonHtml = submitButton.html();
@@ -47,6 +48,9 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
         beforeSend: function () {
             if (callables && callables.beforeSend) {
                 callables.beforeSend();
+            }
+            if(submitButton){
+                submitButton.html('Processing...');
             }
         },
         success: function (response) {
@@ -169,23 +173,38 @@ function listFileNames(input){
     output.append('<p style="margin-top: 2%;"><b>Total size: '+formatBytes(totalBytes)+'</b></p>');
 }
 
-$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages', function (e) {
-    if(this.id === 'truncateWallpapers'){
+$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType', function (e) {
+    buttonHtml = $(this).html();
+    if(this.id === 'addNewType'){
+        e.preventDefault();
+        let newType = prompt("Enter type:");
+        $("#typeSelect").append(new Option(newType, newType));
+        $("#typeSelect").val(newType);
+    }
+    else if(this.id === 'truncateWallpapers'){
+        $(this).html('Processing...');
+        button = $(this);
         let proceedPass = prompt('Are you sure to delete all images ? Enter password to confirm');
         if(proceedPass){
             $.post(APP_URL+'authorizeCriticalOperation', {password: proceedPass}, function(){
                 toastr.success('Authorized. Proceeding...');
-                return transmitData('operation/' + this.id);
+                return transmitData('operation/' + button.attr('id'));
             }).fail(function(response){
                 if(response.status === 403){
                     toastr.error('Not Authorized.');
+                    button.html(buttonHtml);
                     return false;
                 }
+            }).done(function(){
+                button.html(buttonHtml);
             });
+        }
+        else{
+            $(this).html(buttonHtml);
         }
     }
     else{
-        return transmitData('operation/' + this.id);
+        return transmitData('operation/' + this.id, 'GET', null, $(this));
     }
 });
 

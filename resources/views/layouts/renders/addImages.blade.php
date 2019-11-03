@@ -10,12 +10,15 @@
         </div>
     </div>
     <div class="col-sm-4">
-        <select name="type" class="form-control" style="margin-top: -9%;">
-            <option value="">Select image type</option>
-            @foreach ($data['types'] as $type)
-                <option value="{{$type->type}}" @if(isset($data['selectedType']) && $data['selectedType'] === $type->type) selected @endif>{{$type->type}}</option>
-            @endforeach
-        </select>
+        <div class="form-inline">
+            <select name="type" id="typeSelect" class="form-control" style="width:78%;">
+                <option value="">Select image type</option>
+                @foreach ($data['types'] as $type)
+                    <option value="{{$type->type}}" @if(isset($data['selectedType']) && $data['selectedType'] === $type->type) selected @endif>{{$type->type}}</option>
+                @endforeach
+            </select>
+            <button id="addNewType" class="btn btn-success">Add New</button>
+        </div>
         <br>
         <label for="imageTags" style="float: left; margin-top: -50%;">Tags:</label>
         <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4" placeholder="Add tags to this/these image/images" style="margin-top: -175.3125px; margin-bottom: 12%; height: 110px;"></textarea>
@@ -32,7 +35,7 @@
     <div class="form-inline">
     @endif
         <div class="col-sm-3">
-            <img src="data:image/{{$image->imageType}};base64, {{$image->image}}" title="Type: {{$image->type}} || Tags: {{$image->tags}}" style="height: 250px; cursor: pointer;" onclick="openImageInModal($(this))"/><br>
+            <img src="data:image/{{$image->imageType}};base64, {{$image->image}}" title="Type: {{$image->type}} || Tags: {{$image->tags}}" style="max-height: 250px; max-width: 222px; cursor: pointer;" onclick="openImageInModal($(this))"/><br>
             <label>Uploaded on: {{gmdate('d M, Y h:i a', strtotime($image->created_at)+19800)}}</label>
             <button class="btn btn-danger" onclick="removeImage({{$image->id}}, $(this).parent())">Delete</button>
         </div>

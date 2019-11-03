@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\VerifiesEmails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
 
 class VerificationController extends Controller
 {
@@ -47,6 +48,7 @@ class VerificationController extends Controller
      */
     protected function authorizeCriticalOperation(Request $request){
         if(Hash::check($request->password, Auth::user()->password)){
+            Session::put('authorizeCriticalOperation', Auth::id());
             return $this->sendResponse();
         }
         return $this->sendError('Not Authorized', null, $this->accessDeniedResponseCode);

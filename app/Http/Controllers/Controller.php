@@ -157,7 +157,7 @@ class Controller extends BaseController
                 ],
                 'searchImages' => [
                     'tags' => 'nullable|string',
-                    'types' => 'required|string'
+                    'types' => 'nullable|string'
                 ]
             );
         }

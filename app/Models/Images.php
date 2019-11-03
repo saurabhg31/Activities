@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Images extends Model
 {
     protected $table='images';
-    protected $fillable = ['type', 'image', 'imageType', 'tags'];
+    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id'];
     protected $hidden = ['id'];
 
     /**
@@ -42,6 +43,13 @@ class Images extends Model
      * list image types
      */
     protected static function imageTypes(){
-        return self::select('type')->distinct('type')->get();
+        return self::select('type')->distinct('type')->orderBy('type', 'asc')->get();
+    }
+
+    /**
+     * delete a image(s)
+     */
+    protected static function deleteImages(array &$imageIds){
+        return self::whereIn('id', $imageIds)->where('user_id', Auth::id())->delete();
     }
 }
