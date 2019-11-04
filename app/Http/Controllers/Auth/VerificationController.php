@@ -68,8 +68,6 @@ class VerificationController extends Controller
                     return 'PRIVATE';
                 }
             }
-            Session::put('domain', 'private');
-            return 'PRIVATE';
         }
         Session::put('domain', 'public');
         return 'PUBLIC';

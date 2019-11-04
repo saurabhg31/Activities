@@ -21,4 +21,5 @@ Route::middleware(['verified'])->group(function(){
     Route::get('/removeImage', 'Operations@removeImage');
     Route::post('/authorizeCriticalOperation', 'Auth\VerificationController@authorizeCriticalOperation');
     Route::post('/switchDomain', 'Auth\VerificationController@switchDomain');
+    Route::any('/getImageEditForm', 'Operations@getImageEditForm');
 });

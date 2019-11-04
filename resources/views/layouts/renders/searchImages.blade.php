@@ -25,7 +25,7 @@
     <div class="form-inline">
     @endif
         <div class="col-sm-3">
-            <img src="data:image/{{$image->imageType}};base64, {{$image->image}}" title="Type: {{$image->type}} || Tags: {{$image->tags}}" style="max-height: 250px; max-width: 222px; cursor: pointer;" onclick="openImageInModal($(this))"/><br>
+            <img src="data:image/{{$image->imageType}};base64, {{$image->image}}" title="Type: {{$image->type}} || Tags: {{$image->tags}}" style="max-width: 100%; max-height: 100%; cursor: pointer;" onclick="openImageInModal($(this))"/><br>
             <label>Uploaded on: {{gmdate('d M, Y h:i a', strtotime($image->created_at)+19800)}}</label>
             <button class="btn btn-danger" onclick="removeImage({{$image->id}}, $(this).parent())">Delete</button>
         </div>

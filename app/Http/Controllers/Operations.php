@@ -111,4 +111,26 @@ class Operations extends Controller
             return $this->sendError($error->getMessage());
         }
     }
+
+    /**
+     * get image edit form params
+     */
+    protected function getImageEditForm(Request $request){
+        $validateData = $this->validateData($request->all(), $this->validationRules('imageEdit', $request->method()));
+        if($validateData->failed){
+            return $this->sendError($this->validationFailedMsg, $validateData->messages, $this->validationErrorResponseCode);
+        }
+        if($request->isMethod('GET')){
+            $imageData = Images::select(['id', 'user_id', 'type', 'tags'])->where('id', $request->imageId)->first();
+            if($imageData->user_id && $imageData->user_id !== Auth::id()){
+                return $this->sendError('You do not own this image', null, $this->accessDeniedResponseCode);
+            }
+            $data = array(
+                'imageTypes' => Images::imageTypes(),
+                'imageData' => $imageData
+
+            );
+            return $this->renderView('imageEdit', $data);
+        }
+    }
 }

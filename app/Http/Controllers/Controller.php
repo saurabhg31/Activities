@@ -83,7 +83,8 @@ class Controller extends BaseController
             'marketing' => 'layouts.renders.marketing',
             'imagesAdd' => 'layouts.renders.addImages',
             'truncateWallpapers' => 'layouts.renders.addImages',
-            'searchImages' => 'layouts.renders.searchImages'
+            'searchImages' => 'layouts.renders.searchImages',
+            'imageEdit' => 'layouts.renders.imageEditForm'
         );
         return view($viewData[$type], compact('data'))->render();
     }
@@ -137,7 +138,10 @@ class Controller extends BaseController
                 'removeImage' => [
                     'imageId' => 'required|integer|min:1|exists:images,id'
                 ],
-                'searchImages' => []
+                'searchImages' => [],
+                'imageEdit' => [
+                    'imageId' => 'required|integer|min:1|exists:images,id'
+                ]
             );
         }
         else{
@@ -161,6 +165,11 @@ class Controller extends BaseController
                 'searchImages' => [
                     'tags' => 'nullable|string',
                     'types' => 'nullable|string'
+                ],
+                'imageEdit' => [
+                    'imageId' => 'required|integer|min:1|exists:images,id',
+                    'type' => 'required|string',
+                    'tags' => 'nullable|string|max:256'
                 ]
             );
         }
@@ -175,6 +184,7 @@ class Controller extends BaseController
      * TODO: resolve extension issue
      */
     protected function addImages(array $images, string $tags = null, string $type = 'WALLPAPER', string $domain = 'public'){
+        $userId = $domain === 'private' ? Auth::id() : NULL;
         foreach($images as $image){
             $contents = fread(fopen($image, 'rb'), filesize($image));
             $extension = File::extension($image);
@@ -183,11 +193,15 @@ class Controller extends BaseController
                 'image' => base64_encode($contents),
                 'imageType' => $extension ? $extension : 'png',
                 'tags' => $tags,
-                'user_id' => $domain === 'private' ? Auth::id() : NULL
+                'user_id' => $userId
             );
-            if(!Images::where($imageData)->exists()){
+            Images::create($imageData);
+            /*
+            * TODO: add code to check if image exists in database (removed temporarily for performance boost)
+            if(!Images::where(['type' => $type, 'imageType' => $extension ? $extension : 'png', 'tags' => $tags])->exists()){
                 Images::create($imageData);
             }
+            */
         }
         return true;
     }

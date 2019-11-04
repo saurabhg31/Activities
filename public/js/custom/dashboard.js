@@ -40,7 +40,10 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
                 if (evt.lengthComputable)
                 {
                     var percentComplete = Math.round((evt.loaded*100)/evt.total);
-                    submitButton.html(percentComplete+' % uploaded')
+                    submitButton.html(percentComplete+' % uploaded');
+                }
+                if(percentComplete === 100){
+                    submitButton.html('Uploaded. Processing data...');
                 }
             }, false );
             return jqXHR;
@@ -50,6 +53,7 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
                 callables.beforeSend();
             }
             if(submitButton){
+                submitButton.attr('disabled', true);
                 submitButton.html('Processing...');
             }
         },
@@ -113,6 +117,7 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
             }
             if(submitButton){
                 submitButton.html(submitButtonHtml);
+                submitButton.attr('disabled', false);
             }
         }
     });
@@ -161,7 +166,7 @@ function removeImage(imageId, imageParagraph){
 }
 
 function openImageInModal(image){
-    let imageHtml = '<img src="'+image.attr('src')+'" title="'+image.attr('title')+'" style="width: 100%;"/>';
+    let imageHtml = '<img src="'+image.attr('src')+'" title="'+image.attr('title')+'" style="max-width: 100%; max-height: 100%;"/>';
     let modal = $('#myModal');
     modal.find('div[class="modal-body"]').html(imageHtml);
     modal.modal('show');
@@ -191,6 +196,15 @@ function listFileNames(input){
         totalBytes += file.size
     }
     output.append('<p style="margin-top: 2%;"><b>Total size: '+formatBytes(totalBytes)+'</b></p>');
+}
+
+function editImage(imageId, img){
+    let imageHtml = '<img src="'+img.attr('src')+'" title="'+img.attr('title')+'" style="max-width: 100%; max-height: 300px;"/>';
+    let imageEditForm = $.get(APP_URL+'getImageEditForm', {imageId: imageId});
+    console.log(imageEditForm);
+    // let modal = $('#myModal');
+    // modal.find('div[class="modal-body"]').html(imageHtml);
+    // modal.modal('show');
 }
 
 $(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType', function (e) {
