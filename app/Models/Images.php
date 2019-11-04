@@ -73,4 +73,18 @@ class Images extends Model
     protected static function deleteImages(array &$imageIds){
         return self::whereIn('id', $imageIds)->where('user_id', Auth::id())->delete();
     }
+
+    /**
+     * update image info
+     */
+    protected static function updateImageInfo(array &$params){
+        $check = self::select('user_id')->where('id', $params['imageId'])->first();
+        if(is_null($check->user_id) || $check->user_id === Auth::id()){
+            return self::where('id', $params['imageId'])->update([
+                'type' => $params['type'],
+                'tags' => $params['tags']
+            ]);
+        }
+        return false;
+    }
 }

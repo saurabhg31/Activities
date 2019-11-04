@@ -132,5 +132,14 @@ class Operations extends Controller
             );
             return $this->renderView('imageEdit', $data);
         }
+        elseif($request->isMethod('POST')){
+            if(Images::updateImageInfo(array_except($request->all(), ['_token']))){
+                return $this->sendResponse(null, null, ['text' => 'Image information updated']);
+            }
+            else{
+                return $this->sendError('Unable to update', null, $this->serverErrorResponseCode);
+            }
+        }
+        return $this->sendError('Invalid request type', null, $this->accessDeniedResponseCode);
     }
 }

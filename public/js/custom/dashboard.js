@@ -1,4 +1,4 @@
-let display;
+let display, imgEdit;
 
 $(document).ready(function () {
     toastr.options.escapeHtml = true;
@@ -61,8 +61,8 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
             if (callables && callables.success) {
                 callables.success(response);
             }
-            display.output.html(null);
             if(response.html){
+                display.output.html(null);
                 display.output.html(response.html);
             }
             if(response.data){
@@ -199,12 +199,22 @@ function listFileNames(input){
 }
 
 function editImage(imageId, img){
+    imgEdit = img;
     let imageHtml = '<img src="'+img.attr('src')+'" title="'+img.attr('title')+'" style="max-width: 100%; max-height: 300px;"/>';
-    let imageEditForm = $.get(APP_URL+'getImageEditForm', {imageId: imageId});
-    console.log(imageEditForm);
-    // let modal = $('#myModal');
-    // modal.find('div[class="modal-body"]').html(imageHtml);
-    // modal.modal('show');
+    $.get(APP_URL+'getImageEditForm', {imageId: imageId}, function(response){
+        let modal = $('#myModal');
+        modal.find('div[class="modal-body"]').html(imageHtml+response);
+        modal.modal('show');
+    });
+}
+
+function postEditImageInfo(form){
+    transmitData(form.attr('action'), form.attr('method'), new FormData(form[0]), form.find('button[type="submit"]'), {success: function(){
+        $('#myModal').modal('hide');
+        imgEdit.attr('title', 'Type: '+form.find('select[name="type"]').val()+' || Tags: '+form.find('input[name="tags"]').val());
+        imgEdit = null;
+    }});
+    return false;
 }
 
 $(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType', function (e) {
