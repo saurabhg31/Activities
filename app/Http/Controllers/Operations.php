@@ -142,4 +142,30 @@ class Operations extends Controller
         }
         return $this->sendError('Invalid request type', null, $this->accessDeniedResponseCode);
     }
+
+    /**
+     * detect duplicates and remove them
+     * @param int $limit: specifies how many images to load in one iteration
+     * TODO: optimize code to run with limited resources without using limit
+     */
+    public function removeDuplicateImages(int $limit = 10){
+        try{
+            foreach(Images::select('id', 'image')->limit($limit)->get() as $imageData){
+                if(Images::where('image', $imageData->image)->where('id', '!=', $imageData->id)->exists()){
+                    print('Detected a duplicate for image id: '.$imageData->id.PHP_EOL.'Removing current...'.PHP_EOL);
+                    if(Images::where('id', $imageData->id)->delete()){
+                        print('Deleted image with id: '.$imageData->id.PHP_EOL);
+                    }
+                    else{
+                        print('Unable to delete image having id: '.$imageData->id.PHP_EOL);
+                    }
+                }
+            }
+            return true;
+        }
+        catch(Exception $error){
+            print('Error: '.$error->getMessage());
+            return false;
+        }
+    }
 }
