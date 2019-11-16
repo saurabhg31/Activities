@@ -46,6 +46,19 @@ class Controller extends BaseController
     }
 
     /**
+     * recursive array search
+     */
+    public function searchArrayFor($needle, $haystack, $currentKey, $needleKey) {
+        $matchedIndexes = array();
+        foreach($haystack as $key => $val){
+            if($val[$needleKey] == $needle[$needleKey] && $haystack[$currentKey] != $val){
+                array_push($matchedIndexes, $key);
+            }
+        }
+        return isset($matchedIndexes[0]) ? $matchedIndexes : false;
+    }
+
+    /**
      * Allowed operation types
      */
 

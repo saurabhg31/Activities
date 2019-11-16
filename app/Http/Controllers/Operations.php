@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Images;
 use Exception;
+use Illuminate\Cache\Console\ClearCommand;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -146,21 +147,31 @@ class Operations extends Controller
     /**
      * detect duplicates and remove them
      * @param int $limit: specifies how many images to load in one iteration
-     * TODO: optimize code to run with limited resources without using limit
+     * TODO: not working
      */
-    public function removeDuplicateImages(int $limit = 10){
+    public function removeDuplicateImages(int $limit = 10, int $skip = 0){
         try{
-            foreach(Images::select('id', 'image')->limit($limit)->get() as $imageData){
-                if(Images::where('image', $imageData->image)->where('id', '!=', $imageData->id)->exists()){
-                    print('Detected a duplicate for image id: '.$imageData->id.PHP_EOL.'Removing current...'.PHP_EOL);
-                    if(Images::where('id', $imageData->id)->delete()){
-                        print('Deleted image with id: '.$imageData->id.PHP_EOL);
-                    }
-                    else{
-                        print('Unable to delete image having id: '.$imageData->id.PHP_EOL);
-                    }
+            // shell_exec('clear');
+            print(PHP_EOL.'Searching for duplicates in '.Images::count().' images'.PHP_EOL.'Loading '.$limit.' images for searching...'.str_repeat(PHP_EOL, 2));
+            $images = Images::limit($limit)->when($skip, function($query) use ($skip){
+                return $query->skip($skip);
+            })->get();
+            if(!isset($images[0])){
+                print('Unable to retrieve images data. !'.PHP_EOL);
+                return false;
+            }
+            foreach($images as $imageData){
+                print('Searching for duplicates of image: '.$imageData->id.PHP_EOL);
+                $duplicates = Images::removeDuplicatesOf($imageData);
+                if($duplicates){
+                    print($duplicates.' duplicates removed'.PHP_EOL);
+                    Images::create($imageData->toArray());
+                }
+                else{
+                    print('No duplicates found'.PHP_EOL);
                 }
             }
+            print('Process complete'.PHP_EOL);
             return true;
         }
         catch(Exception $error){

@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
 class Images extends Model
 {
     protected $table='images';
-    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id'];
-    protected $hidden = ['id'];
+    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount'];
+    // protected $hidden = ['id'];
 
     /**
      * get images
@@ -86,5 +87,13 @@ class Images extends Model
             ]);
         }
         return false;
+    }
+
+    /**
+     * remove duplicate images
+     * @param self $imageData
+     */
+    protected static function removeDuplicatesOf(self &$imageData){
+        return self::where('image', $imageData->image)->delete();
     }
 }
