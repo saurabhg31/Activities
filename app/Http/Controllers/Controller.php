@@ -166,7 +166,7 @@ class Controller extends BaseController
                 'marketing' => [],
                 'imagesAdd' => [
                     'images' => 'required|array',
-                    'images.*' => 'required|image',
+                    'images.*' => 'required',
                     'tags' => 'nullable|string|min:3|max:10000',
                     'type' => 'required|string|min:3|max:255',
                     'domain' => 'required|string|in:'.implode(',', $this->imageDomains)

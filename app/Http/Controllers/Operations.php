@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Images;
 use Exception;
-use Illuminate\Cache\Console\ClearCommand;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -147,11 +146,10 @@ class Operations extends Controller
     /**
      * detect duplicates and remove them
      * @param int $limit: specifies how many images to load in one iteration
-     * TODO: not working
+     * TODO: extensive testing
      */
     public function removeDuplicateImages(int $limit = 10, int $skip = 0){
         try{
-            // shell_exec('clear');
             print(PHP_EOL.'Searching for duplicates in '.Images::count().' images'.PHP_EOL.'Loading '.$limit.' images for searching...'.str_repeat(PHP_EOL, 2));
             $images = Images::limit($limit)->when($skip, function($query) use ($skip){
                 return $query->skip($skip);
@@ -160,16 +158,25 @@ class Operations extends Controller
                 print('Unable to retrieve images data. !'.PHP_EOL);
                 return false;
             }
+            $ignoreIds = $duplicateIds = array();
             foreach($images as $imageData){
                 print('Searching for duplicates of image: '.$imageData->id.PHP_EOL);
-                $duplicates = Images::removeDuplicatesOf($imageData);
-                if($duplicates){
-                    print($duplicates.' duplicates removed'.PHP_EOL);
-                    Images::create($imageData->toArray());
+                $duplicates = Images::listDuplicatesOf($imageData, $ignoreIds);
+                if(isset($duplicates[0])){
+                    array_push($ignoreIds, $imageData->id);
+                    print((array_key_last($duplicates->toArray())+1).' duplicates found'.PHP_EOL);
+                    foreach($duplicates as $duplicate){
+                        array_push($duplicateIds, $duplicate->id);
+                    }
                 }
                 else{
-                    print('No duplicates found'.PHP_EOL);
+                    print('No duplicates found for image: '.$imageData->id.PHP_EOL);
                 }
+            }
+            if(isset($duplicateIds[0])){
+                print((array_key_last($duplicateIds)+1).' found for '.(array_key_last($ignoreIds)+1).' images. Deleting...'.PHP_EOL);
+                $deleteImages = Images::whereIn('id', $duplicateIds)->whereNotIn('id', $ignoreIds)->delete();
+                print($deleteImages.' images deleted.'.PHP_EOL);
             }
             print('Process complete'.PHP_EOL);
             return true;
