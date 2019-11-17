@@ -69,7 +69,12 @@
     <script src="{{ asset('js/jQuery3.4.1.min.js') }}"></script>
     <script src="{{ asset('js/app.js') }}" defer></script>
     <script src="{{ asset('js/toastr.min.js') }}"></script>
-    <script type="text/javascript">const APP_URL = '{{env('APP_URL')}}';</script>
+    <script type="text/javascript">
+        const APP_URL = '{{env('APP_URL')}}';
+        window.Laravel = <?php echo json_encode([
+            'csrfToken' => csrf_token(),
+        ]); ?>
+    </script>
     @yield('scripts')
 </body>
 </html>

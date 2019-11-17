@@ -30,14 +30,7 @@
         </div>
     </div>
 </div>
-<div class="card text-center" style="margin-top: 2%; margin-left: 2%; margin-right: 2%;">
-    <div class="card-header text-center loaderHeading">Display</div>
-    <div class="text-center loader" style="max-height: 630px; max-width: 1400px; overflow:auto;">
-        <legend>Dynamic interactive screen</legend>
-    </div>
-</div>
-@endsection
-<div id="myModal" class="modal fade" role="dialog" style="width: 100%;">
+<div id="myModal" class="modal fade" role="dialog" style="width: 100%; display: none;">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -49,6 +42,13 @@
         </div>
     </div>
 </div>
+<div class="card text-center" style="margin-top: 2%; margin-left: 2%; margin-right: 2%;">
+    <div class="card-header text-center loaderHeading">Display</div>
+    <div class="text-center loader" style="max-height: 630px; max-width: 1400px; overflow:auto;">
+        <legend>Dynamic interactive screen</legend>
+    </div>
+</div>
+@endsection
 @section('scripts')
 <script type="text/javascript" src="{{asset('js/custom/dashboard.js')}}"></script>
 @endsection

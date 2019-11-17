@@ -256,12 +256,19 @@ $(document).on('click', '.page-link', function(event){
     event.preventDefault();
     if($(this).attr('href').includes('operation/searchImages')){
         let form = $('#searchImagesForm');
-        return transmitData($(this).attr('href').split(APP_URL).pop(), form.attr('method'), new FormData(form[0]), form.find('button[type="submit"]'));
+        return transmitData(
+            $(this).attr('href').split(APP_URL).pop(),
+            form.attr('method'), new FormData(form[0]),
+            form.find('button[type="submit"]'),
+            {success: function(){
+                display.output.scrollTop(45);
+            }}
+        );
     }
     else{
         return transmitData($(this).attr('href').split(APP_URL).pop(), 'GET', null, null, {
             success: function(){
-                display.output.scrollTop(275);
+                display.output.scrollTop(250);
             }
         });
     }

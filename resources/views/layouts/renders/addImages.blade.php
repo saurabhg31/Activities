@@ -2,7 +2,7 @@
     @csrf
     <div class="form-inline">
         <div class="col-sm-4">
-            <input type="file" name="images[]" class="form-control" multiple style="margin-top: -25%;margin-left:-18%;" onchange="listFileNames($(this));">
+            <input type="file" name="images[]" class="form-control" multiple style="margin-top: -40%;margin-left:-18%;" onchange="listFileNames($(this));">
         </div>
         <div class="col-sm-8">
             <label for="fileListOutput" style="float: left;">File list:</label><br>
