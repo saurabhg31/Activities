@@ -179,10 +179,12 @@ class Operations extends Controller
                 print($deleteImages.' images deleted.'.PHP_EOL);
             }
             print('Process complete'.PHP_EOL);
+            $images = $ignoreIds = $duplicateIds = null;
             return true;
         }
         catch(Exception $error){
             print('Error: '.$error->getMessage());
+            $images = $ignoreIds = $duplicateIds = null;
             return false;
         }
     }
