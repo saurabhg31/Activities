@@ -71,7 +71,9 @@ class Images extends Model
      * delete a image(s)
      */
     protected static function deleteImages(array &$imageIds){
-        return self::whereIn('id', $imageIds)->where('user_id', Auth::id())->delete();
+        return self::whereIn('id', $imageIds)->when(env('IMGDEL') === 'allow', function($query){
+            return $query->where('user_id', NULL)->orWhere('user_id', Auth::id());
+        })->delete();
     }
 
     /**

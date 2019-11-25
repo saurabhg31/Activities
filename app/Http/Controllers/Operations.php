@@ -151,16 +151,17 @@ class Operations extends Controller
     public function removeDuplicateImages(int $limit = 10, int $skip = 0){
         try{
             print(PHP_EOL.'Searching for duplicates in '.Images::count().' images'.PHP_EOL.'Loading '.$limit.' images for searching...'.str_repeat(PHP_EOL, 2));
-            $images = Images::limit($limit)->when($skip, function($query) use ($skip){
+            $imageIds = Images::select('id')->limit($limit)->when($skip, function($query) use ($skip){
                 return $query->skip($skip);
             })->get();
-            if(!isset($images[0])){
+            if(!isset($imageIds[0])){
                 print('Unable to retrieve images data. !'.PHP_EOL);
                 return false;
             }
             $ignoreIds = $duplicateIds = array();
-            foreach($images as $imageData){
-                print('Searching for duplicates of image: '.$imageData->id.PHP_EOL);
+            foreach($imageIds as $imageId){
+                print('Searching for duplicates of image: '.$imageId->id.PHP_EOL);
+                $imageData = Images::findOrFail($imageId->id);
                 $duplicates = Images::listDuplicatesOf($imageData, $ignoreIds);
                 if(isset($duplicates[0])){
                     array_push($ignoreIds, $imageData->id);
@@ -179,12 +180,12 @@ class Operations extends Controller
                 print($deleteImages.' images deleted.'.PHP_EOL);
             }
             print('Process complete'.PHP_EOL);
-            $images = $ignoreIds = $duplicateIds = null;
+            $imageIds = $ignoreIds = $duplicateIds = null;
             return true;
         }
         catch(Exception $error){
             print('Error: '.$error->getMessage());
-            $images = $ignoreIds = $duplicateIds = null;
+            $imageIds = $ignoreIds = $duplicateIds = null;
             return false;
         }
     }

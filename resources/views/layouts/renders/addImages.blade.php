@@ -15,7 +15,7 @@
             <option value="private" @if(Session::has('domain') && Session::get('domain') === 'private') selected @endif>Private</option>
         </select>
         <div class="form-inline">
-            <select name="type" id="typeSelect" class="form-control" style="width:78%;">
+            <select name="type" id="typeSelect" class="form-control" style="width:78%;" required>
                 <option value="">Select image type</option>
                 @foreach ($data['types'] as $type)
                     <option value="{{$type->type}}" @if(isset($data['selectedType']) && $data['selectedType'] === $type->type) selected @endif>{{$type->type}}</option>
