@@ -144,7 +144,7 @@ class Operations extends Controller
     }
 
     /**
-     * detect duplicates and remove them
+     * detect duplicates and remove them (sql search)
      * @param int $limit: specifies how many images to load in one iteration
      * TODO: extensive testing
      */
@@ -186,6 +186,44 @@ class Operations extends Controller
         catch(Exception $error){
             print('Error: '.$error->getMessage());
             $imageIds = $ignoreIds = $duplicateIds = null;
+            return false;
+        }
+    }
+
+    /**
+     * detect duplicates and remove them (processor search)
+     * Note: fast but resource intensive
+     */
+    public function fastRemoveDuplicateImages(int $limit = null){
+        try{
+            print('Loading '.Images::count().' images for search. This could take a while...'.PHP_EOL);
+            $images = Images::select(['id', 'image'])->orderBy('created_at', 'desc')->when($limit, function($query) use ($limit){
+                return $query->limit($limit);
+            })->get()->toArray();
+            print('Image data loaded for searching.'.PHP_EOL);
+            $duplicateIds = $ignoreIds = array();
+            foreach($images as $image){
+                print('Searching duplicates of image: '.$image['id'].PHP_EOL);
+                foreach($images as $searchImg){
+                    if(
+                        ($image['id'] !== $searchImg['id']) && (in_array($searchImg['id'], $duplicateIds) === false) && (in_array($searchImg['id'], $ignoreIds) === false) && ($image['image'] === $searchImg['image'])
+                    ){
+                        array_push($duplicateIds, $searchImg['id']);
+                        print('Duplicate for image: '.$image['id'].' found. Image: '.$searchImg['id'].PHP_EOL);
+                    }
+                }
+                array_push($ignoreIds, $image['id']);
+                print('Search completed for image: '.$image['id'].PHP_EOL);
+            }
+            print('Search complete. '.count($duplicateIds).' duplicates found.'.PHP_EOL);
+            // $images = null; unset($images);
+            if(isset($duplicateIds[0])){
+                print('Deleting images: '.implode(',', $duplicateIds).'...'.PHP_EOL);
+                print(Images::whereIn('id', $duplicateIds)->delete().' images deleted.'.PHP_EOL);
+            }
+            return true;
+        }catch(Exception $error){
+            print('Error: '.$error->getMessage().PHP_EOL);
             return false;
         }
     }
