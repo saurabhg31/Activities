@@ -194,12 +194,10 @@ class Operations extends Controller
      * detect duplicates and remove them (processor search)
      * Note: fast but resource intensive
      */
-    public function fastRemoveDuplicateImages(int $limit = null){
+    public function fastRemoveDuplicateImages(){
         try{
             print('Loading '.Images::count().' images for search. This could take a while...'.PHP_EOL);
-            $images = Images::select(['id', 'image'])->orderBy('created_at', 'desc')->when($limit, function($query) use ($limit){
-                return $query->limit($limit);
-            })->get()->toArray();
+            $images = Images::select(['id', 'image'])->orderBy('created_at', 'desc')->get()->toArray();
             print('Image data loaded for searching.'.PHP_EOL);
             $duplicateIds = $ignoreIds = array();
             foreach($images as $image){
@@ -216,11 +214,13 @@ class Operations extends Controller
                 print('Search completed for image: '.$image['id'].PHP_EOL);
             }
             print('Search complete. '.count($duplicateIds).' duplicates found.'.PHP_EOL);
-            // $images = null; unset($images);
             if(isset($duplicateIds[0])){
                 print('Deleting images: '.implode(',', $duplicateIds).'...'.PHP_EOL);
                 print(Images::whereIn('id', $duplicateIds)->delete().' images deleted.'.PHP_EOL);
             }
+            print('Clearing memory. Please wait...'.PHP_EOL);
+            $images = $duplicateIds = $ignoreIds = null; unset($images);
+            print('Memory freed. Exiting...'.PHP_EOL);
             return true;
         }catch(Exception $error){
             print('Error: '.$error->getMessage().PHP_EOL);
