@@ -22,4 +22,8 @@ Route::middleware(['verified'])->group(function(){
     Route::post('/authorizeCriticalOperation', 'Auth\VerificationController@authorizeCriticalOperation');
     Route::post('/switchDomain', 'Auth\VerificationController@switchDomain');
     Route::any('/getImageEditForm', 'Operations@getImageEditForm');
+    /**
+     * Routes for getting data processing hardware & software requirements (in progress)
+     */
+    Route::get('/getRequirements', 'Operations@getRequirements');
 });
