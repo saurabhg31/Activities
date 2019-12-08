@@ -31,6 +31,28 @@ class Controller extends BaseController
     public $validationFailedMsg = 'Validation failed';
 
     /**
+     * get input text
+     * @param boolean $numericOnly (Force to accept only numeric input)
+     * @return string $line
+     * @refer https://www.php.net/manual/en/features.commandline.io-streams.php
+     */
+    public function getInput(bool $numericOnly = false){
+        $handle = fopen ("php://stdin","r");
+        $line = fgets($handle);
+        $line = trim($line);
+        if($numericOnly){
+            if(is_numeric($line)){
+                return (double)$line;
+            }
+            else{
+                print('Invalid input. Enter numeric values only'.PHP_EOL);
+                return $this->getInput(true);
+            }
+        }
+        return $line;
+    }
+
+    /**
      * Validate data
      * @param array $data
      * @param array $rules

@@ -196,7 +196,13 @@ class Operations extends Controller
      */
     public function fastRemoveDuplicateImages(){
         try{
-            print('Loading '.Images::count().' images for search. This could take a while...'.PHP_EOL);
+            print('Need to load '.Images::count().' images for search. This could take a while...'.PHP_EOL.'Do you want to proceed ? (yes/no)'.PHP_EOL);
+            $reply = $this->getInput();
+            if(strtolower($reply) !== 'yes'){
+                print('Process aborted by user.'.PHP_EOL);
+                return false;
+            }
+            print('Loading images to memory...'.PHP_EOL);
             $images = Images::select(['id', 'image'])->orderBy('created_at', 'desc')->get()->toArray();
             print('Image data loaded for searching.'.PHP_EOL);
             $duplicateIds = $ignoreIds = array();
