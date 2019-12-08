@@ -53,6 +53,23 @@ class Controller extends BaseController
     }
 
     /**
+     * Check for minimum recommended memory
+     * @param float $cap (minimum recommended free memory in GB)
+     * @return boolean (true: requirements met, false: requirements not met)
+     */
+    public function runRequirementsCheck(float $cap = 1.9){
+        $freeMemory = exec('free -t -h');
+        $freeMemory = $freeMemory[38].$freeMemory[39].$freeMemory[40];
+        if((float)$freeMemory < $cap){
+            print('Less than recommended free memory ('.$cap.' GB) detected. ABORT ADVISED.'.PHP_EOL.'Current free memory: '.$freeMemory.' GB'.PHP_EOL.'Proceed ? (yes/no): ');
+            if(strtolower($this->getInput()) !== 'yes'){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Validate data
      * @param array $data
      * @param array $rules

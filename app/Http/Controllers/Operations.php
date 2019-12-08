@@ -202,6 +202,10 @@ class Operations extends Controller
                 print('Process aborted by user.'.PHP_EOL);
                 return false;
             }
+            if(!$this->runRequirementsCheck()){
+                print('Process aborted by user.'.PHP_EOL);
+                return false;
+            }
             print('Loading images to memory...'.PHP_EOL);
             $images = Images::select(['id', 'image'])->orderBy('created_at', 'desc')->get()->toArray();
             print('Image data loaded for searching.'.PHP_EOL);
