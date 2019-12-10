@@ -58,6 +58,7 @@ class Controller extends BaseController
      * @return boolean (true: requirements met, false: requirements not met)
      */
     public function runRequirementsCheck(float $cap = 1.9){
+        print('Checking if recommended free memory is available...'.PHP_EOL);
         $freeMemory = exec('free -t -h');
         if($freeMemory){
             $freeMemory = $freeMemory[38].$freeMemory[39].$freeMemory[40];
