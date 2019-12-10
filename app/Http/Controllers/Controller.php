@@ -59,14 +59,26 @@ class Controller extends BaseController
      */
     public function runRequirementsCheck(float $cap = 1.9){
         $freeMemory = exec('free -t -h');
-        $freeMemory = $freeMemory[38].$freeMemory[39].$freeMemory[40];
-        if((float)$freeMemory < $cap){
-            print('Less than recommended free memory ('.$cap.' GB) detected. ABORT ADVISED.'.PHP_EOL.'Current free memory: '.$freeMemory.' GB'.PHP_EOL.'Proceed ? (yes/no): ');
+        if($freeMemory){
+            $freeMemory = $freeMemory[38].$freeMemory[39].$freeMemory[40];
+            if((float)$freeMemory < $cap){
+                print('Less than recommended free memory ('.$cap.' GB) detected. ABORT ADVISED.'.PHP_EOL.'Current free memory: '.$freeMemory.' GB'.PHP_EOL.'Proceed ? (yes/no): ');
+                if(strtolower($this->getInput()) !== 'yes'){
+                    return false;
+                }
+            }
+            return true;
+        }
+        else{
+            print('Unable to fetch free memory. ABORT ADVISED. Proceed ? (yes/no): ');
             if(strtolower($this->getInput()) !== 'yes'){
                 return false;
             }
+            else{
+                return true;
+            }
         }
-        return true;
+        return false;
     }
 
     /**
