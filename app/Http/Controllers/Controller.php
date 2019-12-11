@@ -57,7 +57,10 @@ class Controller extends BaseController
      * @param float $cap (minimum recommended free memory in GB)
      * @return boolean (true: requirements met, false: requirements not met)
      */
-    public function runRequirementsCheck(float $cap = 1.9){
+    public function runRequirementsCheck(float $cap = null){
+        if(!$cap){
+            $cap = env('MEMORY_CAP', 4.0);
+        }
         print('Checking if recommended free memory is available...'.PHP_EOL);
         $freeMemory = exec('free -t -h');
         if($freeMemory){
