@@ -41,8 +41,11 @@ class Images extends Model
             return $query->where('type', $params['types']);
         })->when(isset($params['tags']), function($query2) use ($params){
             $tags = preg_split('/[\ \n\,]+/', $params['tags']);
-            foreach($tags as $tag){
-                $query2->where('tags', 'like', '%'.$tag.'%');
+            $query2->where('tags', 'like', '%'.array_first($tags).'%');
+            if(isset($tags[1])){
+                foreach(array_except($tags, [0]) as $tag){
+                    $query2->orWhere('tags', 'like', '%'.$tag.'%');
+                }
             }
             return $query2;
         })->when(Session::has('domain'), function($query3){
