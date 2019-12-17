@@ -257,7 +257,8 @@ $(document).on('click', '.page-link', function(event){
     if($(this).attr('href').includes('operation/searchImages')){
         let form = $('#searchImagesForm');
         return transmitData(
-            $(this).attr('href').split(APP_URL).pop(),
+            // $(this).attr('href').split(APP_URL).pop(),
+            $(this).attr('href'),
             form.attr('method'), new FormData(form[0]),
             form.find('button[type="submit"]'),
             {success: function(){
