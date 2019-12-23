@@ -252,13 +252,24 @@ $(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#image
     }
 });
 
+/* TODO: Solve hosting issue, url unauthorized response in production */
+function renderUrl(inputUrl){
+    if(inputUrl.includes(APP_URL)){
+        return inputUrl.replace(APP_URL, '');
+    }
+    else{
+        if(inputUrl.includes('http://') && APP_URL.includes('https://')){
+            return inputUrl.replace('http://', 'https://');
+        }
+    }
+}
+
 $(document).on('click', '.page-link', function(event){
     event.preventDefault();
     if($(this).attr('href').includes('operation/searchImages')){
         let form = $('#searchImagesForm');
         return transmitData(
-            // $(this).attr('href').split(APP_URL).pop(),
-            $(this).attr('href'),
+            renderUrl($(this).attr('href')),
             form.attr('method'), new FormData(form[0]),
             form.find('button[type="submit"]'),
             {success: function(){
