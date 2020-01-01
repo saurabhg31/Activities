@@ -55,6 +55,17 @@ class Operations extends Controller
                             $this->renderView($type, ['search' => Images::list(), 'types' => Images::imageTypes()]),
                             $this->generateMsgBag($type, 'Ready to search', 'Search Images')
                         );
+                    case 'expenses':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'currentDate' => gmdate('Y-m-d', time())
+                            ]),
+                            [
+                                'text' => 'Add an expense',
+                                'heading' => 'Expenses'
+                            ]
+                        );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }
@@ -85,6 +96,17 @@ class Operations extends Controller
                                 'selectedTags' => $request->tags
                             ]),
                             $this->generateMsgBag($type, $search->response)
+                        );
+                    case 'expenses':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'currentDate' => gmdate('Y-m-d', time())
+                            ]),
+                            [
+                                'text' => 'Add an expense',
+                                'heading' => 'Expenses'
+                            ]
                         );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);

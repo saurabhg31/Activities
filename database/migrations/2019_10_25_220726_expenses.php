@@ -18,7 +18,7 @@ class Expenses extends Migration
             $table->string('expense');
             $table->longText('description')->nullable();
             $table->float('amount');
-            $table->enum('status', ['PENDING', 'COMPLETED', 'DELAYED', 'CANCELLED'])->default('PENDING');
+            $table->enum('status', ['PENDING', 'COMPLETED', 'DELAYED', 'CANCELLED'])->default('COMPLETED');
             $table->timestamp('deadline')->nullable();
             $table->longText('log')->nullable();
             $table->timestamps();

@@ -26,6 +26,12 @@ class Controller extends BaseController
     public $imageDomains = ['private', 'public'];
 
     /**
+     * protected ranges & values
+     */
+    protected $expenseStatuses = ['PENDING', 'COMPLETED', 'DELAYED', 'CANCELLED'];
+    protected $defaultExpenseStatus = 'COMPLETED';
+
+    /**
      * Validation error messages
      */
     public $validationFailedMsg = 'Validation failed';
