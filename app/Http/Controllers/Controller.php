@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Images;
+use App\Models\MemoryRequirements;
+use Exception;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -65,7 +67,12 @@ class Controller extends BaseController
      */
     public function runRequirementsCheck(float $cap = null){
         if(!$cap){
-            $cap = env('MEMORY_CAP', 4.0);
+            $cap = MemoryRequirements::getMemoryCap();
+            if($cap){
+                $cap = $cap->recommendedFreeMemory;
+            }else{
+                $cap = env('MEMORY_CAP', 4.0);
+            }
         }
         print('Checking if recommended free memory is available...'.PHP_EOL);
         $freeMemory = exec('free -t -h');
@@ -278,6 +285,25 @@ class Controller extends BaseController
             */
         }
         return true;
+    }
+
+    /**
+     * store total size and number of images in db
+     */
+    protected function storeTotalImagesDataInfo(int $dataSizeInBytes){
+        try{
+            print('Generating required minimum & recommended free memory statistics...'.PHP_EOL);
+            $minimumFreeMemory = $dataSizeInBytes/1024/1024/1024; //in GB
+            $requirements = array(
+                'minimumFreeMemory' => $minimumFreeMemory,
+                'recommendedFreeMemory' => $minimumFreeMemory+(float)env('MEMORY_CAP')
+            );
+            $stat = MemoryRequirements::addRequirement($requirements);
+            print('Added memory requirement entry: '.$stat->id.' to DB.['.implode(', ', $requirements).']'.PHP_EOL);
+
+        }catch(Exception $error){
+            print('Error while calculating total images size: '.$error->getMessage().PHP_EOL);
+        }
     }
 
     /**

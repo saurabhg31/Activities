@@ -228,8 +228,14 @@ class Operations extends Controller
                 print('Process aborted by user.'.PHP_EOL);
                 return false;
             }
-            print('Loading images to memory...'.PHP_EOL);
-            $images = Images::select(['id', 'image'])->orderBy('created_at', 'desc')->get()->toArray();
+            print('Loading images to memory...');
+            $freeMemory = memory_get_usage();
+            $images = Images::select(['id', 'image'])->orderBy('created_at', 'desc')->get();
+            print('Loaded.'.PHP_EOL);
+            print('Converting images object to array for faster traversing in PHP...');
+            $images = $images->toArray();
+            print('Converted.'.PHP_EOL);
+            $this->storeTotalImagesDataInfo(memory_get_usage()-$freeMemory);
             print('Image data loaded for searching.'.PHP_EOL);
             $duplicateIds = $ignoreIds = array();
             foreach($images as $image){
