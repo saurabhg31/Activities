@@ -77,13 +77,14 @@ class Operations extends Controller
                 }
                 switch($type){
                     case 'imagesAdd':
+                        $addedImagesCount = $this->addImages($request->images, $request->tags, $request->type, $request->domain);
                         return $this->sendResponse(
-                            $this->addImages($request->images, $request->tags, $request->type, $request->domain) ? null : 'Unable to add images',
+                            $addedImagesCount ? $addedImagesCount : 'Unable to add images',
                             $this->renderView($type, [
                                 'images' => Images::list(),
                                 'types' => Images::imageTypes()
                             ]),
-                            $this->generateMsgBag($type, 'Images added', 'Current images')
+                            $this->generateMsgBag($type, $addedImagesCount.' image(s) added', 'Current images')
                         );
                     case 'searchImages':
                         $search = Images::search($request->all());

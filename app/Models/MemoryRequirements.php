@@ -43,4 +43,25 @@ class MemoryRequirements extends Model
         }
         return null;
     }
+
+    /**
+     * append extra required memory to memory requirements
+     */
+    protected static function appendExtraDataToRequirements(int &$extraDataSizeInBytes, string &$table = 'images', string &$operation = 'duplicateSearch'){
+        $requirements = self::select(['id', 'requirements'])->where([
+            'table' => $table,
+            'operation' => $operation,
+        ])->first();
+        if($requirements){
+            $requirementsId = $requirements->id;
+            $requirements = json_decode($requirements->requirements);
+            $extraDataSizeInGb = $extraDataSizeInBytes/pow(1024, 4);
+            $requirements->minimumFreeMemory += $extraDataSizeInGb;
+            $requirements->recommendedFreeMemory += $extraDataSizeInGb;
+            return self::find($requirementsId)->update([
+                'requirements' => json_encode($requirements)
+            ]);
+        }
+        return false;
+    }
 }

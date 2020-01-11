@@ -261,11 +261,12 @@ class Controller extends BaseController
      * add wallpapers or resource images
      * @param array $images
      * @param string $type
-     * @return boolean true
+     * @return integer $uploadedImagesCount
      * TODO: resolve extension issue
      */
     protected function addImages(array $images, string $tags = null, string $type = 'WALLPAPER', string $domain = 'public'){
         $userId = $domain === 'private' ? Auth::id() : NULL;
+        $imagesDataSizeInBytes = $uploadedImagesCount = 0;
         foreach($images as $image){
             $contents = fread(fopen($image, 'rb'), filesize($image));
             $extension = File::extension($image);
@@ -276,15 +277,15 @@ class Controller extends BaseController
                 'tags' => $tags,
                 'user_id' => $userId
             );
-            Images::create($imageData);
-            /*
-            * TODO: add code to check if image exists in database (removed temporarily for performance boost)
-            if(!Images::where(['type' => $type, 'imageType' => $extension ? $extension : 'png', 'tags' => $tags])->exists()){
-                Images::create($imageData);
+            if(Images::create($imageData)){
+                $imagesDataSizeInBytes += File::size($image);
+                $uploadedImagesCount++;
             }
-            */
         }
-        return true;
+        if($imagesDataSizeInBytes){
+            MemoryRequirements::appendExtraDataToRequirements($imagesDataSizeInBytes);
+        }
+        return $uploadedImagesCount;
     }
 
     /**
