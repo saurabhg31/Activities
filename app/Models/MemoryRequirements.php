@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Model;
 
 class MemoryRequirements extends Model
@@ -55,7 +56,7 @@ class MemoryRequirements extends Model
         if($requirements){
             $requirementsId = $requirements->id;
             $requirements = json_decode($requirements->requirements);
-            $extraDataSizeInGb = $extraDataSizeInBytes/pow(1024, 4);
+            $extraDataSizeInGb = (new Controller())->convertDataSizes($extraDataSizeInBytes);
             $requirements->minimumFreeMemory += $extraDataSizeInGb;
             $requirements->recommendedFreeMemory += $extraDataSizeInGb;
             return self::find($requirementsId)->update([

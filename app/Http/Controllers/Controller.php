@@ -289,12 +289,29 @@ class Controller extends BaseController
     }
 
     /**
+     * convert data size type
+     */
+    public function convertDataSizes(&$dataSize, string &$inputDataSizeType = 'bytes', string &$outputDataSizeType = 'GB')
+    {
+        switch($inputDataSizeType){
+            case 'bytes':
+                $dataSizeInBytes = $dataSize;
+                break;
+        }
+        switch($outputDataSizeType){
+            case 'GB':
+                return $dataSizeInBytes/pow(1024, 3);
+        }
+        return false;
+    }
+
+    /**
      * store total size and number of images in db
      */
     protected function storeTotalImagesDataInfo(int $dataSizeInBytes){
         try{
             print('Generating required minimum & recommended free memory statistics...'.PHP_EOL);
-            $minimumFreeMemory = $dataSizeInBytes/1024/1024/1024; //in GB
+            $minimumFreeMemory = $this->convertDataSizes($dataSizeInBytes); /* converted to GB */
             $requirements = array(
                 'minimumFreeMemory' => $minimumFreeMemory,
                 'recommendedFreeMemory' => $minimumFreeMemory+(float)env('MEMORY_CAP')
