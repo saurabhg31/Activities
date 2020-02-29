@@ -266,4 +266,38 @@ class Operations extends Controller
             return false;
         }
     }
+
+    /**
+     * list of files currently being accessed
+     */
+    public function listFilesCurrentlyInUse($filter = null){
+        $currentlyOpenFiles = array();
+        $totalFiles = null;
+        foreach(explode(PHP_EOL, shell_exec('lsof')) as $index => $line){
+            if(!empty($line)){
+                if($filter){
+                    array_push($currentlyOpenFiles, $filter($line));
+                }
+                else{
+                    array_push($currentlyOpenFiles, str_replace('lsof', null, $line));
+                }
+                $totalFiles = $index + 1;
+            }
+        }
+        $headers = array_values(array_filter(explode(' ', array_first($currentlyOpenFiles))));
+        $data = array();
+        array_shift($currentlyOpenFiles);
+        foreach($currentlyOpenFiles as $fileRow){
+            if(strpos($fileRow, 'Permission denied') === false){
+                array_push($data, array_values(array_filter(explode(' ', $fileRow))));
+            }
+        }
+        return [
+            // 'files currently being accessed by some program' => $currentlyOpenFiles,
+            'file count' => $totalFiles,
+            'headers' => implode(',', $headers),
+            'data' => $data,
+            'dataForStorage' => array_merge($headers, $data)
+        ];
+    }
 }
