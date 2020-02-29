@@ -292,6 +292,7 @@ class Operations extends Controller
                 array_push($data, array_values(array_filter(explode(' ', $fileRow))));
             }
         }
+        return $this->generateSpreadsheet($data, $headers, 'OpenFIles_'.gmdate('Y-m-d_H:i:s', time()));
         return [
             // 'files currently being accessed by some program' => $currentlyOpenFiles,
             'file count' => $totalFiles,
