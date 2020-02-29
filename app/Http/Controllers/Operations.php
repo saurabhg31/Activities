@@ -270,10 +270,11 @@ class Operations extends Controller
     /**
      * list of files currently being accessed
      */
-    public function listFilesCurrentlyInUse($filter = null){
+    public function listFilesCurrentlyInUse(bool $grantSuperUserAccess = false, $filter = null){
         $currentlyOpenFiles = array();
         $totalFiles = null;
-        foreach(explode(PHP_EOL, shell_exec('lsof')) as $index => $line){
+        $command = $grantSuperUserAccess ? 'sudo -u root -S lsof < '.storage_path().'/app/myPass.secret' : 'lsof';
+        foreach(explode(PHP_EOL, shell_exec($command)) as $index => $line){
             if(!empty($line)){
                 if($filter){
                     array_push($currentlyOpenFiles, $filter($line));
