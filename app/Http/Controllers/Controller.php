@@ -208,13 +208,13 @@ class Controller extends BaseController
         try {
             //csv generation begins here
             if ($docType === 'csv') {
-                $headers = [
-                    'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-                    'Content-type' => 'text/csv',
-                    'Content-Disposition' => 'attachment; filename=' . $filename . '.csv',
-                    'Expires' => '0',
-                    'Pragma' => 'public'
-                ];
+                // $headers = [
+                //     'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                //     'Content-type' => 'text/csv',
+                //     'Content-Disposition' => 'attachment; filename=' . $filename . '.csv',
+                //     'Expires' => '0',
+                //     'Pragma' => 'public'
+                // ];
                 array_unshift($data, $fields);
                 $FH = fopen(storage_path().'/'.$filename.'.csv', 'w');
                 foreach ($data as $row) {
