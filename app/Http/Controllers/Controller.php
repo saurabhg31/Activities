@@ -208,31 +208,18 @@ class Controller extends BaseController
         try {
             //csv generation begins here
             if ($docType === 'csv') {
-                // $headers = [
-                //     'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-                //     'Content-type' => 'text/csv',
-                //     'Content-Disposition' => 'attachment; filename=' . $filename . '.csv',
-                //     'Expires' => '0',
-                //     'Pragma' => 'public'
-                // ];
+                $file = storage_path().'/docs/'.$filename.'.csv';
                 array_unshift($data, $fields);
-                $FH = fopen(storage_path().'/'.$filename.'.csv', 'w');
+                $FH = fopen($file, 'w');
                 foreach ($data as $row) {
                     fputcsv($FH, (array) $row);
                 }
                 fclose($FH);
-                if(!file_exists(storage_path().'/'.$filename.'.csv')){
-                    print('Unable to write to file: '.storage_path().'/'.$filename.'.csv'.PHP_EOL);
+                if(!file_exists($file)){
+                    print('Unable to write to file: '.$file.PHP_EOL);
                     return false;
                 }
-                return storage_path().'/'.$filename.'.csv';
-                // return Response::stream(function () use ($data) {
-                //     $FH = fopen('php://output', 'w');
-                //     foreach ($data as $row) {
-                //         fputcsv($FH, (array) $row);
-                //     }
-                //     fclose($FH);
-                // }, $this->successResponseCode, $headers);
+                return $file;
             } else {
                 return $this->sendError('XLS format not yet supported.', null, $this->serverErrorResponseCode);
             }

@@ -273,7 +273,8 @@ class Operations extends Controller
     public function listFilesCurrentlyInUse(bool $grantSuperUserAccess = false, $filter = null){
         $currentlyOpenFiles = array();
         $totalFiles = null;
-        $command = $grantSuperUserAccess ? 'sudo -u root -S lsof < '.storage_path().'/app/myPass.secret' : 'lsof';
+        $command = $grantSuperUserAccess ? 'sudo lsof' : 'lsof';
+        // $command = $grantSuperUserAccess ? 'sudo -u root -S lsof < '.storage_path().'/app/myPass.secret' : 'lsof';
         foreach(explode(PHP_EOL, shell_exec($command)) as $index => $line){
             if(!empty($line)){
                 if($filter){
@@ -293,13 +294,13 @@ class Operations extends Controller
                 array_push($data, array_values(array_filter(explode(' ', $fileRow))));
             }
         }
-        return $this->generateSpreadsheet($data, $headers, 'OpenFIles_'.gmdate('Y-m-d_H:i:s', time()));
         return [
             // 'files currently being accessed by some program' => $currentlyOpenFiles,
             'file count' => $totalFiles,
             'headers' => implode(',', $headers),
-            'data' => $data,
-            'dataForStorage' => array_merge($headers, $data)
+            // 'data' => $data,
+            // 'dataForStorage' => array_merge($headers, $data),
+            'stored in' => $this->generateSpreadsheet($data, $headers, 'CurrentlyOpenFiles_'.gmdate('Y-m-d_H:i:s', time()).($grantSuperUserAccess ? ' (super user access enabled)' : null))
         ];
     }
 }
