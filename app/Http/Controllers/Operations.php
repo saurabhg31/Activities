@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Images;
+use App\system_files_in_use;
 use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -289,6 +290,8 @@ class Operations extends Controller
         $headers = array_values(array_filter(explode(' ', array_first($currentlyOpenFiles))));
         $data = array();
         array_shift($currentlyOpenFiles);
+        // sending data for storage in database
+        system_files_in_use::store($headers, $currentlyOpenFiles);
         foreach($currentlyOpenFiles as $fileRow){
             if(strpos($fileRow, 'Permission denied') === false){
                 array_push($data, array_values(array_filter(explode(' ', $fileRow))));
