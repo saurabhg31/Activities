@@ -295,8 +295,13 @@ class Controller extends BaseController
     protected function addImages(array $images, string $tags = null, string $type = 'WALLPAPER', string $domain = 'public'){
         $userId = $domain === 'private' ? Auth::id() : NULL;
         $imagesDataSizeInBytes = $uploadedImagesCount = 0;
+        $file = $contents = $extension = $imageData = null;
         foreach($images as $image){
-            $contents = fread(fopen($image, 'rb'), filesize($image));
+            $file = fopen($image, 'rb');
+            $contents = fread($file, filesize($image));
+            fclose($file);
+            // dd(base64_encode($contents) == base64_encode(file_get_contents('http://pbs.twimg.com/media/ETaDR64WkAAScHS?format=jpg&name=large')));
+            // TODO: Add code to get image from urls
             $extension = File::extension($image);
             $imageData = array(
                 'type' => $type,
@@ -310,6 +315,7 @@ class Controller extends BaseController
                 $uploadedImagesCount++;
             }
         }
+        $file = $contents = $extension = $imageData = null;
         if($imagesDataSizeInBytes){
             MemoryRequirements::appendExtraDataToRequirements($imagesDataSizeInBytes);
         }
