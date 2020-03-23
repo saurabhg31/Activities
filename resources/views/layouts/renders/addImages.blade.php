@@ -24,7 +24,7 @@
             <button id="addNewType" class="btn btn-success">Add New</button>
         </div>
         <br>
-        <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4" placeholder="Add tags to this/these image/images. eg: #cats, #nature etc." style="margin-top: -47%; margin-bottom: 12%; height: 50%;"></textarea>
+        <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4" placeholder="Add tags to this/these image/images. eg: #cats, #nature etc. For links: links> <-- link 1 -->, <-- link 2 -->, tags> <-- your tags -->" style="margin-top: -47%; margin-bottom: 12%; height: 50%;"></textarea>
     </div>
     <div class="col-sm-12" style="float: center; margin-top: 6%;">
         <div class="form-inline">

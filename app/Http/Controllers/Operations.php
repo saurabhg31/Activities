@@ -78,9 +78,31 @@ class Operations extends Controller
                 }
                 switch($type){
                     case 'imagesAdd':
-                        $addedImagesCount = $this->addImages($request->images, $request->tags, $request->type, $request->domain);
+                        $images = $request->images;
+                        $tags = $request->tags;
+                        if(strpos($request->tags, 'links>') !== false){
+                            // TODO: currently rudimentary, make it more efficient & accurate
+                            // parsing image links & tags
+                            $images = explode('links>', $request->tags);
+                            $images = array_map(function($link){
+                                if(strpos($link, 'pbs.twimg.com')){
+                                    // taking higer resolution pictures for twitter
+                                    $link = str_replace('name=small', 'name=large', $link);
+                                }
+                                if(strpos($link, 'https://') !== false){
+                                    return str_replace(' ', null, str_replace('https://', 'http://', $link));
+                                }
+                                elseif(strpos($link, 'http://') !== false){
+                                    return str_replace(' ', null, $link);
+                                }
+                            }, explode(',', next($images)));
+                            $images = array_filter($images);
+                            $tags = explode('tags>', $request->tags);
+                            $tags = next($tags);
+                        }
+                        $addedImagesCount = $this->addImages($images, $tags, $request->type, $request->domain);
                         return $this->sendResponse(
-                            $addedImagesCount ? $addedImagesCount : 'Unable to add images',
+                            $addedImagesCount ? null : 'Unable to add images',
                             $this->renderView($type, [
                                 'images' => Images::list(),
                                 'types' => Images::imageTypes()
