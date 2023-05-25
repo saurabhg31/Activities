@@ -21,7 +21,7 @@ class ImageIndex extends Model
      * @param string $tags
      * @return integer - number or indices (rows) created
      */
-    protected static function addIndices(int &$imageId, string &$tags)
+    public static function addIndices(int $imageId, string $tags)
     {
         $insertedIndexCount = 0;
         $imageIndexData = [];
@@ -42,10 +42,38 @@ class ImageIndex extends Model
     }
 
     /**
+     * Update image indices
+     * @param integer $imageId
+     * @param string $tags
+     * @return true
+     */
+    public static function updateIndices(int $imageId, string $tags)
+    {
+        $imageIndexData = [];
+        foreach (explode(',', $tags) as $tag) {
+            $tag = trim(str_replace('#', '', $tag));
+            if ($tag) {
+                array_push($imageIndexData, [
+                    'tag' => $tag,
+                    'image_id' => $imageId
+                ]);
+            }
+        }
+        self::where('image_id', $imageId)->whereNotIn('tag', array_column($imageIndexData, 'tag'))->delete();
+        if (!empty($imageIndexData)) {
+            foreach($imageIndexData as $index) {
+                self::where($index)->firstOrNew()->fill($index)->save();
+            }
+        }
+        Cache::put('image_tags', self::getImageTags());
+        return true;
+    }
+
+    /**
      * Get image tags
      * @return \Illuminate\Support\Collection
      */
-    protected static function getImageTags()
+    public static function getImageTags()
     {
         $query = self::selectRaw('distinct(tag)')->join('images', 'image_search_indexing.image_id', '=', 'images.id');
         if (Session::has('domain') && Session::get('domain') == 'private') {
@@ -60,7 +88,7 @@ class ImageIndex extends Model
      * Get cached image tags
      * @return \Illuminate\Support\Collection
      */
-    protected static function getCachedImageTags()
+    public static function getCachedImageTags()
     {
         if (!Cache::has('image_tags')) {
             Cache::put('image_tags', self::getImageTags());

@@ -9,11 +9,14 @@ use Illuminate\Support\Facades\Session;
 class ImageType extends Model
 {
     use HasFactory;
+    protected $fillable = [
+        'type', 'user_id'
+    ];
 
     /**
      * list image types
      */
-    protected static function getTypes(bool $checkDomain = true, array $fields = ['type'])
+    public static function getTypes(bool $checkDomain = true, array $fields = ['type'])
     {
         return self::select($fields)->when($checkDomain, function ($query) {
             if (Session::has('domain') && Session::get('domain') == 'private') {
@@ -28,7 +31,7 @@ class ImageType extends Model
     /**
      * Add type
      */
-    protected static function addType(string $type)
+    public static function addType(string $type)
     {
         $data = [
             'type' => $type,
