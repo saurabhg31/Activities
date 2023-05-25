@@ -233,19 +233,16 @@ $(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#image
 });
 
 function renderUrl(inputUrl) {
-    if (inputUrl.includes(APP_URL)) {
+    if (inputUrl.startsWith('http://') && SECURE) {
+        inputUrl = inputUrl.replace('http://', 'https://');
         return inputUrl.replace(APP_URL, '');
     }
-    else {
-        if (inputUrl.includes('http://') && APP_URL.includes('https://')) {
-            inputUrl = inputUrl.replace('http://', 'https://');
-            return inputUrl.replace(APP_URL, '');
-        }
-    }
+    return inputUrl;
 }
 
 $(document).on('click', '.page-link', function (event) {
     event.preventDefault();
+    toastr.info('Loading ...');
     if ($(this).attr('href').includes('operation/searchImages')) {
         let form = $('#searchImagesForm');
         return transmitData(
