@@ -56,7 +56,7 @@ class Images extends Model
         } else {
             $search->whereNull('images.user_id');
         }
-        if (!empty($tags) && $useIndexing) {
+        if ($useIndexing && count($tags) > 1) {
             $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . count($tags));
         }
         DB::statement('SET sql_mode=""');
