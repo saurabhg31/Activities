@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
 class Images extends Model
@@ -32,16 +33,14 @@ class Images extends Model
      */
     protected static function search(array &$params = null, bool $useIndexing = true)
     {
+        $tags = [];
         $search = self::when(isset($params['types']), function ($query) use ($params) {
             return $query->where('type', $params['types']);
-        })->when(isset($params['tags']), function ($conditionalQuery) use ($params, $useIndexing) {
+        })->when(isset($params['tags']), function ($conditionalQuery) use ($params, $useIndexing, &$tags) {
             $tags = preg_split('/[\ \n\,]+/', $params['tags']);
             if ($useIndexing) {
                 return $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
-                    $join->on('image_search_indexing.image_id', '=', 'images.id');
-                    foreach ($tags as $tag) {
-                        $join->where('tag', $tag);
-                    }
+                    $join->on('image_search_indexing.image_id', '=', 'images.id')->whereIn('tag', $tags);
                 });
             } else {
                 return $conditionalQuery->where(function ($query) use ($tags) {
@@ -57,7 +56,12 @@ class Images extends Model
         } else {
             $search->whereNull('user_id');
         }
+        if (!empty($tags) && $useIndexing) {
+            $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . count($tags));
+        }
+        DB::statement('SET sql_mode=""');
         $search = $search->orderBy('images.id', 'desc')->paginate(env('PAGINATION', 20));
+        DB::statement('SET sql_mode="only_full_group_by"');
         $search->response = 'Search complete';
         return $search;
     }
