@@ -1,0 +1,42 @@
+<form id="searchImagesForm" action="operation/searchImages" method="POST" onsubmit="submitFormData($(this)); return false;">
+    @csrf
+    <div class="form-inline" style="margin-top: 2%;">
+        <div class="col-sm-4">
+            <select class="form-control" name="types" style="width: 100%;">
+                <option value="">Select image type</option>
+                @foreach ($data['types'] as $type)
+                    <option value="{{$type->type}}" @if(isset($data['selectedType']) && $data['selectedType'] === $type->type) selected @endif>{{$type->type}}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-sm-4">
+            <input name="tags" type="text" class="form-control" style="width: 100%;" placeholder="Enter tags separated by ,. (#nature, #constancenunes etc.)" value="{{@$data['selectedTags']}}"/>
+        </div>
+        <div class="col-sm-4">
+            <button type="submit" class="btn btn-success" style="width: 100%;">Search</button>
+        </div>
+    </div>
+</form>
+@if(isset($data['search']))
+<legend style="margin-top: 0.4%;">
+    Displaying <label id="imageCount">{{count($data['search'])}}</label> of {{$data['search']->total()}} results. Page {{$data['search']->currentPage()}} of {{$data['search']->lastPage()}}
+</legend>
+@php($count = 1)
+@foreach ($data['search'] as $image)
+    @if($count === 1 || $count === 5)
+    <div class="form-inline">
+    @endif
+        <div class="col-sm-3">
+            <img src="data:image/{{$image->imageType}};base64, {{$image->image}}" title="Type: {{$image->type}} || Tags: {{$image->tags}}" style="max-width: 100%; max-height: 100%; cursor: pointer;" onclick="openImageInModal($(this))"/><br>
+            <label>Uploaded on: {{$image->created_at->format('d M, Y \a\t h:i:s a')}}</label>
+            <button type="button" class="btn btn-warning" onclick="editImage({{$image->id}}, $(this).prev().prev().prev())">Edit</button>
+            <button class="btn btn-danger" onclick="removeImage({{$image->id}}, $(this).parent())">Delete</button>
+        </div>
+    @php($count++)
+    @if($count === 5)
+    </div><br>
+    @php($count = 1)
+    @endif
+@endforeach
+@endif
+<div style="margin-left:1%;margin-right:1%;">{{$data['search']->links('pagination::bootstrap-5')}}</div>
