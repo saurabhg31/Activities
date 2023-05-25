@@ -59,5 +59,5 @@
     </div>
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{ asset('js/custom/dashboard.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/custom/dashboard.min.js') }}"></script>
 @endsection
