@@ -14,8 +14,16 @@ return new class extends Migration
     public function up()
     {
         Schema::table('images', function (Blueprint $table) {
-            $table->string('tags', 255)->nullable()->change();
-            $table->index(['type', 'tags'], 'performance_index');
+            $table->id()->change();
+            $table->string('tags')->nullable()->change();
+            $table->index(['type'], 'performance_index');
+        });
+        Schema::create('image_search_indexing', function (Blueprint $table) {
+            $table->id();
+            $table->string('tag')->index();
+            $table->unsignedBigInteger('image_id');
+            $table->timestamps();
+            $table->foreign('image_id', 'image_id_foreign')->references('id')->on('images')->onDelete('cascade');
         });
     }
 
@@ -29,5 +37,6 @@ return new class extends Migration
         Schema::table('images', function (Blueprint $table) {
             $table->dropIndex('performance_index');
         });
+        Schema::dropIfExists('image_search_indexing');
     }
 };

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ImageIndex;
 use Illuminate\Foundation\Auth\VerifiesEmails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 
@@ -70,6 +72,7 @@ class VerificationController extends Controller
             if (Hash::check($data['password'], $request->user()->password)) {
                 Session::put('domain', $data['domain']);
                 $successMsg[] = 'Switched domain to <strong>' . strtoupper($data['domain']) . '</strong>';
+                Cache::put('image_tags', ImageIndex::getImageTags());
                 return view('layouts.renders.domain', compact('successMsg'));
             } else {
                 $errorBag[] = 'Incorrect password.';
@@ -77,6 +80,7 @@ class VerificationController extends Controller
             }
             Session::put('domain', 'public');
             $successMsg[] = 'Set domain to <strong>PUBLIC</strong>';
+            Cache::put('image_tags', ImageIndex::getImageTags());
             return view('layouts.renders.domain', compact('successMsg'));
         } else {
             $errorBag[] = 'Invalid request type.';

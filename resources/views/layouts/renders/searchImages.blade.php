@@ -10,7 +10,12 @@
             </select>
         </div>
         <div class="col-sm-4">
-            <input name="tags" type="text" class="form-control" style="width: 100%;" placeholder="Enter tags separated by ,. (#nature, #constancenunes etc.)" value="{{@$data['selectedTags']}}"/>
+            <input list="imageTagsList" name="tags" type="text" class="form-control" style="width: 100%;" placeholder="Enter tags separated by ',' (#nature, #grumpycat etc.)" value="{{@$data['selectedTags']}}" autocomplete="off"/>
+            <datalist id="imageTagsList">
+                @foreach (\App\Models\ImageIndex::getCachedImageTags() as $tag)
+                <option value="{{$tag}}">
+                @endforeach
+            </datalist>
         </div>
         <div class="col-sm-4">
             <button type="submit" class="btn btn-success" style="width: 100%;">Search</button>

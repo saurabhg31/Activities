@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ImageIndex;
 use App\Models\Images;
 use App\Models\ImageType;
 use App\Models\MemoryRequirements;
@@ -259,7 +260,8 @@ class Controller extends BaseController
                 'searchImages' => [],
                 'imageEdit' => [
                     'imageId' => 'required|integer|min:1|exists:images,id'
-                ]
+                ],
+                'imageTags' => []
             );
         } else {
             $validationRules = array(
@@ -305,6 +307,9 @@ class Controller extends BaseController
         $userId = $domain == 'private' ? Auth::id() : NULL;
         $imagesDataSizeInBytes = $uploadedImagesCount = 0;
         $file = $contents = $extension = $imageData = $fileSize = null;
+        $imageTypeModel = new ImageType();
+        $imageModel = new Images();
+        $imageIndexModel = new ImageIndex();
         foreach ($images as $image) {
             if (!is_string($image)) {
                 $file = fopen($image, 'rb');
@@ -316,7 +321,7 @@ class Controller extends BaseController
                 $contents = file_get_contents($image);
                 $fileSize = strlen($image);
             }
-            ImageType::addType($type);
+            $imageTypeModel->addType($type);
             $imageData = array(
                 'type' => strtoupper($type),
                 'image' => base64_encode($contents),
@@ -325,9 +330,10 @@ class Controller extends BaseController
                 'user_id' => $userId,
                 'created_at' => now()
             );
-            if (Images::create($imageData)) {
+            if ($imageId = $imageModel->create($imageData)->id) {
                 $imagesDataSizeInBytes += $fileSize;
                 $uploadedImagesCount++;
+                $imageIndexModel->addIndices($imageId, $tags);
             }
         }
         $file = $contents = $extension = $imageData = null;

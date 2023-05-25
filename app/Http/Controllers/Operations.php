@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ImageIndex;
 use App\Models\Images;
 use App\system_files_in_use;
 use Exception;
@@ -18,7 +19,7 @@ class Operations extends Controller
      * @param Illuminate\Http\Request $request
      * @return json response
      */
-    protected function processActivity(String $type, Request $request)
+    protected function processActivity(string $type, Request $request)
     {
         try {
             if ($request->isMethod('GET')) {
@@ -42,6 +43,10 @@ class Operations extends Controller
                             $this->renderView($type, ['search' => Images::list(), 'types' => Images::imageTypes()]),
                             $this->generateMsgBag($type, 'Ready to search', 'Search Images')
                         );
+                    case 'imageTags':
+                        return response()->json([
+                            'tags' => ImageIndex::getCachedImageTags()
+                        ]);
                     case 'expenses':
                         return $this->sendResponse(
                             null,

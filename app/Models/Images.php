@@ -30,25 +30,34 @@ class Images extends Model
     /**
      * search images
      */
-    protected static function search(array &$params = null)
+    protected static function search(array &$params = null, bool $useIndexing = true)
     {
         $search = self::when(isset($params['types']), function ($query) use ($params) {
             return $query->where('type', $params['types']);
-        })->when(isset($params['tags']), function ($conditionalQuery) use ($params) {
+        })->when(isset($params['tags']), function ($conditionalQuery) use ($params, $useIndexing) {
             $tags = preg_split('/[\ \n\,]+/', $params['tags']);
-            return $conditionalQuery->where(function ($query) use ($tags) {
-                foreach ($tags as $tag) {
-                    $query->where('tags', 'like', '%' . $tag . '%');
-                }
-                return $query;
-            });
+            if ($useIndexing) {
+                return $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
+                    $join->on('image_search_indexing.image_id', '=', 'images.id');
+                    foreach ($tags as $tag) {
+                        $join->where('tag', $tag);
+                    }
+                });
+            } else {
+                return $conditionalQuery->where(function ($query) use ($tags) {
+                    foreach ($tags as $tag) {
+                        $query->where('tags', 'like', '%' . $tag . '%');
+                    }
+                    return $query;
+                });
+            }
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
             $search->where('user_id', auth('web')->id());
         } else {
             $search->whereNull('user_id');
         }
-        $search = $search->orderBy('id', 'desc')->paginate(env('PAGINATION', 20));
+        $search = $search->orderBy('images.id', 'desc')->paginate(env('PAGINATION', 20));
         $search->response = 'Search complete';
         return $search;
     }
