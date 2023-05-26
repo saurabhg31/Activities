@@ -1,4 +1,17 @@
 @extends('layouts.app')
+@section('css')
+    <style>
+        .aspect-ratio {
+            max-width: 100vw;
+            max-height: 100vw;
+        }
+        .aspect-ratio img {
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+    </style>
+@endsection
 @section('content')
     <div class="container">
         <div class="row justify-content-center">
@@ -29,9 +42,9 @@
                                 <button class="btn btn-dark" id="travelLogs">Travel Logs</button>
                                 <button class="btn btn-secondary" id="marketing">Marketing</button>
                             </div>
-                            <div class="form-inline" style="margin-top: 1%; margin-left: 26.2%;">
+                            <div class="form-inline" style="margin-top: 1%; justify-content: center;">
                                 <button class="btn btn-warning" id="searchImages">Search Images</button>
-                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                                 <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>
                             </div>
                         </div>
@@ -42,7 +55,7 @@
     </div>
     <div id="myModal" class="modal fade" role="dialog" style="display: none;">
         <div class="modal-dialog" style="display: flex; justify-content: center;">
-            <div class="modal-content" style="display: inline-block; width: auto; height: auto;">
+            <div class="modal-content aspect-ratio" style="display: inline-block; width: auto; height: auto;">
                 <div class="modal-header" style="height: 0%;">
                     <button type="button" class="close" data-dismiss="modal" style="margin-top: -26px">&times;</button>
                     <h4 class="modal-title"></h4>
