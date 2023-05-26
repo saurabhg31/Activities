@@ -48,7 +48,6 @@
                     <h4 class="modal-title"></h4>
                 </div>
                 <div class="modal-body" style="display: contents;"></div>
-                {{-- <div class="modal-footer"  style="height: 0%;"></div> --}}
             </div>
         </div>
     </div>
