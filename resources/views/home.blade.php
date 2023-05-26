@@ -22,15 +22,16 @@
                             </div>
                         @endif
                         <div class="custom-block text-center">
-                            <div class="form-inline" style="margin-left: 9%;">
+                            <div class="form-inline" style="margin-left: 9%; display: none;">
                                 <button class="btn btn-primary" id="expenses">Expenses</button>
                                 <button class="btn btn-success" id="reminders">Reminders</button>
                                 <button class="btn btn-light" id="aps">Arithmetic Problem Solver</button>
                                 <button class="btn btn-dark" id="travelLogs">Travel Logs</button>
                                 <button class="btn btn-secondary" id="marketing">Marketing</button>
                             </div>
-                            <div class="form-inline" style="margin-top: 1%; margin-left: 28.2%;">
+                            <div class="form-inline" style="margin-top: 1%; margin-left: 26.2%;">
                                 <button class="btn btn-warning" id="searchImages">Search Images</button>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                                 <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>
                             </div>
                         </div>
@@ -39,15 +40,15 @@
             </div>
         </div>
     </div>
-    <div id="myModal" class="modal fade" role="dialog" style="width: 100%; display: none;">
-        <div class="modal-dialog">
-            <div class="modal-content" style="width: 1040px; height: 667px; margin-left: -47%;">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+    <div id="myModal" class="modal fade" role="dialog" style="display: none;">
+        <div class="modal-dialog" style="display: flex; justify-content: center;">
+            <div class="modal-content" style="display: inline-block; width: auto; height: auto;">
+                <div class="modal-header" style="height: 0%;">
+                    <button type="button" class="close" data-dismiss="modal" style="margin-top: -26px">&times;</button>
                     <h4 class="modal-title"></h4>
                 </div>
-                <div class="modal-body"></div>
-                <div class="modal-footer"></div>
+                <div class="modal-body" style="display: contents;"></div>
+                {{-- <div class="modal-footer"  style="height: 0%;"></div> --}}
             </div>
         </div>
     </div>

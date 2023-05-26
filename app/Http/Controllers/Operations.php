@@ -68,7 +68,7 @@ class Operations extends Controller
                 }
                 switch ($type) {
                     case 'imagesAdd':
-                        ini_set('max_execution_time', 3600); // 60 mins
+                        set_time_limit(3600); // 60 mins
                         $images = $request->images;
                         $tags = $request->tags;
                         if (strpos($request->tags, 'links>') !== false) {
@@ -100,7 +100,7 @@ class Operations extends Controller
                             $this->generateMsgBag($type, $addedImagesCount . ' image(s) added', 'Current images')
                         );
                     case 'searchImages':
-                        ini_set('max_execution_time', 120); // 2 mins
+                        set_time_limit(120); // 2 mins
                         $search = Images::search($request->all());
                         return $this->sendResponse(
                             null,
