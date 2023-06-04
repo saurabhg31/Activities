@@ -2,7 +2,7 @@
     @csrf
     <div class="form-inline">
         <div class="col-sm-4">
-            <input type="file" name="images[]" class="form-control" multiple style="margin-top:-33%;width:100%"
+            <input type="file" name="images[]" class="form-control" multiple style="margin-top:-44%;width:100%"
                 onchange="listFileNames($(this));" id="addImagesInput" accept="image/*">
         </div>
         <div class="col-sm-8">
@@ -29,7 +29,7 @@
         <br>
         <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4"
             placeholder="Add tags to this/these image/images. eg: #cats, #nature etc. For links: links> <-- link 1 -->, <-- link 2 -->, tags> <-- your tags -->"
-            style="margin-top:-41%;height:50%;"></textarea>
+            style="margin-top:-61%;height:50%;"></textarea>
     </div>
     <div class="col-sm-12" style="float: center; margin-top: 6%;"></div>
 </form>
