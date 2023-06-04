@@ -15,7 +15,7 @@ class ForceJsonResponse
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!in_array($request->path(), ['operation/imagesAdd', 'operation/searchImages'])) {
+        if (str_starts_with($request->path(), 'api/')) {
             $request->headers->set('Accept', 'application/json');
         }
         return $next($request);
