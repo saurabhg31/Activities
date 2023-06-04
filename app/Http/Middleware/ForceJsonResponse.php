@@ -15,7 +15,9 @@ class ForceJsonResponse
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $request->headers->set('Accept', 'application/json');
+        if (!in_array($request->path(), ['operation/imagesAdd', 'operation/searchImages'])) {
+            $request->headers->set('Accept', 'application/json');
+        }
         return $next($request);
     }
 }
