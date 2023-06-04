@@ -128,6 +128,7 @@ class Operations extends Controller
                 }
             }
         } catch (QueryException $error) {
+            report($error);
             return $this->sendError('Something went wrong', ['msg' => $error->getMessage()]);
         }
     }

@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Jobs\LogRequest as JobsLogRequest;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Symfony\Component\HttpFoundation\Response;
 
 class LogRequest
@@ -27,7 +28,7 @@ class LogRequest
             'request_ipv4' => $request->ip(),
             'request_ipv6' => NULL,
             'method' => $request->method(),
-            'payload' => $request->all(),
+            'payload' => $path == 'operation/imagesAdd' ? Arr::except($request->all(), 'images') : $request->all(),
             'headers' => $request->server(),
         ];
         $responseData = [
