@@ -34,7 +34,7 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
 Route::post('/email/verification-notification', function (Request $request) {
     $request->user()->sendEmailVerificationNotification();
     return back()->with('resent', true);
-})->middleware(['auth', 'throttle:60,1'])->name('verification.resend');
+})->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::any('/password/change', [PasswordController::class, 'changePassword'])->name('changePassword');
     Route::get('/home', [HomeController::class, 'index'])->name('home');
