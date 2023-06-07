@@ -1,7 +1,7 @@
 <form id="searchImagesForm" action="operation/searchImages" method="POST" onsubmit="submitFormData($(this)); return false;">
     @csrf
     <div class="form-inline" style="margin-top: 2%;">
-        <div class="col-sm-4">
+        <div class="col-sm-3">
             <select class="form-control" name="types" style="width: 100%;">
                 <option value="">Select image type</option>
                 @foreach ($data['types'] as $type)
@@ -17,8 +17,12 @@
                 @endforeach
             </datalist>
         </div>
-        <div class="col-sm-4">
+        <div class="col-sm-2">
             <button type="submit" class="btn btn-success" style="width: 100%;">Search</button>
+        </div>
+        <div class="col-sm-3">
+            <button class="btn btn-primary" id="goToPageButton" style="width: 30%;" type="button">To page: </button>
+            <input class="form-control" type="number" placeholder="Page Number" id="goToPageInput" autocomplete="off" style="width: 45%;" min="1"/>
         </div>
     </div>
 </form>
