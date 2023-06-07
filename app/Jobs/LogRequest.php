@@ -32,6 +32,12 @@ class LogRequest implements ShouldQueue
      */
     public function handle(): void
     {
+        if (env('REQUEST_LOG') == 'failure_only' && $this->responseData['successful']) {
+            return;
+        }
+        if (str_contains($this->responseData['response_body'], '<html')) {
+            $this->responseData['response_body'] = json_encode(['message' => 'Disabled due to size & html restrictions.']);
+        }
         $logData = [
             'peak_memory_use' => $this->peakMemoryUsage / (1024 * 1024),
             'time_taken' => $this->timeTaken,
