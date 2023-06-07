@@ -265,7 +265,7 @@ $(document).on('click', '.page-link', function (event) {
     }
 });
 
-$(document).on('click', '#goToPageButton', function () {
+$(document).on('click', '#goToPageButton', function (event) {
     let page = $('#goToPageInput').val();
     if (!page) {
         toastr.error('Please specifiy page number to go to.');
@@ -277,8 +277,14 @@ $(document).on('click', '#goToPageButton', function () {
         form.attr('method'), new FormData(form[0]),
         form.find('button[type="submit"]'),
         {
+            beforeSend: function () {
+                $(event.currentTarget).attr('disabled', true);
+            },
             success: function () {
                 display.output.scrollTop(45);
+            },
+            complete: function () {
+                $(event.currentTarget).attr('disabled', false);
             }
         }
     );
