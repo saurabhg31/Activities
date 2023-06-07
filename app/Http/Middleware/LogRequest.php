@@ -36,13 +36,15 @@ class LogRequest
             'status_code' => $response->getStatusCode(),
             'response_body' => $response->getContent(),
         ];
-        JobsLogRequest::dispatch(
-            $startTime,
-            $requestData,
-            $responseData,
-            now()->diffInSeconds($startTime),
-            memory_get_peak_usage(true)
-        );
+        if (!$responseData['successful']) {
+            JobsLogRequest::dispatch(
+                $startTime,
+                $requestData,
+                $responseData,
+                now()->diffInSeconds($startTime),
+                memory_get_peak_usage(true)
+            );
+        }
         return $response;
     }
 }
