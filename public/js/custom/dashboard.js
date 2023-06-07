@@ -265,6 +265,25 @@ $(document).on('click', '.page-link', function (event) {
     }
 });
 
+$(document).on('click', '#goToPageButton', function () {
+    let page = $('#goToPageInput').val();
+    if (!page) {
+        toastr.error('Please specifiy page number to go to.');
+        return false;
+    }
+    let form = $('#searchImagesForm');
+    return transmitData(
+        renderUrl('operation/searchImages?page=' + page),
+        form.attr('method'), new FormData(form[0]),
+        form.find('button[type="submit"]'),
+        {
+            success: function () {
+                display.output.scrollTop(45);
+            }
+        }
+    );
+});
+
 $(document).on('change', '#addImagesInput', function () {
     var imageUploadBtn = $('#uploadImagesBtn');
     if (parseInt($(this).get(0).files.length) > 200) {

@@ -18,7 +18,7 @@
             </datalist>
         </div>
         <div class="col-sm-2">
-            <button type="submit" class="btn btn-success" style="width: 100%;">Search</button>
+            <button type="submit" class="btn btn-success" style="width: 120%;">Search</button>
         </div>
         <div class="col-sm-3">
             <button class="btn btn-primary" id="goToPageButton" style="width: 30%;" type="button">To page: </button>
