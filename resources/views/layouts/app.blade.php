@@ -25,7 +25,7 @@
                 <a class="navbar-brand" href="{{ url('/') }}">
                     {{ config('app.name', 'Laravel') }}
                 </a>
-                <a id="navbarDropdown" class="btn btn-success" href="{{ route('home') }}" role="button" style="margin-left: 35%;">
+                <a id="navbarDropdown" class="btn @if(Session::has('domain') && Session::get('domain') == 'private') btn-warning @else btn-success @endif" href="{{ route('home') }}" role="button" style="margin-left: 35%;">
                     Home <span class="caret"></span>
                 </a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse"

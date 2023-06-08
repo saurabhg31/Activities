@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
 
 class LoginController extends Controller
 {
@@ -52,6 +53,7 @@ class LoginController extends Controller
             $errorBag[] = 'Invalid credentials';
             return view('auth.login', compact('errorBag'));
         }
+        Session::put('domain', 'public');
         return redirect()->to('home');
     }
 

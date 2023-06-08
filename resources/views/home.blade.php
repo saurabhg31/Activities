@@ -19,7 +19,7 @@
                 <div class="card">
                     <div class="card-header">
                         Dashboard
-                        <span style="float: right;">
+                        <span style="float: right; display: none;">
                             DOMAIN:&nbsp;
                             @if (Session::has('domain'))
                                 <strong>{{ strtoupper(Session::get('domain')) }}</strong>
