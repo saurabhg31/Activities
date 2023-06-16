@@ -12,6 +12,9 @@ return new class extends Migration
      */
     public function up()
     {
+        if (env('DB_CONNECTION') == 'pgsql') {
+            return;
+        }
         DB::statement('ALTER TABLE images MODIFY COLUMN image MEDIUMBLOB;');
     }
 
@@ -22,6 +25,9 @@ return new class extends Migration
      */
     public function down()
     {
+        if (env('DB_CONNECTION') == 'pgsql') {
+            return;
+        }
         DB::statement('ALTER TABLE images MODIFY COLUMN image BLOB;');
     }
 };
