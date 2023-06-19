@@ -24,7 +24,7 @@ class MigrateToPostgresFromMySql extends Command
      *
      * @var string
      */
-    protected $description = 'Command to migrate relevant data to postgress.';
+    protected $description = 'Command to migrate relevant data to postgres.';
 
     /**
      * Execute the console command.
