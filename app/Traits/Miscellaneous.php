@@ -51,6 +51,22 @@ trait Miscellaneous
     }
 
     /**
+     * Generate a password prompt & read password from command line
+     * @param string $promptMessage
+     * @return string
+     * @source: https://chat.openai.com/
+     */
+    public function readPasswordFromCli(string $promptMessage = 'Enter password: ')
+    {
+        print($promptMessage);
+        shell_exec("stty -echo"); // Execute the stty command to turn off echo
+        $password = trim(fgets(STDIN)); // Read the password from the terminal
+        shell_exec("stty echo"); // Execute the stty command to turn on echo
+        print(PHP_EOL);
+        return $password;
+    }
+
+    /**
      * Read input from cli
      * @param integer $maxAllowedLines - Max input lines allowed
      * @param array $lineMsgs - Msg to display at each input line
