@@ -43,7 +43,7 @@
             <div class="form-inline">
         @endif
         <div class="col-sm-3">
-            <img src="data:image/{{ $image->imageType }};base64, {{ $image->image }}"
+            <img src="data:image/{{ $image->imageType }};base64, {{ stream_get_contents($image->image) }}"
                 title="Type: {{ $image->type }} || Tags: {{ $image->tags }}"
                 style="max-width: 100%; max-height: 100%; cursor: pointer;" onclick="openImageInModal($(this))" /><br>
             <label>Uploaded on: {{ $image->created_at->format('d M, Y \a\t h:i:s a') }}</label>

@@ -59,9 +59,13 @@ class Images extends Model
         if ($useIndexing && count($tags) > 1) {
             $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . count($tags));
         }
-        DB::statement('SET sql_mode=""');
+        if (env('DB_CONNECTION') == 'mysql') {
+            DB::statement('SET sql_mode=""');
+        }
         $search = $search->orderBy('images.id', 'desc')->paginate(env('PAGINATION', 20));
-        DB::statement('SET sql_mode="only_full_group_by"');
+        if (env('DB_CONNECTION') == 'mysql') {
+            DB::statement('SET sql_mode="only_full_group_by"');
+        }
         $search->response = 'Search complete';
         return $search;
     }
