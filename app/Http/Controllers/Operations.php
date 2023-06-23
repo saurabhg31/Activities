@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\LogSearchQueries;
 use App\Models\ImageIndex;
 use App\Models\Images;
 use App\system_files_in_use;
@@ -10,6 +11,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class Operations extends Controller
 {
@@ -101,7 +103,8 @@ class Operations extends Controller
                         );
                     case 'searchImages':
                         set_time_limit(120); // 2 mins
-                        $search = Images::search($request->all());
+                        $search = Images::search($requestData = $request->all());
+                        LogSearchQueries::dispatch($requestData, Session::get('domain') ?? 'public');
                         return $this->sendResponse(
                             null,
                             $this->renderView($type, [

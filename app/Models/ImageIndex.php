@@ -61,7 +61,7 @@ class ImageIndex extends Model
         }
         self::where('image_id', $imageId)->whereNotIn('tag', array_column($imageIndexData, 'tag'))->delete();
         if (!empty($imageIndexData)) {
-            foreach($imageIndexData as $index) {
+            foreach ($imageIndexData as $index) {
                 self::where($index)->firstOrNew()->fill($index)->save();
             }
         }
@@ -91,7 +91,10 @@ class ImageIndex extends Model
     public static function getCachedImageTags()
     {
         if (!Cache::has('image_tags')) {
-            Cache::put('image_tags', self::getImageTags());
+            $popularSearches = SearchQueryIndexing::getPopularSearchPrompts()->pluck('tag_query');
+            Cache::put('image_tags', self::getImageTags()->merge($popularSearches)->sort(function ($prompt1, $prompt2) {
+                return $prompt1 > $prompt2;
+            })->unique());
         }
         return Cache::get('image_tags');
     }
