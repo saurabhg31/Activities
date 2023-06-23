@@ -17,7 +17,7 @@ class LogRequest
      */
     public function handle(Request $request, Closure $next): Response
     {
-        return $next($request); // Disabled due to windows limitations
+        // return $next($request); // Disabled due to windows limitations
         $path = $request->path();
         if ($path == 'api/read-request-logs') {
             return $next($request);
