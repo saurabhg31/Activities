@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CacheTotalLogCount;
 use App\Models\RequestLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -13,10 +16,12 @@ use function App\Helpers\translate;
 
 class LogsController extends Controller
 {
-    private $logTable;
+    private $logTable, $accessTime, $startMemory;
 
     public function __construct()
     {
+        $this->accessTime = now();
+        $this->startMemory = memory_get_usage(true);
         if (empty(env('LOG_API_ACCESS_KEY'))) {
             throw new HttpException(
                 500,
@@ -85,10 +90,16 @@ class LogsController extends Controller
                 return $value;
             }, $query->getBindings())
         );
+        $resourcesUsed = array_filter([
+            'total_logs' => $this->cacheLogCount() . (Cache::has('total_log_count_runtime') ? ' (Total log count last updated at: ' . Carbon::createFromTimestamp(Cache::get('total_log_count_runtime'))->format('Y-m-d H:i:s T') . ')' : null),
+            'log_search_query' => $queryString,
+            'time_taken' => number_format(now()->diffInSeconds($this->accessTime)) . ' second(s)',
+            'memory_used' => number_format((memory_get_usage(true) - $this->startMemory) / 1024 / 1024, 2) . ' MB'
+        ]);
         return response()->json([
             'total' => $totalLogCount,
             'logs' => $query->get(),
-            'log_search_query' => $queryString
+            'resources' => $resourcesUsed
         ]);
     }
 
@@ -134,6 +145,20 @@ class LogsController extends Controller
             return response()->json([
                 'laravel_log_data' => file_get_contents($logFile)
             ]);
+        }
+    }
+
+    /**
+     * Cache total log entry count
+     * @return integer|null
+     */
+    private function cacheLogCount()
+    {
+        if (Cache::has('total_log_count')) {
+            return Cache::get('total_log_count');
+        } else {
+            CacheTotalLogCount::dispatch();
+            return null;
         }
     }
 }
