@@ -71,13 +71,20 @@ class ImageIndex extends Model
 
     /**
      * Get image tags
+     * @param integer $userId
      * @return \Illuminate\Support\Collection
      */
-    public static function getImageTags()
+    public static function getImageTags(int $userId = null, string $domain = null)
     {
+        if (auth()->check()) {
+            $userId = auth('web')->id();
+        }
         $query = self::selectRaw('distinct(tag)')->join('images', 'image_search_indexing.image_id', '=', 'images.id');
-        if (Session::has('domain') && Session::get('domain') == 'private') {
-            $query->where('images.user_id', auth('web')->id());
+        if (
+            (Session::has('domain') && Session::get('domain') == 'private' || $userId) &&
+            ($domain && $domain == 'private')
+        ) {
+            $query->where('images.user_id', $userId);
         } else {
             $query->whereNull('images.user_id');
         }
@@ -88,11 +95,15 @@ class ImageIndex extends Model
      * Get cached image tags
      * @return \Illuminate\Support\Collection
      */
-    public static function getCachedImageTags()
+    public static function getCachedImageTags(string $domain = 'public', int $userId = null)
     {
-        if (!Cache::has('image_tags')) {
-            cacheImageSearchPrompts();
+        if (!$userId && auth('web')->check()) {
+            $userId = auth('web')->id();
         }
-        return Cache::get('image_tags');
+        $cacheName = "image_tags_{$domain}_" . $userId;
+        if (!Cache::has($cacheName)) {
+            cacheImageSearchPrompts($domain, $userId);
+        }
+        return Cache::get($cacheName);
     }
 }

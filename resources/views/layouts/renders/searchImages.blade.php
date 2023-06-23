@@ -12,7 +12,7 @@
         <div class="col-sm-4">
             <input list="imageTagsList" name="tags" type="text" class="form-control" style="width: 100%;" placeholder="Enter tags separated by ',' (#nature, #grumpycat etc.)" value="{{@$data['selectedTags']}}" autocomplete="off"/>
             <datalist id="imageTagsList">
-                @foreach (\App\Models\ImageIndex::getCachedImageTags() as $tag)
+                @foreach (\App\Models\ImageIndex::getCachedImageTags(Session::has('domain') ? Session::get('domain') : 'public', auth('web')->id()) as $tag)
                 <option value="{{$tag}}">
                 @endforeach
             </datalist>

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use Illuminate\Console\Command;
 
 use function App\Helpers\cacheImageSearchPrompts;
@@ -29,7 +30,17 @@ class CacheImageSearchPrompts extends Command
      */
     public function handle()
     {
-        cacheImageSearchPrompts();
+        $offset = 0;
+        $limit = 10;
+        $users = User::select('id')->limit($limit)->get();
+        while ($users->isNotEmpty()) {
+            foreach ($users as $user) {
+                cacheImageSearchPrompts('public', $user->id);
+                cacheImageSearchPrompts('private', $user->id);
+                $offset++;
+            }
+            $users = User::select('id')->offset($offset)->limit($limit)->get();
+        }
         return Command::SUCCESS;
     }
 }

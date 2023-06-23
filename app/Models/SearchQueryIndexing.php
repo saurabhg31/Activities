@@ -25,6 +25,9 @@ class SearchQueryIndexing extends Model
      */
     public static function logSearchQuery(array &$requestData, string $domain): bool
     {
+        if (empty($requestData['tags'])) {
+            return false;
+        }
         $data = Arr::only($requestData, ['types', 'tags']);
         if (!empty($data['types'])) {
             $data['image_type_id'] = ImageType::where('type', $data['types'])->first()->id;
@@ -32,7 +35,7 @@ class SearchQueryIndexing extends Model
         $data['tag_query'] = $data['tags'];
         $data['domain'] = $domain;
         $data = Arr::only($data, (new self)->getFillable());
-        $record = self::where($data)->first();
+        $record = self::where(['tag_query' => $data['tag_query']])->first();
         if ($record) {
             $record->increment('times_searched');
             return true;
@@ -46,9 +49,8 @@ class SearchQueryIndexing extends Model
      * @param integer $minimumSearchHits - The minimum number of times, it must be searched before appearing.
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public static function getPopularSearchPrompts(int $minimumSearchHits = 3)
+    public static function getPopularSearchPrompts(int $minimumSearchHits = 3, string $domain = 'public')
     {
-        $domain = Session::get('domain') ?? 'public';
         return self::select('tag_query')
             ->where('domain', $domain)
             ->where('times_searched', '>=', $minimumSearchHits)

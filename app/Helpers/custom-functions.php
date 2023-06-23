@@ -39,13 +39,18 @@ if (!function_exists('getAvailableLocales')) {
 if (!function_exists('cacheImageSearchPrompts')) {
     /**
      * Function to cache image searches
+     * @param string $domain
      * @return boolean
      */
-    function cacheImageSearchPrompts()
+    function cacheImageSearchPrompts(string $domain, int $userId = null)
     {
-        $popularSearches = SearchQueryIndexing::getPopularSearchPrompts()->pluck('tag_query');
-        return Cache::put('image_tags', ImageIndex::getImageTags()->merge($popularSearches)->sort(function ($prompt1, $prompt2) {
-            return $prompt1 > $prompt2;
+        $cacheName = "image_tags_{$domain}";
+        if ($userId) {
+            $cacheName .= "_{$userId}";
+        }
+        $popularSearches = SearchQueryIndexing::getPopularSearchPrompts(3, $domain)->pluck('tag_query');
+        return Cache::put($cacheName, ImageIndex::getImageTags($userId, $domain)->merge($popularSearches)->sort(function ($prompt1, $prompt2) {
+            return $prompt1 > $prompt2 ? 1 : 0;
         })->unique());
     }
 }
