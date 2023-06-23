@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 
+use function App\Helpers\cacheImageSearchPrompts;
+
 class VerificationController extends Controller
 {
     /*
@@ -72,7 +74,6 @@ class VerificationController extends Controller
             if (Hash::check($data['password'], $request->user()->password)) {
                 Session::put('domain', $data['domain']);
                 $successMsg[] = 'Switched domain to <strong>' . strtoupper($data['domain']) . '</strong>';
-                Cache::put('image_tags', ImageIndex::getImageTags());
                 return view('layouts.renders.domain', compact('successMsg'));
             } else {
                 $errorBag[] = 'Incorrect password.';
@@ -80,7 +81,6 @@ class VerificationController extends Controller
             }
             Session::put('domain', 'public');
             $successMsg[] = 'Set domain to <strong>PUBLIC</strong>';
-            Cache::put('image_tags', ImageIndex::getImageTags());
             return view('layouts.renders.domain', compact('successMsg'));
         } else {
             $errorBag[] = 'Invalid request type.';

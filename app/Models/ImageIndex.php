@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 
+use function App\Helpers\cacheImageSearchPrompts;
+
 class ImageIndex extends Model
 {
     use HasFactory;
@@ -37,7 +39,6 @@ class ImageIndex extends Model
         if (!empty($imageIndexData)) {
             $insertedIndexCount = self::insertOrIgnore($imageIndexData);
         }
-        Cache::put('image_tags', self::getImageTags());
         return $insertedIndexCount;
     }
 
@@ -65,7 +66,6 @@ class ImageIndex extends Model
                 self::where($index)->firstOrNew()->fill($index)->save();
             }
         }
-        Cache::put('image_tags', self::getImageTags());
         return true;
     }
 
@@ -91,10 +91,7 @@ class ImageIndex extends Model
     public static function getCachedImageTags()
     {
         if (!Cache::has('image_tags')) {
-            $popularSearches = SearchQueryIndexing::getPopularSearchPrompts()->pluck('tag_query');
-            Cache::put('image_tags', self::getImageTags()->merge($popularSearches)->sort(function ($prompt1, $prompt2) {
-                return $prompt1 > $prompt2;
-            })->unique());
+            cacheImageSearchPrompts();
         }
         return Cache::get('image_tags');
     }

@@ -14,7 +14,7 @@ class SearchQueryIndexing extends Model
     const UPDATED_AT = null;
 
     protected $fillable = [
-        'image_type_id', 'tag_query', 'domain'
+        'image_type_id', 'tag_query', 'domain', 'times_searched'
     ];
 
     /**
@@ -31,7 +31,13 @@ class SearchQueryIndexing extends Model
         }
         $data['tag_query'] = $data['tags'];
         $data['domain'] = $domain;
-        self::insert(Arr::only($data, (new self)->getFillable()));
+        $data = Arr::only($data, (new self)->getFillable());
+        $record = self::where($data)->first();
+        if ($record) {
+            $record->increment('times_searched');
+            return true;
+        }
+        self::insert($data);
         return true;
     }
 
@@ -43,6 +49,11 @@ class SearchQueryIndexing extends Model
     public static function getPopularSearchPrompts(int $minimumSearchHits = 3)
     {
         $domain = Session::get('domain') ?? 'public';
-        return self::select('tag_query')->where('domain', $domain)->distinct('tag_query')->orderBy('tag_query')->get();
+        return self::select('tag_query')
+            ->where('domain', $domain)
+            ->where('times_searched', '>=', $minimumSearchHits)
+            ->distinct('tag_query')
+            ->orderBy('tag_query')
+            ->get();
     }
 }

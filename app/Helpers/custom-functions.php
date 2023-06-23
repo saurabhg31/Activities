@@ -2,6 +2,10 @@
 
 namespace App\Helpers;
 
+use App\Models\ImageIndex;
+use App\Models\SearchQueryIndexing;
+use Illuminate\Support\Facades\Cache;
+
 if (!function_exists('translate')) {
     /**
      * Translate function to compensate for octane config caching issue
@@ -29,5 +33,19 @@ if (!function_exists('getAvailableLocales')) {
         return array_filter(scandir(base_path('lang')), function ($item) {
             return !in_array($item, ['.', '..']);
         });
+    }
+}
+
+if (!function_exists('cacheImageSearchPrompts')) {
+    /**
+     * Function to cache image searches
+     * @return boolean
+     */
+    function cacheImageSearchPrompts()
+    {
+        $popularSearches = SearchQueryIndexing::getPopularSearchPrompts()->pluck('tag_query');
+        return Cache::put('image_tags', ImageIndex::getImageTags()->merge($popularSearches)->sort(function ($prompt1, $prompt2) {
+            return $prompt1 > $prompt2;
+        })->unique());
     }
 }
