@@ -1,7 +1,7 @@
 <form action="operation/imagesAdd" method="POST" onsubmit="submitFormData($(this)); return false;">
     @csrf
     <div class="form-inline">
-        <div class="col-sm-4" style="margin-top: -12%;">
+        <div class="col-sm-4" style="margin-top: -10%;">
             <input type="file" name="images[]" class="form-control" multiple onchange="listFileNames($(this));"
                 id="addImagesInput" accept="image/*" style="width: 100%;">
         </div>
@@ -11,15 +11,15 @@
             <button type="submit" id="uploadImagesBtn" class="btn btn-primary"
                 style="width:100%;margin-top:0.5%">Upload Images</button>
         </div>
-        <div class="col-sm-4" style="margin-top: -12.8%;">
+        <div class="col-sm-4" style="margin-top: -10%;">
             <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4"
                 placeholder="Add tags to this/these image/images. eg: #cats, #nature etc. For links: links> <-- link 1 -->, <-- link 2 -->, tags> <-- your tags -->" style="width: 100%;"></textarea>
-            <select name="domain" class="form-control" style="width: 100%; margin-top: 1%;">
+            <select name="domain" class="form-control" style="width: 100%; margin-top: 1.4%;">
                 <option value="public">Public</option>
                 <option value="private" @if (Session::has('domain') && Session::get('domain') === 'private') selected @endif>Private</option>
             </select>
-            <div class="form-inline" style="width: 100%; margin-top: 1%;">
-                <select name="type" id="typeSelect" class="form-control" required style="width: 76%;">
+            <div class="form-inline" style="width: 100%; margin-top: 1.9%;">
+                <select name="type" id="typeSelect" class="form-control" required style="width: 82%;">
                     <option value="">Select image type</option>
                     @foreach ($data['types'] as $type)
                         <option value="{{ $type->type }}" @if (isset($data['selectedType']) && $data['selectedType'] === $type->type) selected @endif>
@@ -33,7 +33,7 @@
     </div>
 </form>
 @if (isset($data['images']))
-    <legend>
+    <legend style="margin-top: -0.7%;">
         Displaying <label id="imageCount">{{ count($data['images']) }}</label> of {{ $data['images']->total() }}
         results. Page {{ $data['images']->currentPage() }} of {{ $data['images']->lastPage() }}
     </legend>
