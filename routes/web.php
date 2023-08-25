@@ -25,18 +25,23 @@ Route::get('/', function () {
     Session::forget('domain');
     return view('welcome');
 });
+
 Auth::routes();
+
 Route::get('/email/verify', function () {
     return view('auth.verify');
 })->middleware('auth')->name('verification.notice');
+
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
     return redirect('/home');
 })->middleware(['auth', 'signed'])->name('verification.verify');
+
 Route::post('/email/verification-notification', function (Request $request) {
     $request->user()->sendEmailVerificationNotification();
     return back()->with('resent', true);
 })->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::any('/password/change', [PasswordController::class, 'changePassword'])->name('changePassword');
     Route::get('/home', [HomeController::class, 'index'])->name('home');
