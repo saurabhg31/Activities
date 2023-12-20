@@ -1,3 +1,4 @@
+const MAX_ALLOWED_UPLOAD_ITEMS = 1000;
 let display, imgEdit;
 
 $(document).ready(function () {
@@ -292,9 +293,9 @@ $(document).on('click', '#goToPageButton', function (event) {
 
 $(document).on('change', '#addImagesInput', function () {
     var imageUploadBtn = $('#uploadImagesBtn');
-    if (parseInt($(this).get(0).files.length) > 200) {
+    if (parseInt($(this).get(0).files.length) > MAX_ALLOWED_UPLOAD_ITEMS) {
         imageUploadBtn.attr('disabled', true);
-        alert("You can upload a maximum of 200 files at a time only.");
+        alert(`You can upload a maximum of ${MAX_ALLOWED_UPLOAD_ITEMS} files at a time only.`);
     } else {
         imageUploadBtn.attr('disabled', false);
     }
