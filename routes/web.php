@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Operations;
+use App\Http\Controllers\StatisticsController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -54,4 +55,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Routes for getting data processing hardware & software requirements (in progress)
      */
     Route::get('/getRequirements', [Operations::class, 'getRequirements']);
+    Route::get('/statistics', [StatisticsController::class, 'loadStatiscsDashboard']);
 });
