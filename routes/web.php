@@ -55,5 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
      * Routes for getting data processing hardware & software requirements (in progress)
      */
     Route::get('/getRequirements', [Operations::class, 'getRequirements']);
-    Route::get('/statistics', [StatisticsController::class, 'loadStatiscsDashboard']);
+    Route::middleware(['adminOnly'])->group(function () {
+        Route::get('/statistics', [StatisticsController::class, 'loadStatiscsDashboard'])->name('stats');
+    });
 });
