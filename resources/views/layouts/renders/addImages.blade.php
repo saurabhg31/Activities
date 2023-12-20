@@ -13,7 +13,8 @@
         </div>
         <div class="col-sm-4" style="margin-top: -10%;">
             <textarea name="tags" id="imageTags" class="form-control" rows="3" cols="4"
-                placeholder="Add tags to this/these image/images. eg: #cats, #nature etc. For links: links> <-- link 1 -->, <-- link 2 -->, tags> <-- your tags -->" style="width: 100%;"></textarea>
+                placeholder="Add tags to this/these image/images. eg: #cats, #nature etc. For links: links> <-- link 1 -->, <-- link 2 -->, tags> <-- your tags -->"
+                style="width: 100%;"></textarea>
             <select name="domain" class="form-control" style="width: 100%; margin-top: 1.4%;">
                 <option value="public">Public</option>
                 <option value="private" @if (Session::has('domain') && Session::get('domain') === 'private') selected @endif>Private</option>
@@ -34,7 +35,8 @@
 </form>
 @if (isset($data['images']))
     <legend style="margin-top: -0.7%;">
-        Displaying <label id="imageCount">{{ count($data['images']) }}</label> of {{ $data['images']->total() }}
+        Displaying <label id="imageCount">{{ count($data['images']) }}</label> of
+        {{ number_format($data['images']->total()) }}
         results. Page {{ $data['images']->currentPage() }} of {{ $data['images']->lastPage() }}
     </legend>
     @php($count = 1)
