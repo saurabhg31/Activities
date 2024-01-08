@@ -18,14 +18,16 @@
     @yield('css')
 </head>
 
-<body>
+<body @if (Session::has('domain') && Session::get('domain') == 'private') class="backgroundClass" @endif>
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
                     {{ config('app.name', 'Laravel') }}
                 </a>
-                <a id="navbarDropdown" class="btn @if(Session::has('domain') && Session::get('domain') == 'private') btn-warning @else btn-success @endif" href="{{ route('home') }}" role="button" style="margin-left: 35%;">
+                <a id="navbarDropdown"
+                    class="btn @if (Session::has('domain') && Session::get('domain') == 'private') btn-warning @else btn-success @endif"
+                    href="{{ route('home') }}" role="button" style="margin-left: 35%;">
                     Home <span class="caret"></span>
                 </a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse"
@@ -111,10 +113,10 @@
         window.Laravel = <?php echo json_encode([
             'csrfToken' => csrf_token(),
         ]); ?>;
-        @if(env('FORCE_HTTPS'))
-        const SECURE = true;
+        @if (env('FORCE_HTTPS'))
+            const SECURE = true;
         @else
-        const SECURE = false
+            const SECURE = false
         @endif
     </script>
     @yield('scripts')

@@ -1,3 +1,10 @@
+@php
+    $privateImages = array_filter(scandir('images/privateDomainImages/'), function ($file) {
+        return $file != '.' && $file != '..';
+    });
+    $backgroundImg = $privateImages[array_rand($privateImages, 1)];
+@endphp
+
 @extends('layouts.app')
 @section('css')
     <style>
@@ -5,11 +12,21 @@
             max-width: 100vw;
             max-height: 100vw;
         }
+
         .aspect-ratio img {
             max-width: 100%;
             height: auto;
             object-fit: contain;
         }
+
+        @if (Session::has('domain') && Session::get('domain'))
+            .backgroundClass {
+                background-image: url("{{ asset("images/privateDomainImages/{$backgroundImg}") }}");
+                background-repeat: no-repeat;
+                background-size: cover;
+                height: 100%;
+            }
+        @endif
     </style>
 @endsection
 @section('content')
