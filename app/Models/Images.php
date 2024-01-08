@@ -34,10 +34,14 @@ class Images extends Model
     public static function search(array $params = null, bool $useIndexing = true)
     {
         $tags = [];
+        $gifDataPresent = false;
         $search = self::select('images.*')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
-        })->when(isset($params['tags']), function ($conditionalQuery) use ($params, $useIndexing, &$tags) {
+        })->when(isset($params['tags']), function ($conditionalQuery) use ($params, $useIndexing, &$tags, &$gifDataPresent) {
             $tags = preg_split('/[\ \n\,]+/', $params['tags']);
+            if (array_search('gif', $tags) !== false) {
+                $gifDataPresent = true;
+            }
             if ($useIndexing) {
                 return $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
                     $join->on('image_search_indexing.image_id', '=', 'images.id')->whereIn('tag', $tags);
@@ -60,7 +64,7 @@ class Images extends Model
             $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . count($tags));
         }
         DB::statement('SET sql_mode=""');
-        $search = $search->orderBy('images.id', 'desc')->paginate(env('PAGINATION', 20));
+        $search = $search->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 12 : env('PAGINATION', 20));
         DB::statement('SET sql_mode="only_full_group_by"');
         $search->response = 'Search complete';
         return $search;
