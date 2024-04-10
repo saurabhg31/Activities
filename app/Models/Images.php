@@ -44,7 +44,12 @@ class Images extends Model
             }
             if ($useIndexing) {
                 return $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
-                    $join->on('image_search_indexing.image_id', '=', 'images.id')->whereIn('tag', $tags);
+                    $join->on('image_search_indexing.image_id', '=', 'images.id');
+                    if (count($tags) == 1) {
+                        $join->where('tag', 'like', '%' . reset($tags) . '%');
+                    } else {
+                        $join->whereIn('tag', $tags);
+                    }
                 });
             } else {
                 return $conditionalQuery->where(function ($query) use ($tags) {
