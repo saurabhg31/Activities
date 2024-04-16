@@ -300,3 +300,7 @@ $(document).on('change', '#addImagesInput', function () {
         imageUploadBtn.attr('disabled', false);
     }
 });
+
+$(document).on('click', '#updateTags', function (event) {
+    alert('Operation in development.');
+});

@@ -60,9 +60,11 @@
                                 <button class="btn btn-secondary" id="marketing">Marketing</button>
                             </div>
                             <div class="form-inline" style="margin-top: 1%; justify-content: center;">
-                                <button class="btn btn-warning" id="searchImages">Search Images</button>
+                                <button class="btn btn-success" id="searchImages">Search Images</button>
                                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                                 <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <button class="btn btn-warning" id="updateTags">Rename/Update Tags</button>
                             </div>
                         </div>
                     </div>
@@ -89,5 +91,5 @@
     </div>
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{ asset('js/custom/dashboard.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/custom/dashboard.js') }}"></script>
 @endsection
