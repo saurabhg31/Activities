@@ -60,6 +60,12 @@ class Operations extends Controller
                                 'heading' => 'Expenses'
                             ]
                         );
+                    case 'updateTags':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, ['types' => Images::imageTypes()]),
+                            $this->generateMsgBag($type, 'Ready to update tags in bulk', 'Update tags')
+                        );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }

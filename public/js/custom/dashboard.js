@@ -220,7 +220,7 @@ function postEditImageInfo(form) {
     return false;
 }
 
-$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType', function (e) {
+$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType,#updateTags', function (e) {
     buttonHtml = $(this).html();
     if (this.id === 'addNewType') {
         e.preventDefault();
@@ -299,8 +299,4 @@ $(document).on('change', '#addImagesInput', function () {
     } else {
         imageUploadBtn.attr('disabled', false);
     }
-});
-
-$(document).on('click', '#updateTags', function (event) {
-    alert('Operation in development.');
 });
