@@ -288,4 +288,16 @@ trait Miscellaneous
             return false;
         }
     }
+
+    /**
+     * Get all tables from application database
+     * @return array
+     */
+    public function getAllTables()
+    {
+        $key = 'Tables_in_' . getenv('DB_DATABASE');
+        return array_map(function ($obj) use (&$key) {
+            return $obj->$key;
+        }, DB::select('SHOW TABLES;'));
+    }
 }
