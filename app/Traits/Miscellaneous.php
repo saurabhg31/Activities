@@ -300,4 +300,18 @@ trait Miscellaneous
             return $obj->$key;
         }, DB::select('SHOW TABLES;'));
     }
+
+    /**
+     * Function to execute shell commands
+     * @param string $command
+     * @return boolean True if command is successful, false otherwise
+     */
+    private function executeCommand(string $command)
+    {
+        print('Running command: <~ ' . $command . ' ~>' . PHP_EOL);
+        $output = [];
+        $resultCode = null;
+        exec($command, $output, $resultCode);
+        return $resultCode === 0;
+    }
 }

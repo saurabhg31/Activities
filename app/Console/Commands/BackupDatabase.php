@@ -26,20 +26,6 @@ class BackupDatabase extends Command
     protected $description = 'Command to backup all tables present in the database of the application. ';
 
     /**
-     * Function to execute shell commands
-     * @param string $command
-     * @return boolean True if command is successful, false otherwise
-     */
-    private function executeCommand(string $command)
-    {
-        print('Running command: <~ ' . $command . ' ~>' . PHP_EOL);
-        $output = [];
-        $resultCode = null;
-        exec($command, $output, $resultCode);
-        return $resultCode === 0;
-    }
-
-    /**
      * Execute the console command.
      *
      * @return int
@@ -77,7 +63,7 @@ class BackupDatabase extends Command
 
         // executing command
         print('Backing up tables ... ' . PHP_EOL);
-        if (self::executeCommand($shellCommand)) {
+        if ($this->executeCommand($shellCommand)) {
             if (count($tableProperties['compressionRequired']) && false) {
                 print(count($tableProperties['tablesWithoutCompressionRequirement']) . ' tables which are not to be compressed have been backed up.' . PHP_EOL);
                 print('Compressing ' . implode(', ', $tableProperties['compressionRequired']) . ' ... ' . PHP_EOL);
