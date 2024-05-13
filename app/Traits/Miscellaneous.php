@@ -16,7 +16,7 @@ trait Miscellaneous
      * @return array
      * @source: https://stackoverflow.com/a/1320156/12199939
      */
-    public function flattenArray(array $array)
+    private function flattenArray(array $array)
     {
         $return = array();
         array_walk_recursive($array, function ($a) use (&$return) {
@@ -31,7 +31,7 @@ trait Miscellaneous
      * @param string $key - only depth=1 supported for now
      * @return void
      */
-    public function removeDuplicatesByKey(array &$array, string $key)
+    private function removeDuplicatesByKey(array &$array, string $key)
     {
         $arrayIndicesToRemove = [];
         $uniqueVals = [];
@@ -59,7 +59,7 @@ trait Miscellaneous
      * @param boolean $throwErrorIfLineValidationFails - stop execution and throw an error if validation fails for any line
      * @return array - returns input lines
      */
-    public function readInputFromCli(
+    private function readInputFromCli(
         int $maxAllowedLines = 1,
         array $lineMsgs = [],
         callable $validateLine = null,
@@ -91,7 +91,7 @@ trait Miscellaneous
      * Remove last line from cli
      * @return void
      */
-    public function removeLastLine()
+    private function removeLastLine()
     {
         print("\033[1A\033[K");
     }
@@ -101,7 +101,7 @@ trait Miscellaneous
      * @param array $inputArray - the mutidimensional array
      * @return boolean - returns true if array has duplicate values, false otherwise
      */
-    public function arrayHasDuplicateValues(array &$inputArray)
+    private function arrayHasDuplicateValues(array &$inputArray)
     {
         return !count(array_unique(array_map('json_encode', $inputArray))) == count($inputArray);
     }
@@ -114,7 +114,7 @@ trait Miscellaneous
      * @param string|null $softDeleteColumn - pass null if deleted_at condition should not be added
      * @return string
      */
-    public function generateExistsQuery(array $values, string $column, string $tableName, string|null $softDeleteColumn = 'deleted_at')
+    private function generateExistsQuery(array $values, string $column, string $tableName, string|null $softDeleteColumn = 'deleted_at')
     {
         $values = implode(', ', array_map(function ($val) {
             return '"' . $val . '"';
@@ -132,7 +132,7 @@ trait Miscellaneous
      * @param string $tableName
      * @return string
      */
-    public function generateRawInsertQuery(array &$data, string $tableName)
+    private function generateRawInsertQuery(array &$data, string $tableName)
     {
         $columns = implode(', ', array_keys(reset($data)));
         $values = implode(', ', array_values(array_map(function ($row) {
@@ -151,7 +151,7 @@ trait Miscellaneous
      * @param string $considerExistsCheckOf - pass column name to check exist query
      * @return integer
      */
-    public function findMaxAllowedInsertRows(array &$dataset, string $tableName = 'products', string $considerExistsCheckOf = null)
+    private function findMaxAllowedInsertRows(array &$dataset, string $tableName = 'products', string $considerExistsCheckOf = null)
     {
         $maxAllowedBytes = (int)DB::select("show variables like 'max_allowed_packet'")[0]->Value;
         if ($considerExistsCheckOf) {
@@ -204,7 +204,7 @@ trait Miscellaneous
      * @param string $value
      * @return boolean - true on successful write, false otherwise
      */
-    public function appendToEnv(string $key, string $value)
+    private function appendToEnv(string $key, string $value)
     {
         $value = trim($value);
         $envData = file_get_contents(app()->environmentFilePath());
@@ -225,7 +225,7 @@ trait Miscellaneous
      * @param integer seconds
      * @return void
      */
-    public function delayExecution(int $seconds)
+    private function delayExecution(int $seconds)
     {
         if ($seconds < 1) {
             throw new Exception('Argument $seconds must be at least 1.');
@@ -247,7 +247,7 @@ trait Miscellaneous
      * @param integer $attempt - attempt counter, do not pass while calling
      * @return \Illuminate\Http\Client\Response|false
      */
-    public function attemptRequest(
+    private function attemptRequest(
         string $url,
         string $method,
         array $payload = null,
@@ -293,7 +293,7 @@ trait Miscellaneous
      * Get all tables from application database
      * @return array
      */
-    public function getAllTables()
+    private function getAllTables()
     {
         $key = 'Tables_in_' . getenv('DB_DATABASE');
         return array_map(function ($obj) use (&$key) {
