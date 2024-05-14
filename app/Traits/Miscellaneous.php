@@ -314,4 +314,46 @@ trait Miscellaneous
         exec($command, $output, $resultCode);
         return $resultCode === 0;
     }
+
+    /**
+     * Get output from raw query
+     * @param string $rawQuery
+     * @param boolean $autoprocess (if set to true, analyzes the query output and returns optimized result(s))
+     * @return mixed
+     */
+    private function getRawQueryOutput(string $rawQuery, bool $autoprocess = true)
+    {
+        $output = DB::select($rawQuery);
+        if (!$autoprocess) {
+            return $output;
+        }
+        $outputCount = count($output);
+        $processedOutput = null;
+        if (gettype($output) == 'array') {
+            if (!$outputCount) {
+                $processedOutput = null;
+            } elseif ($outputCount == 1) {
+                $processedOutput = reset($output);
+            }
+        }
+        return $processedOutput;
+    }
+
+    /**
+     * Function to check if queue daemon is running
+     * @return boolean (true if running, false otherwise)
+     */
+    private function checkQueueStatus()
+    {
+        $queueDaemonRunning = false;
+        $lineParts = [];
+        $commandToLookFor = 'php artisan queue:work';
+        $output = shell_exec('ps xw | grep "' . $commandToLookFor . '"');
+        foreach(explode(PHP_EOL, $output) as $line){
+            $lineParts = array_filter(array_map(function($part){return trim($part);}, explode(' ', $line)));
+            // dd($lineParts);
+            dump($lineParts);
+        }
+        die('END');
+    }
 }

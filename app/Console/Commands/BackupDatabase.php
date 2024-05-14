@@ -36,8 +36,8 @@ class BackupDatabase extends Command
         print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL);
 
         // checking if all requirements for initiating database backup are met
-        if (!getenv('DB_BACKUP_FILE_DATETIME_FORMAT')) {
-            die('Critical environment value not set. Database backup process aborted! E-01.' . PHP_EOL);
+        if (!getenv('DB_BACKUP_FILE_DATETIME_FORMAT') || !getenv('DB_BACKUP_ROW_CHUNK')) {
+            die('Critical environment value(s) not set. Database backup process aborted! E-01.' . PHP_EOL);
         }
 
         // declaring backup storage directory & filename
@@ -64,15 +64,39 @@ class BackupDatabase extends Command
         // executing command
         print('Backing up tables ... ' . PHP_EOL);
         if ($this->executeCommand($shellCommand)) {
-            if (count($tableProperties['compressionRequired']) && false) {
-                print(count($tableProperties['tablesWithoutCompressionRequirement']) . ' tables which are not to be compressed have been backed up.' . PHP_EOL);
-                print('Compressing ' . implode(', ', $tableProperties['compressionRequired']) . ' ... ' . PHP_EOL);
-            } else {
-                print('Process completed on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . '. Took ' . str_replace(' after', '', Date::now()->diffForHumans($startTime)) . PHP_EOL);
+            if (count($tableProperties['compressionRequired'])) {
+                print('1. ' . number_format(count($tableProperties['tablesWithoutCompressionRequirement'])) . ' tables which do not require compression have been backed up.' . PHP_EOL);
+                $totalCount = count($tableProperties['tablesWithoutCompressionRequirement']);
+                print('2. Compressing ' . number_format($totalCount) . ' tables ... ' . PHP_EOL);
+
+                // compressing tables
+                foreach ($tableProperties['compressionRequired'] as $index => $tableName) {
+                    print('    ' . ($index + 1) . '. ' . $tableName . ' ... ');
+                    if (self::compressTable($tableName)) {
+                        $this->removeLastLine();
+                    } else {
+                        print(PHP_EOL . 'Compression of table "' . $tableName . '" failed!' . PHP_EOL);
+                    }
+                }
             }
+            print('Process completed on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . '. Took ' . str_replace(' after', '', Date::now()->diffForHumans($startTime)) . PHP_EOL);
+            return Command::SUCCESS;
         } else {
             die('Failed to create database backup. Process aborted! E-02.' . PHP_EOL);
         }
-        return Command::SUCCESS;
+    }
+
+    /**
+     * Function to compress a sql table containing massive data
+     * @param string $tableName
+     * @return boolean true on success, false otherwise
+     */
+    private function compressTable(string $tableName)
+    {
+        // getting total rows
+        $rowCount = ($this->getRawQueryOutput('select count(*) as count from ' . $tableName))->count;
+        if (!$this->checkQueueStatus()) {
+            die('Application\'s queue daemon is not running! Backup process aborted.' . PHP_EOL);
+        }
     }
 }
