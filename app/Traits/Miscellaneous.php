@@ -349,11 +349,15 @@ trait Miscellaneous
         $lineParts = [];
         $commandToLookFor = 'php artisan queue:work';
         $output = shell_exec('ps xw | grep "' . $commandToLookFor . '"');
-        foreach(explode(PHP_EOL, $output) as $line){
-            $lineParts = array_filter(array_map(function($part){return trim($part);}, explode(' ', $line)));
-            // dd($lineParts);
-            dump($lineParts);
+        foreach (explode(PHP_EOL, $output) as $line) {
+            $lineParts = array_filter(array_map(function ($part) {
+                return trim($part);
+            }, explode(' ', $line)));
+            if (count($lineParts) == 7) {
+                $queueDaemonRunning = true;
+                break;
+            }
         }
-        die('END');
+        return $queueDaemonRunning;
     }
 }

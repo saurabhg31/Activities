@@ -96,7 +96,7 @@ class BackupDatabase extends Command
         // getting total rows
         $rowCount = ($this->getRawQueryOutput('select count(*) as count from ' . $tableName))->count;
         if (!$this->checkQueueStatus()) {
-            die('Application\'s queue daemon is not running! Backup process aborted.' . PHP_EOL);
+            die(PHP_EOL . '------------------- CRITICAL ERROR -------------------' . PHP_EOL . 'Application\'s queue daemon is not running! Backup process aborted.' . PHP_EOL);
         }
     }
 }
