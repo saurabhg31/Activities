@@ -32,10 +32,10 @@ class BackupDatabase extends Command
      */
     public function handle()
     {
+        // log start time & verify all requirements are met before proceeding
         $startTime = Date::now();
         print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL . '    A. Checking if backup process requirements are met ... ' . PHP_EOL);
         self::checkRequiremmments();
-        die();
 
         // declaring backup filename
         $databaseBackupFileName = storage_path(getenv('DB_BACKUP_STORAGE_FOLDER') . '/DatabaseBackup_' . Date::now()->format('Y_m_d_H_i'));
@@ -53,8 +53,8 @@ class BackupDatabase extends Command
         $shellCommand = 'mysqldump -u ' . getenv('DB_USERNAME') . ' -p ' . getenv('DB_DATABASE') . ' ' . implode(' ', $tableProperties['tablesWithoutCompressionRequirement']) . ' > ' . '"' . $databaseBackupFileName . '.sql"';
 
         // executing command
-        print('Backing up tables ... ' . PHP_EOL);
-        if ($this->executeCommand($shellCommand)) {
+        print('    C. Backing up tables ... ' . PHP_EOL);
+        if ($this->executeCommand($shellCommand, false, true)) {
             if (count($tableProperties['compressionRequired'])) {
                 print('1. ' . number_format(count($tableProperties['tablesWithoutCompressionRequirement'])) . ' tables which do not require compression have been backed up.' . PHP_EOL);
                 $totalCount = count($tableProperties['tablesWithoutCompressionRequirement']);

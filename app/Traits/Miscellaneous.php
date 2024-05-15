@@ -335,14 +335,17 @@ trait Miscellaneous
      * Function to execute shell commands
      * @param string $command
      * @param boolean $returnOutput (if true return output as string, nothing is echoed)
+     * @param boolean $silent (does not echo running command if passed as true and logs it instead)
      * @return boolean|string True if command is successful, false otherwise
      */
-    private function executeCommand(string $command, bool $returnOutput = false)
+    private function executeCommand(string $command, bool $returnOutput = false, bool $silent = false)
     {
         if ($returnOutput) {
             return shell_exec($command);
         }
-        print('Running command: <~ ' . $command . ' ~>' . PHP_EOL);
+        if (!$silent) {
+            print('    . Running command: <~ ' . $command . ' ~>' . PHP_EOL);
+        }
         $output = [];
         $resultCode = null;
         exec($command, $output, $resultCode);
