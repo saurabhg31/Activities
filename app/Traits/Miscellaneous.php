@@ -3,8 +3,10 @@
 namespace App\Traits;
 
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 
@@ -85,6 +87,34 @@ trait Miscellaneous
             }
         }
         return $input;
+    }
+
+    /**
+     * Securely read & compare password input from cli (for linux only)
+     * @param string $hashedPasswordString (hashed or encrypted password string to compare with)
+     * @param string|callable $comparisonMethod (hash or callable function, must have two params in order of password & hashed password and should return a value)
+     * @param string $prompt (Message to display for entering password)
+     * @return boolean (true on success, false on failure)
+     */
+    private function readAndComparePasswordInputFromCli(
+        string &$hashedPasswordString,
+        string|callable &$comparisonMethod = 'hash',
+        string $prompt = "Enter Password: ",
+    ) {
+        $checkPassed = false;
+        $command = "/usr/bin/env bash -c 'read -s -p \"" . addslashes($prompt) . "\" mypassword && echo \$mypassword'";
+        $password = rtrim(shell_exec($command));
+        print(PHP_EOL);
+        unset($command);
+        if ($comparisonMethod === 'hash') {
+            $checkPassed = Hash::check($password, $hashedPasswordString);
+        } else {
+            $checkPassed = $comparisonMethod($password, $hashedPasswordString);
+        }
+        // flushing password out of memory
+        $password = null;
+        unset($password);
+        return $checkPassed;
     }
 
     /**
@@ -400,5 +430,30 @@ trait Miscellaneous
             return false;
         }
         return true;
+    }
+
+    /**
+     * Securely authenticate user via terminal
+     * @param string|\Illuminate\Database\Eloquent\Model $table (must be the table name if string)
+     * @param array $options (key value pairs that should match)
+     * @return boolean
+     */
+    private function authenticateUserViaTerminal(string|Model &$table, array &$options = ['is_admin' => 1])
+    {
+        $authCheckStatus = false;
+        $email = $this->readInputFromCli(1, ['Enter admin account email: ']);
+        $email = reset($email);
+        if ($table instanceof Model) {
+            $hashedPasswordString = $table->where(array_merge(['email' => $email], $options))->first();
+            if (is_null($hashedPasswordString)) {
+                print('Admin account with email "' . $email . '" not found! Please enter again. (Ctrl + C to abort backup process)' . PHP_EOL);
+                return $this->authenticateUserViaTerminal($table, $options);
+            }
+            $authCheckStatus = $this->readAndComparePasswordInputFromCli($hashedPasswordString);
+        }
+        // flushing credentials from memory
+        $hashedPasswordString = $table = $options = $email = null;
+        unset($hashedPasswordString, $table, $options, $email);
+        return $authCheckStatus;
     }
 }

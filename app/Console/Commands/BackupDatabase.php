@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Date;
 use App\Traits\Miscellaneous;
@@ -146,6 +147,13 @@ class BackupDatabase extends Command
         }
         print('        . Database backup storage directory is active.' . PHP_EOL);
 
-        // TODO: Add code to authenticate admin access verification, add admin functionality to whole project
+        // code to authenticate admin access verification
+        print('    B. AUTHENTICATING ADMIN USER ... ' . PHP_EOL);
+        $userModel = new User;
+        if (!$this->authenticateUserViaTerminal($userModel)) {
+            die('User Authenticated FAILED! Process aborted.' . PHP_EOL);
+        }
+
+        // TODO: Add remaining code
     }
 }
