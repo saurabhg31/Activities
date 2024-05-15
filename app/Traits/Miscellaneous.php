@@ -98,7 +98,7 @@ trait Miscellaneous
      */
     private function readAndComparePasswordInputFromCli(
         string &$hashedPasswordString,
-        string|callable &$comparisonMethod = 'hash',
+        string|callable $comparisonMethod = 'hash',
         string $prompt = "Enter Password: ",
     ) {
         $checkPassed = false;
@@ -441,16 +441,22 @@ trait Miscellaneous
     private function authenticateUserViaTerminal(string|Model &$table, array &$options = ['is_admin' => 1])
     {
         $authCheckStatus = false;
-        $email = $this->readInputFromCli(1, ['Enter admin account email: ']);
+        $email = $this->readInputFromCli(1, ['        . Enter admin account email: ']);
         $email = reset($email);
         if ($table instanceof Model) {
             $hashedPasswordString = $table->where(array_merge(['email' => $email], $options))->first();
             if (is_null($hashedPasswordString)) {
-                print('Admin account with email "' . $email . '" not found! Please enter again. (Ctrl + C to abort backup process)' . PHP_EOL);
+                print('            . Admin account with email "' . $email . '" not found! Please enter again. (Ctrl + C to abort backup process)' . PHP_EOL);
                 return $this->authenticateUserViaTerminal($table, $options);
             }
-            $authCheckStatus = $this->readAndComparePasswordInputFromCli($hashedPasswordString);
+            $hashedPasswordString = $hashedPasswordString->password;
+            $authCheckStatus = $this->readAndComparePasswordInputFromCli($hashedPasswordString, 'hash', '        . Enter password: ');
         }
+        if (!$authCheckStatus) {
+            print('            . Invalid credentials for "' . $email . '"! Please try again. (Ctrl + C to abort backup process)' . PHP_EOL);
+            return $this->authenticateUserViaTerminal($table, $options);
+        }
+        print('        . Authenticated for user with email: "' . $email . '"' . PHP_EOL);
         // flushing credentials from memory
         $hashedPasswordString = $table = $options = $email = null;
         unset($hashedPasswordString, $table, $options, $email);

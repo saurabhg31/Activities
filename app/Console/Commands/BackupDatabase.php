@@ -153,7 +153,6 @@ class BackupDatabase extends Command
         if (!$this->authenticateUserViaTerminal($userModel)) {
             die('User Authenticated FAILED! Process aborted.' . PHP_EOL);
         }
-
-        // TODO: Add remaining code
+        return true; // user authenticated
     }
 }
