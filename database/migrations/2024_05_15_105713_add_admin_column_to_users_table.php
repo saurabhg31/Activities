@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('isAdmin')->default(false)->after('remember_token');
+            $table->boolean('is_admin')->default(false)->after('email');
         });
     }
 
@@ -26,7 +26,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('isAdmin');
+            $table->dropColumn('is_admin');
         });
     }
 };

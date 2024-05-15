@@ -145,5 +145,7 @@ class BackupDatabase extends Command
             }
         }
         print('        . Database backup storage directory is active.' . PHP_EOL);
+
+        // TODO: Add code to authenticate admin access verification, add admin functionality to whole project
     }
 }
