@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Date;
 use App\Traits\Miscellaneous;
+use Illuminate\Support\Arr;
 
 class BackupDatabase extends Command
 {
@@ -23,7 +24,7 @@ class BackupDatabase extends Command
      *
      * @var string
      */
-    protected $description = 'Command to backup all tables present in the database of the application. ';
+    protected $description = 'Command to backup all tables present in the database of the application. Works on linux system only.';
 
     /**
      * Execute the console command.
@@ -33,12 +34,9 @@ class BackupDatabase extends Command
     public function handle()
     {
         $startTime = Date::now();
-        print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL);
-
-        // checking if all requirements for initiating database backup are met
-        if (!getenv('DB_BACKUP_FILE_DATETIME_FORMAT') || !getenv('DB_BACKUP_ROW_CHUNK')) {
-            die('Critical environment value(s) not set. Database backup process aborted! E-01.' . PHP_EOL);
-        }
+        print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL . '    A. Checking if backup process requirements are met ... ' . PHP_EOL);
+        self::checkRequiremmments();
+        die();
 
         // declaring backup storage directory & filename
         $storageDirectory = storage_path('Database Dumps/');
@@ -93,10 +91,42 @@ class BackupDatabase extends Command
      */
     private function compressTable(string $tableName)
     {
+        // checking if compression config enabled in config
+        if (!env('DB_BACKUP_ENABLE_COMPRESSION', false)) {
+            print('WARNING: Compression not enabled in config, skipped.' . PHP_EOL);
+        }
         // getting total rows
         $rowCount = ($this->getRawQueryOutput('select count(*) as count from ' . $tableName))->count;
+    }
+
+    /**
+     * Function to check if all requirements for initiating database backup are met
+     * @return void
+     */
+    private function checkRequiremmments()
+    {
+        // checking config
+        array_map(function ($configKey) {
+            if (!getenv($configKey)) {
+                die('Critical environment value(s) not set. Database backup process aborted! E-01.' . PHP_EOL);
+            }
+        }, ['DB_BACKUP_STORAGE_FOLDER', 'DB_BACKUP_FILE_DATETIME_FORMAT', 'DB_BACKUP_DATE_FORMAT', 'DB_BACKUP_ROW_CHUNK', 'DB_BACKUP_PART_FILE_MAX_SIZE_IN_MB']);
+        print('        . All configurations available.' . PHP_EOL);
+
+        // checking queue daemon status
         if (!$this->checkQueueStatus()) {
             die(PHP_EOL . '------------------- CRITICAL ERROR -------------------' . PHP_EOL . 'Application\'s queue daemon is not running! Backup process aborted.' . PHP_EOL);
         }
+        print('        . Queue daemon is running.' . PHP_EOL);
+
+        // checking available free memory (including swap)
+        $minimumMemoryRequired = [
+            'normal' => 1 * pow(2, 20), // in KB
+            'swap' => 0.25 * pow(2, 20) // in KB
+        ];
+        if (!$this->minimumFreeMemoryIsAvailable($minimumMemoryRequired)) {
+            die('        . Insufficient free memory for completing backup process! Process aborted. E - 03.' . PHP_EOL);
+        }
+        die(PHP_EOL . 'END' . PHP_EOL);
     }
 }

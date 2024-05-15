@@ -304,10 +304,14 @@ trait Miscellaneous
     /**
      * Function to execute shell commands
      * @param string $command
-     * @return boolean True if command is successful, false otherwise
+     * @param boolean $returnOutput (if true return output as string, nothing is echoed)
+     * @return boolean|string True if command is successful, false otherwise
      */
-    private function executeCommand(string $command)
+    private function executeCommand(string $command, bool $returnOutput = false)
     {
+        if ($returnOutput) {
+            return shell_exec($command);
+        }
         print('Running command: <~ ' . $command . ' ~>' . PHP_EOL);
         $output = [];
         $resultCode = null;
@@ -359,5 +363,42 @@ trait Miscellaneous
             }
         }
         return $queueDaemonRunning;
+    }
+
+    /**
+     * Function to check available free memory in a linux system
+     * @param array $minimumMemoryRequired (an array containing keys: "normal" & "swap" with integer values of required free memory size in KB)
+     * @return boolean (true is enough free memory is present, false otherwise)
+     */
+    private function minimumFreeMemoryIsAvailable(array $minimumMemoryRequired)
+    {
+        $memoryAvailable = [
+            'normal' => 0, // in KB
+            'swap' => 0 // in KB
+        ];
+        $memoryShortBy = [
+            'normal' => 0, // in KB
+            'swap' => 0 // in K
+        ];
+        $freeMemoryDetails = explode(PHP_EOL, $this->executeCommand('free', true));
+        unset($freeMemoryDetails[0]);
+        $freeMemoryDetails = array_map(function ($line) use (&$memoryAvailable) {
+            $lineParts = array_filter(explode(' ', $line));
+            if (reset($lineParts) == 'Mem:') {
+                $memoryAvailable['normal'] = (int)Arr::last($lineParts);
+            } elseif (reset($lineParts) == 'Swap:') {
+                $memoryAvailable['swap'] = (int)Arr::last($lineParts);
+            }
+        }, $freeMemoryDetails);
+        // comparing available memory with requirements
+        foreach (['normal', 'swap'] as $memoryType) {
+            if ($memoryAvailable[$memoryType] < $minimumMemoryRequired[$memoryType]) {
+                $memoryShortBy[$memoryType] = ($minimumMemoryRequired[$memoryType] - $memoryAvailable[$memoryType]) / pow(2, 10); // in MB
+            }
+        }
+        if ($memoryShortBy['normal'] + $memoryShortBy['swap'] > 0) {
+            return false;
+        }
+        return true;
     }
 }
