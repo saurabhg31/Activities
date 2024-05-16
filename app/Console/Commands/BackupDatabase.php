@@ -35,7 +35,7 @@ class BackupDatabase extends Command
         // log start time & verify all requirements are met before proceeding
         $startTime = Date::now();
         print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL . '    A. Checking if backup process requirements are met ... ' . PHP_EOL);
-        // self::checkRequiremmments();
+        self::checkRequiremmments();
 
         // declaring backup filename
         $databaseBackupFileName = storage_path(env('DB_BACKUP_STORAGE_FOLDER') . '/DatabaseBackup_' . Date::now()->format('Y_m_d_H_i'));
@@ -72,10 +72,9 @@ class BackupDatabase extends Command
     /**
      * Function to compress a sql table containing massive data
      * @param string $tableName
-     * @param string $backupStorageDirectoryPath - default is APP_DIRECTORY/storage/dbDumps
      * @return boolean true on success, false otherwise
      */
-    private function compressTable(string $tableName, $backupStorageDirectoryPath = 'storage/dbDumps')
+    private function compressTable(string $tableName)
     {
         // checking if compression config enabled in config
         if (!env('DB_BACKUP_ENABLE_COMPRESSION', false)) {
@@ -83,21 +82,15 @@ class BackupDatabase extends Command
         }
 
         // analyzing table for compression
+        $backupDirectory = storage_path(env('DB_BACKUP_STORAGE_FOLDER'));
         $maxIdCountCap = env('DB_BACKUP_PART_FILE_MAX_SIZE_IN_MB') * pow(2, 20);
         print('            . Analyzing table ... ' . PHP_EOL);
-        $progressPercentage = 0.0;
         print('                . Getting total number of rows in table ... ');
         $rowCount = ($this->getRawQueryOutput('select count(*) as count from ' . $tableName))->count;
         $this->printActionCompletedMsg(number_format($rowCount) . ' rows found.' . PHP_EOL);
-        $progressPercentage += 0.2;
-        $this->printProgress($progressPercentage);
-        $this->removeMultipleLastLines();
         print('                . Fetching table description ... ');
         $tableDesc = $this->getRawQueryOutput('desc ' . $tableName . ';');
         $this->printActionCompletedMsg();
-        $progressPercentage += 0.2;
-        $this->printProgress($progressPercentage);
-        $this->removeMultipleLastLines();
         print('                . Searching for auto increment column ... ');
         $autoIncrementColumnDesc = array_filter($tableDesc, function ($columnDesc) {
             return isset($columnDesc->Extra) && $columnDesc->Extra == 'auto_increment';
@@ -109,57 +102,56 @@ class BackupDatabase extends Command
             $autoIncrementColumnDesc = reset($autoIncrementColumnDesc);
             $this->printActionCompletedMsg('Found column "' . $autoIncrementColumnDesc->Field . '"' . PHP_EOL);
         }
-        $progressPercentage += 0.1;
-        $this->printProgress($progressPercentage);
-        $this->removeMultipleLastLines();
+
+        // calculating best compression method for given table based on its contents
         print('                . Selecting optimal method of compression ... ');
         if ($autoIncrementColumnDesc) {
             if ($rowCount > $maxIdCountCap) {
                 $this->printActionCompletedMsg('Too many rows, normal method selected.' . PHP_EOL);
-                $progressPercentage += 0.05;
-                $this->printProgress($progressPercentage);
                 // TODO: Add code to compress rows without id sorting
             } else {
                 $this->printActionCompletedMsg('Id sorting method selected.' . PHP_EOL);
-                $progressPercentage += 0.1;
-                $this->printProgress($progressPercentage);
-                $this->removeMultipleLastLines();
                 print('                . Fetching all ids present in table "' . $tableName . '" ... ');
+
                 // fetching all ids
                 $ids = array_map(function ($obj) {
                     return $obj->autoIncrementColumn;
                 }, $this->getRawQueryOutput('select ' . $autoIncrementColumnDesc->Field . ' as autoIncrementColumn from ' . $tableName));
                 asort($ids); // sorting ids in ascending order
                 $this->printActionCompletedMsg(number_format($rowCount) . ' ids sorted in ascending order.' . PHP_EOL);
-                $progressPercentage += 1;
-                $this->printProgress($progressPercentage);
-                $this->removeMultipleLastLines();
                 print('                . Creating id chunks with ' . number_format(env('DB_BACKUP_ROW_CHUNK')) . ' ids in each ... ');
                 $idChunks = array_chunk($ids, env('DB_BACKUP_ROW_CHUNK'));
-                $this->printActionCompletedMsg('Generated ' . number_format(count($idChunks)) . ' chunks.' . PHP_EOL);
-                $progressPercentage += 0.3;
-                $this->printProgress($progressPercentage);
-                // fetching table data for compression in chunks
+                $totalGeneratedChunks = count($idChunks);
+                $this->printActionCompletedMsg('Generated ' . number_format($totalGeneratedChunks) . ' chunks.' . PHP_EOL);
+
+                // fetching table data in chunks & compressing the same
                 if (env('DB_BACKUP_USE_QUEUE')) {
                     // TODO: Add code to backup table data using queue daemon
                 } else {
-                    $this->removeMultipleLastLines();
-                    print('                . Processing chunk: ');
-                    $chunkData = null;
+                    $chunkStorageFolder = $backupDirectory . '/chunks/';
+                    exec('rm -rf ' . $chunkStorageFolder); // TODO: remove this obsolete line of code
+                    mkdir($chunkStorageFolder, 0770);
+                    $chunkFile = null;
+                    $totalBytesWrittenInChunkFiles = 0;
+                    $bytesWrittenInChunkFile = 0;
                     foreach ($idChunks as $index => $chunk) {
-                        print(number_format($index + 1) . ' ... ');
-                        $chunkData = $this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' in (' . implode(',', $chunk) . ')');
-
+                        print('                . Processing chunk: ');
+                        print(number_format($index + 1) . '/' . $totalGeneratedChunks . ' ... ');
+                        $chunkFile = 'chunk_' . ($index + 1) . '.text';
+                        $bytesWrittenInChunkFile = file_put_contents(
+                            $chunkStorageFolder . $chunkFile,
+                            json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' in (' . implode(',', $chunk) . ')'))
+                        );
+                        $totalBytesWrittenInChunkFiles += $bytesWrittenInChunkFile;
+                        $this->printActionCompletedMsg(round($bytesWrittenInChunkFile / pow(2, 20), 2) . ' MB written in chunk file "' . $chunkFile . '"' . PHP_EOL);
                     }
+                    print('            . Chunks processing completed successfully, ' . (number_format($totalBytesWrittenInChunkFiles / pow(2, 20), 2)) . ' MB data written in total. Beginning compressed zipping procedure ... ' . PHP_EOL);
                 }
             }
         } else {
             $this->printActionCompletedMsg('Sequential method selected.' . PHP_EOL);
-            $progressPercentage += 0.05;
-            $this->printProgress($progressPercentage);
             // TODO: Add code to compress table if no auto increment column is present
         }
-
         die(PHP_EOL . '-------------- END --------------' . PHP_EOL);
     }
 
@@ -171,7 +163,7 @@ class BackupDatabase extends Command
     {
         // checking config
         array_map(function ($configKey) {
-            if (!env($configKey)) {
+            if (is_null($configKey)) {
                 die('Critical environment value(s) not set. Database backup process aborted! E-01.' . PHP_EOL);
             }
         }, ['DB_BACKUP_STORAGE_FOLDER', 'DB_BACKUP_FILE_DATETIME_FORMAT', 'DB_BACKUP_DATE_FORMAT', 'DB_BACKUP_ROW_CHUNK', 'DB_BACKUP_PART_FILE_MAX_SIZE_IN_MB', 'DB_BACKUP_USE_QUEUE']);
