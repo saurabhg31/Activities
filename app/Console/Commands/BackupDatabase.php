@@ -125,27 +125,31 @@ class BackupDatabase extends Command
                 $this->printActionCompletedMsg('Generated ' . number_format($totalGeneratedChunks) . ' chunks.' . PHP_EOL);
 
                 // fetching table data in chunks & compressing the same
-                if (env('DB_BACKUP_USE_QUEUE')) {
-                    // TODO: Add code to backup table data using queue daemon
+                if (strtolower(env('DB_BACKUP_MODE')) == 'dynamic') {
+                    // TODO: Add code to compress by dynamically deciding number of chunks & filesize based on data
                 } else {
-                    $chunkStorageFolder = $backupDirectory . '/chunks/';
-                    exec('rm -rf ' . $chunkStorageFolder); // TODO: remove this obsolete line of code
-                    mkdir($chunkStorageFolder, 0770);
-                    $chunkFile = null;
-                    $totalBytesWrittenInChunkFiles = 0;
-                    $bytesWrittenInChunkFile = 0;
-                    foreach ($idChunks as $index => $chunk) {
-                        print('                . Processing chunk: ');
-                        print(number_format($index + 1) . '/' . $totalGeneratedChunks . ' ... ');
-                        $chunkFile = 'chunk_' . ($index + 1) . '.json';
-                        $bytesWrittenInChunkFile = file_put_contents(
-                            $chunkStorageFolder . $chunkFile,
-                            json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' in (' . implode(',', $chunk) . ')'))
-                        );
-                        $totalBytesWrittenInChunkFiles += $bytesWrittenInChunkFile;
-                        $this->printActionCompletedMsg(round($bytesWrittenInChunkFile / pow(2, 20), 2) . ' MB written in chunk file "' . $chunkFile . '"' . PHP_EOL);
+                    if (env('DB_BACKUP_USE_QUEUE')) {
+                        // TODO: Add code to backup table data using queue daemon
+                    } else {
+                        $chunkStorageFolder = $backupDirectory . '/chunks/';
+                        exec('rm -rf ' . $chunkStorageFolder); // TODO: remove this obsolete line of code
+                        mkdir($chunkStorageFolder, 0770);
+                        $chunkFile = null;
+                        $totalBytesWrittenInChunkFiles = 0;
+                        $bytesWrittenInChunkFile = 0;
+                        foreach ($idChunks as $index => $chunk) {
+                            print('                . Processing chunk: ');
+                            print(number_format($index + 1) . '/' . $totalGeneratedChunks . ' ... ');
+                            $chunkFile = 'chunk_' . ($index + 1) . '.json';
+                            $bytesWrittenInChunkFile = file_put_contents(
+                                $chunkStorageFolder . $chunkFile,
+                                json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' in (' . implode(',', $chunk) . ')'))
+                            );
+                            $totalBytesWrittenInChunkFiles += $bytesWrittenInChunkFile;
+                            $this->printActionCompletedMsg(round($bytesWrittenInChunkFile / pow(2, 20), 2) . ' MB written in chunk file "' . $chunkFile . '"' . PHP_EOL);
+                        }
+                        print('            . Chunks processing completed successfully, ' . (number_format($totalBytesWrittenInChunkFiles / pow(2, 20), 2)) . ' MB data written in total. Beginning compressed zipping procedure ... ' . PHP_EOL);
                     }
-                    print('            . Chunks processing completed successfully, ' . (number_format($totalBytesWrittenInChunkFiles / pow(2, 20), 2)) . ' MB data written in total. Beginning compressed zipping procedure ... ' . PHP_EOL);
                 }
             }
         } else {
@@ -166,7 +170,7 @@ class BackupDatabase extends Command
             if (is_null($configKey)) {
                 die('Critical environment value(s) not set. Database backup process aborted! E-01.' . PHP_EOL);
             }
-        }, ['DB_BACKUP_STORAGE_FOLDER', 'DB_BACKUP_FILE_DATETIME_FORMAT', 'DB_BACKUP_DATE_FORMAT', 'DB_BACKUP_ROW_CHUNK', 'DB_BACKUP_PART_FILE_MAX_SIZE_IN_MB', 'DB_BACKUP_USE_QUEUE']);
+        }, ['DB_BACKUP_STORAGE_FOLDER', 'DB_BACKUP_FILE_DATETIME_FORMAT', 'DB_BACKUP_DATE_FORMAT', 'DB_BACKUP_ROW_CHUNK', 'DB_BACKUP_PART_FILE_MAX_SIZE_IN_MB', 'DB_BACKUP_USE_QUEUE', 'DB_BACKUP_MODE']);
         print('        . All configurations available.' . PHP_EOL);
 
         if (env('DB_BACKUP_USE_QUEUE')) {
