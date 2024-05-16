@@ -81,26 +81,22 @@ class BackupDatabase extends Command
         if (!env('DB_BACKUP_ENABLE_COMPRESSION', false)) {
             die('ERROR: Compression not enabled in config, process aborted.' . PHP_EOL);
         }
-
-        // starting compressing process
-        print('            . Analyzing table ... ' . PHP_EOL);
-
+        
         // analyzing table for compression
+        print('            . Analyzing table ... ' . PHP_EOL);
         $progressPercentage = 0.0;
         print('                . Getting total number of rows in table ... ');
         $rowCount = ($this->getRawQueryOutput('select count(*) as count from ' . $tableName))->count;
         $this->printActionCompletedMsg();
         $progressPercentage = 1.0;
         $this->printProgress($progressPercentage);
-        $this->removeLastLine();
-        $this->removeLastLine();
+        $this->removeMultipleLastLines(2);
         print('                . Fetching table description ... ');
         $tableDesc = $this->getRawQueryOutput('desc ' . $tableName . ';');
         $this->printActionCompletedMsg();
         $progressPercentage = 1.3;
         $this->printProgress($progressPercentage);
-        $this->removeLastLine();
-        $this->removeLastLine();
+        $this->removeMultipleLastLines(2);
         print('                . Searching for auto increment column ... ');
         $autoIncrementColumnDesc = array_filter($tableDesc, function ($columnDesc) {
             return isset($columnDesc->Extra) && $columnDesc->Extra == 'auto_increment';
@@ -110,6 +106,8 @@ class BackupDatabase extends Command
         $this->printProgress($progressPercentage);
         if (empty($autoIncrementColumnDesc)) {
             // TODO: Add code to compress table if no auto increment column is available
+            die(PHP_EOL . 'ERROR: Code to compress table if no auto increment column is available is in progress.' . PHP_EOL);
+        } else {
         }
 
         die(PHP_EOL . '-------------- END --------------' . PHP_EOL);

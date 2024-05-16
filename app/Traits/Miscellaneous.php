@@ -128,6 +128,21 @@ trait Miscellaneous
     }
 
     /**
+     * Remove multiple lines from the bottom one by one in terminal
+     * @param integer $lineCount - number of lines to remove, must be greater than 0
+     * @return void
+     */
+    private function removeMultipleLastLines(int $lineCount)
+    {
+        if ($lineCount < 0) {
+            throw new Error('$lineCount cannot be less than zero.');
+        }
+        for ($i = 0; $i < $lineCount; $i++) {
+            $this->removeLastLine();
+        }
+    }
+
+    /**
      * Checks if a multidimensional array has duplicate values
      * @param array $inputArray - the mutidimensional array
      * @return boolean - returns true if array has duplicate values, false otherwise
