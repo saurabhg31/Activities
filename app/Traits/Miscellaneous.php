@@ -119,7 +119,7 @@ trait Miscellaneous
     }
 
     /**
-     * Remove last line from cli
+     * Remove last line from cli, does not move cursor up to previous line, instead clears the last line for entry
      * @return void
      */
     private function removeLastLine()
@@ -128,11 +128,11 @@ trait Miscellaneous
     }
 
     /**
-     * Remove multiple lines from the bottom one by one in terminal
+     * Remove multiple lines from the bottom one by one in terminal, by default ($lineCount = 2)) moves the cursor up to previous line
      * @param integer $lineCount - number of lines to remove, must be greater than 0
      * @return void
      */
-    private function removeMultipleLastLines(int $lineCount)
+    private function removeMultipleLastLines(int $lineCount = 2)
     {
         if ($lineCount < 0) {
             throw new Error('$lineCount cannot be less than zero.');
@@ -495,6 +495,7 @@ trait Miscellaneous
      */
     public function printProgress(float|int &$progressPercentage, string|callable $statusMsg = null)
     {
+        $progressPercentage = round($progressPercentage, 5);
         if ($progressPercentage > 100 || $progressPercentage < 0) {
             throw new Error('Invalid progress percentage!');
         }
