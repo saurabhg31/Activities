@@ -54,7 +54,7 @@ class BackupDatabase extends Command
         $shellCommand = 'mysqldump -u ' . getenv('DB_USERNAME') . ' -p ' . getenv('DB_DATABASE') . ' ' . implode(' ', $tableProperties['tablesWithoutCompressionRequirement']) . ' > ' . '"' . $databaseBackupFileName . '.sql"';
 
         // executing command
-        print('    C. Backing up tables ... ' . PHP_EOL);
+        print('    C. Backing up tables ... ' . PHP_EOL . '        . MySql : ');
         if ($this->executeCommand($shellCommand, false, true)) {
             if (count($tableProperties['compressionRequired'])) {
                 // compressing tables
@@ -89,25 +89,30 @@ class BackupDatabase extends Command
         $progressPercentage = 0.0;
         print('                . Getting total number of rows in table ... ');
         $rowCount = ($this->getRawQueryOutput('select count(*) as count from ' . $tableName))->count;
-        $progressPercentage = 1.0;
         $this->printActionCompletedMsg();
+        $progressPercentage = 1.0;
         $this->printProgress($progressPercentage);
+        $this->removeLastLine();
+        $this->removeLastLine();
         print('                . Fetching table description ... ');
         $tableDesc = $this->getRawQueryOutput('desc ' . $tableName . ';');
         $this->printActionCompletedMsg();
         $progressPercentage = 1.3;
         $this->printProgress($progressPercentage);
+        $this->removeLastLine();
+        $this->removeLastLine();
         print('                . Searching for auto increment column ... ');
         $autoIncrementColumnDesc = array_filter($tableDesc, function ($columnDesc) {
             return isset($columnDesc->Extra) && $columnDesc->Extra == 'auto_increment';
         });
-        dd($tableDesc, $autoIncrementColumnDesc);
+        $this->printActionCompletedMsg();
+        $progressPercentage = 1.8;
+        $this->printProgress($progressPercentage);
+        if (empty($autoIncrementColumnDesc)) {
+            // TODO: Add code to compress table if no auto increment column is available
+        }
 
         die(PHP_EOL . '-------------- END --------------' . PHP_EOL);
-
-        // calculating total size of table
-        $table = DB::table($tableName);
-        dd(mb_strlen(json_encode($table->first()), '8bit') / pow(2, 20));
     }
 
     /**

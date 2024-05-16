@@ -476,19 +476,15 @@ trait Miscellaneous
      * Print progress to terminal
      * @param float|int $progressPercentage
      * @param string|callable $statusMsg (if set to null, dotted progress bar is displayed, 1 dot per percent, if callable/closure is passed, executes it with $progressPercentage as argument)
-     * @param boolean $removeLastLine
      * @return void
      */
-    public function printProgress(float|int &$progressPercentage, string|callable $statusMsg = null, bool $removeLastLine = false)
+    public function printProgress(float|int &$progressPercentage, string|callable $statusMsg = null)
     {
         if ($progressPercentage > 100 || $progressPercentage < 0) {
             throw new Error('Invalid progress percentage!');
         }
-        if ($removeLastLine) {
-            $this->removeLastLine();
-        }
         if (is_null($statusMsg)) {
-            $statusMsg = ' ' . str_repeat('.', floor($progressPercentage)) . '    ';
+            $statusMsg = PHP_EOL . ' ' . str_repeat('.', floor($progressPercentage)) . '    ';
         }
         print($statusMsg . $progressPercentage . ' % complete.' . PHP_EOL);
     }
