@@ -35,7 +35,7 @@ class BackupDatabase extends Command
         // log start time & verify all requirements are met before proceeding
         $startTime = Date::now();
         print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL . '    A. Checking if backup process requirements are met ... ' . PHP_EOL);
-        self::checkRequiremmments();
+        // self::checkRequiremmments(); // TODO: Uncomment this line during hosting
 
         // declaring backup filename
         $databaseBackupFileName = storage_path(env('DB_BACKUP_STORAGE_FOLDER') . '/DatabaseBackup_' . Date::now()->format('Y_m_d_H_i'));
@@ -137,7 +137,7 @@ class BackupDatabase extends Command
                     foreach ($idChunks as $index => $chunk) {
                         print('                . Processing chunk: ');
                         print(number_format($index + 1) . '/' . $totalGeneratedChunks . ' ... ');
-                        $chunkFile = 'chunk_' . ($index + 1) . '.text';
+                        $chunkFile = 'chunk_' . ($index + 1) . '.json';
                         $bytesWrittenInChunkFile = file_put_contents(
                             $chunkStorageFolder . $chunkFile,
                             json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' in (' . implode(',', $chunk) . ')'))
