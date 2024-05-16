@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use Error;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -345,6 +346,7 @@ trait Miscellaneous
         }
         if (!$silent) {
             print('    . Running command: <~ ' . $command . ' ~>' . PHP_EOL);
+            // TODO: Add command logging code
         }
         $output = [];
         $resultCode = null;
@@ -355,14 +357,16 @@ trait Miscellaneous
     /**
      * Get output from raw query
      * @param string $rawQuery
-     * @param boolean $autoprocess (if set to true, analyzes the query output and returns optimized result(s))
+     * @param boolean|callable $autoprocess (if set to true, analyzes the query output and returns optimized result(s), if passed a function, executes the function with query output at first argument and return the result)
      * @return mixed
      */
-    private function getRawQueryOutput(string $rawQuery, bool $autoprocess = true)
+    private function getRawQueryOutput(string $rawQuery, bool|callable $autoprocess = true)
     {
         $output = DB::select($rawQuery);
-        if (!$autoprocess) {
+        if ($autoprocess === false) {
             return $output;
+        } elseif (gettype($autoprocess) == 'object') {
+            return $autoprocess($output);
         }
         $outputCount = count($output);
         $processedOutput = null;
@@ -371,6 +375,8 @@ trait Miscellaneous
                 $processedOutput = null;
             } elseif ($outputCount == 1) {
                 $processedOutput = reset($output);
+            } else {
+                $processedOutput = $output;
             }
         }
         return $processedOutput;
@@ -464,5 +470,36 @@ trait Miscellaneous
         $hashedPasswordString = $table = $options = $email = null;
         unset($hashedPasswordString, $table, $options, $email);
         return $authCheckStatus;
+    }
+
+    /**
+     * Print progress to terminal
+     * @param float|int $progressPercentage
+     * @param string|callable $statusMsg (if set to null, dotted progress bar is displayed, 1 dot per percent, if callable/closure is passed, executes it with $progressPercentage as argument)
+     * @param boolean $removeLastLine
+     * @return void
+     */
+    public function printProgress(float|int &$progressPercentage, string|callable $statusMsg = null, bool $removeLastLine = false)
+    {
+        if ($progressPercentage > 100 || $progressPercentage < 0) {
+            throw new Error('Invalid progress percentage!');
+        }
+        if ($removeLastLine) {
+            $this->removeLastLine();
+        }
+        if (is_null($statusMsg)) {
+            $statusMsg = ' ' . str_repeat('.', floor($progressPercentage)) . '    ';
+        }
+        print($statusMsg . $progressPercentage . ' % complete.' . PHP_EOL);
+    }
+
+    /**
+     * print action completed message in terminal
+     * @param string $msg
+     * @return void
+     */
+    public function printActionCompletedMsg(string $msg = 'Done.' . PHP_EOL)
+    {
+        print($msg);
     }
 }

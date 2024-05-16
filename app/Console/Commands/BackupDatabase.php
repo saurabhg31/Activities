@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Date;
 use App\Traits\Miscellaneous;
+use Illuminate\Support\Facades\DB;
 
 class BackupDatabase extends Command
 {
@@ -35,7 +36,7 @@ class BackupDatabase extends Command
         // log start time & verify all requirements are met before proceeding
         $startTime = Date::now();
         print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL . '    A. Checking if backup process requirements are met ... ' . PHP_EOL);
-        self::checkRequiremmments();
+        // self::checkRequiremmments();
 
         // declaring backup filename
         $databaseBackupFileName = storage_path(getenv('DB_BACKUP_STORAGE_FOLDER') . '/DatabaseBackup_' . Date::now()->format('Y_m_d_H_i'));
@@ -56,18 +57,10 @@ class BackupDatabase extends Command
         print('    C. Backing up tables ... ' . PHP_EOL);
         if ($this->executeCommand($shellCommand, false, true)) {
             if (count($tableProperties['compressionRequired'])) {
-                print('1. ' . number_format(count($tableProperties['tablesWithoutCompressionRequirement'])) . ' tables which do not require compression have been backed up.' . PHP_EOL);
-                $totalCount = count($tableProperties['tablesWithoutCompressionRequirement']);
-                print('2. Compressing ' . number_format($totalCount) . ' tables ... ' . PHP_EOL);
-
                 // compressing tables
-                foreach ($tableProperties['compressionRequired'] as $index => $tableName) {
-                    print('    ' . ($index + 1) . '. ' . $tableName . ' ... ');
-                    if (self::compressTable($tableName)) {
-                        // TODO: Add post compression action code
-                    } else {
-                        print(PHP_EOL . 'Compression of table "' . $tableName . '" failed!' . PHP_EOL);
-                    }
+                foreach ($tableProperties['compressionRequired'] as $tableName) {
+                    print('        . Compressing table "' . $tableName . '" ... ' . PHP_EOL);
+                    self::compressTable($tableName);
                 }
             }
             print('Process completed on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . '. Took ' . str_replace(' after', '', Date::now()->diffForHumans($startTime)) . PHP_EOL);
@@ -86,10 +79,35 @@ class BackupDatabase extends Command
     {
         // checking if compression config enabled in config
         if (!env('DB_BACKUP_ENABLE_COMPRESSION', false)) {
-            print('WARNING: Compression not enabled in config, skipped.' . PHP_EOL);
+            die('ERROR: Compression not enabled in config, process aborted.' . PHP_EOL);
         }
-        // getting total rows
+
+        // starting compressing process
+        print('            . Analyzing table ... ' . PHP_EOL);
+
+        // analyzing table for compression
+        $progressPercentage = 0.0;
+        print('                . Getting total number of rows in table ... ');
         $rowCount = ($this->getRawQueryOutput('select count(*) as count from ' . $tableName))->count;
+        $progressPercentage = 1.0;
+        $this->printActionCompletedMsg();
+        $this->printProgress($progressPercentage);
+        print('                . Fetching table description ... ');
+        $tableDesc = $this->getRawQueryOutput('desc ' . $tableName . ';');
+        $this->printActionCompletedMsg();
+        $progressPercentage = 1.3;
+        $this->printProgress($progressPercentage);
+        print('                . Searching for auto increment column ... ');
+        $autoIncrementColumnDesc = array_filter($tableDesc, function ($columnDesc) {
+            return isset($columnDesc->Extra) && $columnDesc->Extra == 'auto_increment';
+        });
+        dd($tableDesc, $autoIncrementColumnDesc);
+
+        die(PHP_EOL . '-------------- END --------------' . PHP_EOL);
+
+        // calculating total size of table
+        $table = DB::table($tableName);
+        dd(mb_strlen(json_encode($table->first()), '8bit') / pow(2, 20));
     }
 
     /**
