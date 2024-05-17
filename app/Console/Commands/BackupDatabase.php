@@ -149,6 +149,7 @@ class BackupDatabase extends Command
                             $this->printActionCompletedMsg(round($bytesWrittenInChunkFile / pow(2, 20), 2) . ' MB written in chunk file "' . $chunkFile . '"' . PHP_EOL);
                         }
                         print(PHP_EOL . '            . Chunks processing completed successfully, ' . (number_format($totalBytesWrittenInChunkFiles / pow(2, 20), 2)) . ' MB data written in total.' . PHP_EOL . '            . Beginning compressed zipping procedure ... ' . PHP_EOL);
+                        // TODO: ADD code to zip $backupDirectory & delete the directory with files once zipping is done
                     }
                 }
             }
