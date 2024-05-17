@@ -137,7 +137,7 @@ class BackupDatabase extends Command
                     if (env('DB_BACKUP_USE_QUEUE')) {
                         // TODO: Add code to backup table data using queue daemon
                     } else {
-                        $chunkStorageFolder = $backupDirectory . '/chunks/';
+                        $chunkStorageFolder = $backupDirectory . '/' . $tableName . '/';
                         exec('rm -rf ' . $chunkStorageFolder); // TODO: remove this obsolete line of code
                         mkdir($chunkStorageFolder, 0770);
                         $chunkFile = null;
