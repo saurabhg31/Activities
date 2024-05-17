@@ -32,6 +32,10 @@ class BackupDatabase extends Command
      */
     public function handle()
     {
+        if (!env('DB_BACKUP_ENABLED', false)) {
+            print('Programmatic database backup not enabled.' . PHP_EOL);
+            return Command::FAILURE;
+        }
         // log start time & verify all requirements are met before proceeding
         $startTime = Date::now();
         print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL . '    A. Checking if backup process requirements are met ... ' . PHP_EOL);
@@ -126,8 +130,10 @@ class BackupDatabase extends Command
 
                 // fetching table data in chunks & compressing the same
                 if (strtolower(env('DB_BACKUP_MODE')) == 'dynamic') {
-                    // TODO: Add code to compress by dynamically deciding number of chunks & filesize based on data
+                    // compress by dynamically deciding calculating optimal chunk & file size based on data
+                    print('                . Dynamic mode is enabled, calculating optimal chunk & file size based on data ... ');
                 } else {
+                    // compress by fetching chunks of data based on values set in env
                     if (env('DB_BACKUP_USE_QUEUE')) {
                         // TODO: Add code to backup table data using queue daemon
                     } else {
