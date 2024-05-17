@@ -130,7 +130,7 @@ class BackupDatabase extends Command
 
                 // fetching table data in chunks & compressing the same
                 if (strtolower(env('DB_BACKUP_MODE')) == 'dynamic') {
-                    // compress by dynamically deciding calculating optimal chunk & file size based on data
+                    // TODO: add code to compress by dynamically deciding calculating optimal chunk & file size based on data
                     print('                . Dynamic mode is enabled, calculating optimal chunk & file size based on data ... ');
                 } else {
                     // compress by fetching chunks of data based on values set in env
