@@ -538,4 +538,17 @@ trait Miscellaneous
         );
         return (int)reset($chunkFileSize);
     }
+
+    /**
+     * print progress bar in terminal
+     * @param float|int $completed
+     * @param float|int $total
+     * @param string $char
+     * @param integer $maxChars
+     * @return void
+     */
+    private function printProgressBar(float|int $completed, float|int $total, string $char = '.', int $maxChars = 100)
+    {
+        print(str_repeat($char, (int)(($completed / $total) * $maxChars)));
+    }
 }

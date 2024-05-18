@@ -139,12 +139,21 @@ class BackupDatabase extends Command
                     $chunkFileData = '';
                     $chunkFileSizeLimitInBytes = $desiredChunkFileSizeInMB * pow(2, 20);
                     $jsonRowData = null;
+                    $dataFileLengths = ['chunk' => 0, 'row' => 0, 'total' => 0];
                     print('                    . Writing data in "chunk_' . $chunkFileCounter . '.jsonl" ... ');
                     foreach ($ids as $id) {
+                        $dataFileLengths['chunk'] = strlen($chunkFileData);
                         $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
-                        if ((strlen($chunkFileData) + strlen($jsonRowData)) < $chunkFileSizeLimitInBytes) {
+                        $dataFileLengths['row'] = strlen($jsonRowData);
+                        $dataFileLengths['total'] = $dataFileLengths['chunk'] + $dataFileLengths['row'];
+                        if ($dataFileLengths['total'] < $chunkFileSizeLimitInBytes) {
                             $chunkFileData .= $jsonRowData . PHP_EOL;
-                        } elseif ((strlen($chunkFileData) + strlen($jsonRowData)) >= $chunkFileSizeLimitInBytes) {
+                            // TODO : fix this gui progress bar animation problem
+                            // print(PHP_EOL . '                        ');
+                            // $this->printProgressBar($dataFileLengths['total'] + 1, $chunkFileSizeLimitInBytes, '.', 48);
+                            // print('    ' . ((($dataFileLengths['total'] + 1) / $chunkFileSizeLimitInBytes) * 100) . ' % complete.');
+                            // $this->removeMultipleLastLines();
+                        } elseif ($dataFileLengths['total'] >= $chunkFileSizeLimitInBytes) {
                             $bytesWrittenInChunkFile = file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
                             $this->printActionCompletedMsg($bytesWrittenInChunkFile / pow(2, 20) . ' MB data written.' . PHP_EOL);
                             $chunkFileData = $jsonRowData . PHP_EOL;
