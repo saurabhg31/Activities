@@ -141,7 +141,7 @@ class BackupDatabase extends Command
                     $jsonRowData = null;
                     foreach ($ids as $id) {
                         print('                    . Writing data in "chunk_' . $chunkFileCounter . '.jsonl" ... ');
-                        $jsonRowData .= json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
+                        $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
                         if ((strlen($chunkFileData) + strlen($jsonRowData)) < $chunkFileSizeLimitInBytes) {
                             $chunkFileData .= $jsonRowData . PHP_EOL;
                         } elseif ((strlen($chunkFileData) + strlen($jsonRowData)) >= $chunkFileSizeLimitInBytes) {
