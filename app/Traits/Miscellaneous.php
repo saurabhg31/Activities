@@ -432,7 +432,7 @@ trait Miscellaneous
         ];
         $memoryShortBy = [
             'normal' => 0, // in KB
-            'swap' => 0 // in K
+            'swap' => 0 // in KB
         ];
         $freeMemoryDetails = explode(PHP_EOL, $this->executeCommand('free', true));
         unset($freeMemoryDetails[0]);
@@ -493,7 +493,7 @@ trait Miscellaneous
      * @param string|callable $statusMsg (if set to null, dotted progress bar is displayed, 1 dot per percent, if callable/closure is passed, executes it with $progressPercentage as argument)
      * @return void
      */
-    public function printProgress(float|int &$progressPercentage, string|callable $statusMsg = null)
+    private function printProgress(float|int &$progressPercentage, string|callable $statusMsg = null)
     {
         $progressPercentage = round($progressPercentage, 5);
         if ($progressPercentage > 100 || $progressPercentage < 0) {
@@ -510,10 +510,32 @@ trait Miscellaneous
      * @param string $msg
      * @return void
      */
-    public function printActionCompletedMsg(string $msg = 'Done.' . PHP_EOL)
+    private function printActionCompletedMsg(string $msg = 'Done.' . PHP_EOL)
     {
         print($msg);
     }
 
-    
+    /**
+     * Get desired chunk size (in MB) from terminal
+     * @param integer $maxAllowedInMB - max allowed chunk size
+     * @return boolean - true on valid input, false otherwise
+     */
+    private function getDesiredChunkSize(int $maxAllowedInMB = 512, bool $throwErrorIfLineValidationFails = true)
+    {
+        $maxAllowedInStr = number_format($maxAllowedInMB);
+        $chunkFileSize = $this->readInputFromCli(
+            1,
+            ['                . Manual mode is enabled, enter desired chunk file size (in MB, max "' . $maxAllowedInStr . '") : '],
+            function ($str) use ($maxAllowedInMB, $maxAllowedInStr, $throwErrorIfLineValidationFails) {
+                $check = is_int((int)$str) && 0 < $str && $str < $maxAllowedInMB + 1;
+                if ($throwErrorIfLineValidationFails && !$check) {
+                    print('                    . ERROR: Input value must be an integer between 1 and ' . $maxAllowedInStr . ', includes 1 & ' . $maxAllowedInStr . ' as well.' . PHP_EOL);
+                }
+                return $check;
+            },
+            null,
+            true
+        );
+        return (int)reset($chunkFileSize);
+    }
 }

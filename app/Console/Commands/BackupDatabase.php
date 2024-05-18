@@ -123,26 +123,49 @@ class BackupDatabase extends Command
                 }, $this->getRawQueryOutput('select ' . $autoIncrementColumnDesc->Field . ' as autoIncrementColumn from ' . $tableName));
                 asort($ids); // sorting ids in ascending order
                 $this->printActionCompletedMsg(number_format($rowCount) . ' ids sorted in ascending order.' . PHP_EOL);
-                print('                . Creating id chunks with ' . number_format(env('DB_BACKUP_ROW_CHUNK')) . ' ids in each ... ');
-                $idChunks = array_chunk($ids, env('DB_BACKUP_ROW_CHUNK'));
-                $totalGeneratedChunks = count($idChunks);
-                $this->printActionCompletedMsg('Generated ' . number_format($totalGeneratedChunks) . ' chunks.' . PHP_EOL);
 
                 // fetching table data in chunks & compressing the same
-                if (strtolower(env('DB_BACKUP_MODE')) == 'dynamic') {
-                    // TODO: add code to compress by dynamically deciding calculating optimal chunk & file size based on data
-                    print('                . Dynamic mode is enabled, calculating optimal chunk & file size based on data ... ');
+                $chunkStorageFolder = $backupDirectory . '/' . $tableName . '/';
+                if (strtolower(env('DB_BACKUP_MODE')) == 'manual') {
+                    // compress by manually specifying chunk file size (uses jsonl format for chunks)
+                    $desiredChunkFileSizeInMB = $this->getDesiredChunkSize(); // getting desired size of each chunk
+                    // checking if enough free memory is available to accomodate request (keeps 25% buffer)
+                    while (!$this->minimumFreeMemoryIsAvailable(['normal' => $desiredChunkFileSizeInMB * pow(2, 10) * 1.25, 'swap' => 0])) {
+                        print('                    . Enough memory not available for successful operation with chunk size of ' . number_format($desiredChunkFileSizeInMB) . ' MB, try with smaller chunk size. (Ctrl + C to cancel process)' . PHP_EOL);
+                        $desiredChunkFileSizeInMB = $this->getDesiredChunkSize();
+                    }
+                    $chunkFileCounter = 1;
+                    $bytesWrittenInChunkFile = $totalBytesWrittenInChunkFiles = 0;
+                    $chunkFileData = '';
+                    $chunkFileSizeLimitInBytes = $desiredChunkFileSizeInMB * pow(2, 20);
+                    $jsonRowData = null;
+                    foreach ($ids as $id) {
+                        print('                    . Writing data in "chunk_' . $chunkFileCounter . '.jsonl" ... ');
+                        $jsonRowData .= json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
+                        if ((strlen($chunkFileData) + strlen($jsonRowData)) < $chunkFileSizeLimitInBytes) {
+                            $chunkFileData .= $jsonRowData . PHP_EOL;
+                        } elseif ((strlen($chunkFileData) + strlen($jsonRowData)) >= $chunkFileSizeLimitInBytes) {
+                            $bytesWrittenInChunkFile = file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
+                            $this->printActionCompletedMsg($bytesWrittenInChunkFile / pow(2, 20) . ' MB data written.' . PHP_EOL);
+                            $chunkFileData = $jsonRowData . PHP_EOL;
+                            $chunkFileCounter++;
+                        }
+                        // TODO: Figure out all possible scenarios
+                    }
                 } else {
+                    print('                . Creating id chunks with ' . number_format(env('DB_BACKUP_ROW_CHUNK')) . ' ids in each ... ');
+                    $idChunks = array_chunk($ids, env('DB_BACKUP_ROW_CHUNK'));
+                    $totalGeneratedChunks = count($idChunks);
+                    $this->printActionCompletedMsg('Generated ' . number_format($totalGeneratedChunks) . ' chunks.' . PHP_EOL);
                     // compress by fetching chunks of data based on values set in env
                     if (env('DB_BACKUP_USE_QUEUE')) {
                         // TODO: Add code to backup table data using queue daemon
                     } else {
-                        $chunkStorageFolder = $backupDirectory . '/' . $tableName . '/';
                         exec('rm -rf ' . $chunkStorageFolder); // TODO: remove this obsolete line of code
                         mkdir($chunkStorageFolder, 0770);
-                        $chunkFile = null;
                         $totalBytesWrittenInChunkFiles = 0;
                         $bytesWrittenInChunkFile = 0;
+                        $chunkFile = null;
                         foreach ($idChunks as $index => $chunk) {
                             print('                . Processing chunk: ');
                             print(number_format($index + 1) . '/' . $totalGeneratedChunks . ' ... ');
