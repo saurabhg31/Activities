@@ -139,8 +139,8 @@ class BackupDatabase extends Command
                     $chunkFileData = '';
                     $chunkFileSizeLimitInBytes = $desiredChunkFileSizeInMB * pow(2, 20);
                     $jsonRowData = null;
+                    print('                    . Writing data in "chunk_' . $chunkFileCounter . '.jsonl" ... ');
                     foreach ($ids as $id) {
-                        print('                    . Writing data in "chunk_' . $chunkFileCounter . '.jsonl" ... ');
                         $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
                         if ((strlen($chunkFileData) + strlen($jsonRowData)) < $chunkFileSizeLimitInBytes) {
                             $chunkFileData .= $jsonRowData . PHP_EOL;
@@ -149,6 +149,7 @@ class BackupDatabase extends Command
                             $this->printActionCompletedMsg($bytesWrittenInChunkFile / pow(2, 20) . ' MB data written.' . PHP_EOL);
                             $chunkFileData = $jsonRowData . PHP_EOL;
                             $chunkFileCounter++;
+                            print('                    . Writing data in "chunk_' . $chunkFileCounter . '.jsonl" ... ');
                         }
                         // TODO: Figure out all possible scenarios
                     }
