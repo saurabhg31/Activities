@@ -129,26 +129,27 @@ class BackupDatabase extends Command
                 $chunkStorageFolder = $backupDirectory . '/' . $tableName . '/';
                 mkdir($chunkStorageFolder, 0770);
                 if (strtolower(env('DB_BACKUP_MODE')) == 'manual') {
-                    print('                . Calculating optimal chunk file size ... ' . PHP_EOL);
-                    // Calculating optimal chunk file size
-                    $optimalChunkDetails = $this->calculateOptimalChunkFileSize(
-                        $ids,
-                        $tableName,
-                        $autoIncrementColumnDesc,
-                        $this->generateChunkFileSizeLimits(5, 100, 5)
-                    );
-                    $this->removeLastLine();
-                    print('                . Recommended optimal chunk size : ' . $optimalChunkDetails['optimalChunkSizeInMB'] . ' MB. Rate detected: ' . $optimalChunkDetails['maxRateOfProcessing'] . ' rows / second. ');
-                    $confirm = $this->readInputFromCli(1, ['Do you accept ? (Y/N): '], function ($char) {
-                        return is_string($char) && in_array(strtolower($char), ['y', 'n', 'yes', 'no']);
-                    }, null, true);
-                    if (in_array(strtolower(reset($confirm)), ['y', 'yes'])) {
-                        $desiredChunkFileSizeInMB = $optimalChunkDetails['optimalChunkSizeInMB'];
-                        print('                . Recommended chunk size of ' . number_format($optimalChunkDetails['optimalChunkSizeInMB']) . ' MB selected.' . PHP_EOL);
+                    if ($this->getConfirmation('                . Calculate optimal chunk file size ?')) {
+                        print('                . Calculating optimal chunk file size ... ' . PHP_EOL);
+                        // Calculating optimal chunk file size
+                        $optimalChunkDetails = $this->calculateOptimalChunkFileSize(
+                            $ids,
+                            $tableName,
+                            $autoIncrementColumnDesc,
+                            $this->generateChunkFileSizeLimits(5, 100, 5)
+                        );
+                        $this->removeLastLine();
+                        print('                . Recommended optimal chunk size : ' . $optimalChunkDetails['optimalChunkSizeInMB'] . ' MB. Rate detected: ' . $optimalChunkDetails['maxRateOfProcessing'] . ' rows / second. ');
+                        if ($this->getConfirmation()) {
+                            $desiredChunkFileSizeInMB = $optimalChunkDetails['optimalChunkSizeInMB'];
+                            print('                . Recommended chunk size of ' . number_format($optimalChunkDetails['optimalChunkSizeInMB']) . ' MB selected.' . PHP_EOL);
+                        } else {
+                            $desiredChunkFileSizeInMB = $this->getDesiredChunkSize();
+                        }
                     } else {
-                        // compress by manually specifying chunk file size (uses jsonl format for chunks)
                         $desiredChunkFileSizeInMB = $this->getDesiredChunkSize();
                     }
+
                     // checking if enough free memory is available to accomodate request (keeps 25% buffer)
                     while (!$this->minimumFreeMemoryIsAvailable([
                         'normal' => $desiredChunkFileSizeInMB * pow(2, 10) * 1.25, 'swap' => 0
@@ -158,6 +159,7 @@ class BackupDatabase extends Command
                     }
                     // generating chunk files
                     $this->generateChunkFiles($ids, $desiredChunkFileSizeInMB, $tableName, $autoIncrementColumnDesc, $chunkStorageFolder, $rowCount);
+                    print('    . Chunk file(s) generation completed.' . PHP_EOL);
                 } else {
                     print('                . Creating id chunks with ' . number_format(env('DB_BACKUP_ROW_CHUNK')) . ' ids in each ... ');
                     $idChunks = array_chunk($ids, env('DB_BACKUP_ROW_CHUNK'));
@@ -182,7 +184,6 @@ class BackupDatabase extends Command
                             $this->printActionCompletedMsg(round($bytesWrittenInChunkFile / pow(2, 20), 2) . ' MB written in chunk file "' . $chunkFile . '"' . PHP_EOL);
                         }
                         print(PHP_EOL . '            . Chunks processing completed successfully, ' . (number_format($totalBytesWrittenInChunkFiles / pow(2, 20), 2)) . ' MB data written in total.' . PHP_EOL . '            . Beginning compressed zipping procedure ... ' . PHP_EOL);
-                        // TODO: ADD code to zip $backupDirectory & delete the directory with files once zipping is done
                     }
                 }
             }
@@ -190,6 +191,10 @@ class BackupDatabase extends Command
             $this->printActionCompletedMsg('Sequential method selected.' . PHP_EOL);
             // TODO: Add code to compress table if no auto increment column is present
         }
+
+        // TODO: Add code to generate and store compressed table schema information
+        // TODO: ADD code to zip $backupDirectory & delete the directory with files once zipping is done
+
         die(PHP_EOL . '-------------- END --------------' . PHP_EOL);
     }
 
