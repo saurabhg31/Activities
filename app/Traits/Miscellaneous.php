@@ -144,6 +144,20 @@ trait Miscellaneous
     }
 
     /**
+     * Remove n number of last lines (uses recursion)
+     * @param integer $lineCount - Number of last lines to remove
+     * @return true
+     */
+    private function removeLastLines(int $lineCount = 1)
+    {
+        if ($lineCount) {
+            print("\033[1A\033[K");
+            return $this->removeLines($lineCount--);
+        }
+        return true;
+    }
+
+    /**
      * Checks if a multidimensional array has duplicate values
      * @param array $inputArray - the mutidimensional array
      * @return boolean - returns true if array has duplicate values, false otherwise
@@ -683,6 +697,7 @@ trait Miscellaneous
             $chunkFileData = '';
             $chunkFileCounter++;
             foreach ($unprocessedIds as $id) {
+                // TODO: Something is wrong here, going to infinite loop, WIP
                 print(PHP_EOL);
                 $this->removeLastLine();
                 print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... ' . round(($processedIdsCounter / $rowCount) * 100, 2) . ' % complete.');
