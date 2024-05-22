@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use stdClass;
 
 trait Miscellaneous
 {
@@ -550,5 +551,83 @@ trait Miscellaneous
     private function printProgressBar(float|int $completed, float|int $total, string $char = '.', int $maxChars = 100)
     {
         print(str_repeat($char, (int)(($completed / $total) * $maxChars)));
+    }
+
+    /**
+     * Calculate optimal data chunk size for fastest possivle processing
+     * @param array $ids
+     * @param string $tableName
+     * @param stdClass $autoIncrementColumnDesc
+     * @param array $chunkFileSizeLimitsInMB - chunk file size samples to test
+     * @param boolean $silent - removes printed lines if passed as true
+     * @return array - the optimal chunk size in MB & rate
+     */
+    private function calculateOptimalChunkFileSize(
+        array &$ids,
+        string &$tableName,
+        stdClass &$autoIncrementColumnDesc,
+        array $chunkFileSizeLimitsInMB = [5, 10, 15, 20],
+        bool $silent = true
+    ) {
+        $processedIds = [];
+        $removeLastLine = false;
+        $rowData = $startTime = $tmpChunkFileData = null;
+        $optimalChunkSizeInMB = reset($chunkFileSizeLimitsInMB);
+        $chunkFileSizeLimitInBytes = $timeTakenForEachChunkToForm = $rateOfProcessing = $maxRateOfProcessing = $bytesAdded = 0;
+        foreach ($chunkFileSizeLimitsInMB as $chunkFileSizeLimitInMB) {
+            if ($removeLastLine && $silent) {
+                $this->removeLastLine();
+            }
+            print('                    . Testing for chunk size: ' . $chunkFileSizeLimitInMB . ' MB ... ');
+            $chunkFileSizeLimitInBytes = $chunkFileSizeLimitInMB * pow(2, 20);
+            $startTime = now();
+            foreach ($ids as $id) {
+                $rowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
+                $bytesAdded += strlen($rowData) + 1; // calculating total bytes added, an extra 1 byte is added for line break as jsonl format is being used (PHP_EOL)
+                if ($bytesAdded > $chunkFileSizeLimitInBytes) {
+                    break;
+                }
+                array_push($processedIds, $id);
+            }
+            $timeTakenForEachChunkToForm = now()->diffInMilliseconds($startTime) / 1000; // converting to seconds from milliseconds
+            $rateOfProcessing = floor(count($processedIds) / $timeTakenForEachChunkToForm); // calculating rate of processing
+            print('Max capacity: ' . number_format($rateOfProcessing) . ' rows / second.' . PHP_EOL);
+            $removeLastLine = true;
+            // resetting variables
+            $bytesAdded = 0;
+            $processedIds = [];
+            $startTime = now();
+            if ($rateOfProcessing > $maxRateOfProcessing) {
+                // storing chunk size value which gives max performance
+                $maxRateOfProcessing = $rateOfProcessing;
+                $optimalChunkSizeInMB = $chunkFileSizeLimitInMB;
+            }
+        }
+        return [
+            'optimalChunkSizeInMB' => $optimalChunkSizeInMB,
+            'maxRateOfProcessing' => $maxRateOfProcessing
+        ];
+    }
+
+    /**
+     * Generate chunk file size limits in MB based on min, max & increment values
+     * @param int $min
+     * @param int $max
+     * @param int $increment
+     * @return array
+     */
+    private function generateChunkFileSizeLimits(int $min, int $max, int $increment = 5)
+    {
+        if ($min <= 0) {
+            throw new Error('Min must be an integer greater than 0');
+        }
+        if ($max < $min) {
+            throw new Error('Max must be an integer greater than min');
+        }
+        $chunkFileSizeLimits = [];
+        for ($chunkFileSize = $min; $chunkFileSize < $max + 1; $chunkFileSize += $increment) {
+            array_push($chunkFileSizeLimits, $chunkFileSize);
+        }
+        return $chunkFileSizeLimits;
     }
 }

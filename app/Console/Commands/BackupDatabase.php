@@ -126,41 +126,63 @@ class BackupDatabase extends Command
 
                 // fetching table data in chunks & compressing the same
                 $chunkStorageFolder = $backupDirectory . '/' . $tableName . '/';
+                mkdir($chunkStorageFolder, 0770);
                 if (strtolower(env('DB_BACKUP_MODE')) == 'manual') {
-                    // compress by manually specifying chunk file size (uses jsonl format for chunks)
-                    $desiredChunkFileSizeInMB = $this->getDesiredChunkSize(); // getting desired size of each chunk
+                    print('                . Calculating optimal chunk file size ... ' . PHP_EOL);
+                    // Calculating optimal chunk file size
+                    $optimalChunkDetails = $this->calculateOptimalChunkFileSize(
+                        $ids,
+                        $tableName,
+                        $autoIncrementColumnDesc,
+                        $this->generateChunkFileSizeLimits(5, 100, 5)
+                    );
+                    $this->removeLastLine();
+                    print('                . Recommended optimal chunk size : ' . $optimalChunkDetails['optimalChunkSizeInMB'] . ' MB. Rate detected: ' . $optimalChunkDetails['maxRateOfProcessing'] . ' rows / second. ');
+                    $confirm = $this->readInputFromCli(1, ['Do you accept ? (Y/N): '], function ($char) {
+                        return is_string($char) && in_array(strtolower($char), ['y', 'n', 'yes', 'no']);
+                    }, null, true);
+                    if (in_array(strtolower(reset($confirm)), ['y', 'yes'])) {
+                        $desiredChunkFileSizeInMB = $optimalChunkDetails['optimalChunkSizeInMB'];
+                        print('                . Recommended chunk size of ' . number_format($optimalChunkDetails['optimalChunkSizeInMB']) . ' MB selected.' . PHP_EOL);
+                    } else {
+                        // compress by manually specifying chunk file size (uses jsonl format for chunks)
+                        $desiredChunkFileSizeInMB = $this->getDesiredChunkSize();
+                    }
                     // checking if enough free memory is available to accomodate request (keeps 25% buffer)
-                    while (!$this->minimumFreeMemoryIsAvailable(['normal' => $desiredChunkFileSizeInMB * pow(2, 10) * 1.25, 'swap' => 0])) {
+                    while (!$this->minimumFreeMemoryIsAvailable([
+                        'normal' => $desiredChunkFileSizeInMB * pow(2, 10) * 1.25, 'swap' => 0
+                    ])) {
                         print('                    . Enough memory not available for successful operation with chunk size of ' . number_format($desiredChunkFileSizeInMB) . ' MB, try with smaller chunk size. (Ctrl + C to cancel process)' . PHP_EOL);
                         $desiredChunkFileSizeInMB = $this->getDesiredChunkSize();
                     }
-                    $chunkFileCounter = 1;
-                    $bytesWrittenInChunkFile = $totalBytesWrittenInChunkFiles = 0;
+                    // generating chunk files
                     $chunkFileData = '';
+                    $chunkFileCounter = 1;
+                    $jsonRowData = $lastProcessedId = null;
+                    $dataFileLengths = ['chunk' => 0, 'currentRow' => 0, 'total' => 0];
                     $chunkFileSizeLimitInBytes = $desiredChunkFileSizeInMB * pow(2, 20);
-                    $jsonRowData = null;
-                    $dataFileLengths = ['chunk' => 0, 'row' => 0, 'total' => 0];
-                    print('                    . Writing data in "chunk_' . $chunkFileCounter . '.jsonl" ... ');
+                    $bytesWrittenInChunkFile = $totalBytesWrittenInChunkFiles = $processedIdsCounter = 0;
+                    print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... 0 % complete.');
                     foreach ($ids as $id) {
                         $dataFileLengths['chunk'] = strlen($chunkFileData);
                         $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
-                        $dataFileLengths['row'] = strlen($jsonRowData);
-                        $dataFileLengths['total'] = $dataFileLengths['chunk'] + $dataFileLengths['row'];
+                        $dataFileLengths['currentRow'] = strlen($jsonRowData);
+                        $dataFileLengths['total'] = $dataFileLengths['chunk'] + $dataFileLengths['currentRow'];
                         if ($dataFileLengths['total'] < $chunkFileSizeLimitInBytes) {
                             $chunkFileData .= $jsonRowData . PHP_EOL;
-                            // TODO : fix this gui progress bar animation problem
-                            // print(PHP_EOL . '                        ');
-                            // $this->printProgressBar($dataFileLengths['total'] + 1, $chunkFileSizeLimitInBytes, '.', 48);
-                            // print('    ' . ((($dataFileLengths['total'] + 1) / $chunkFileSizeLimitInBytes) * 100) . ' % complete.');
-                            // $this->removeMultipleLastLines();
+                            $lastProcessedId = $id;
+                            $processedIdsCounter++;
                         } elseif ($dataFileLengths['total'] >= $chunkFileSizeLimitInBytes) {
                             $bytesWrittenInChunkFile = file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
-                            $this->printActionCompletedMsg($bytesWrittenInChunkFile / pow(2, 20) . ' MB data written.' . PHP_EOL);
                             $chunkFileData = $jsonRowData . PHP_EOL;
                             $chunkFileCounter++;
-                            print('                    . Writing data in "chunk_' . $chunkFileCounter . '.jsonl" ... ');
+                            $this->printActionCompletedMsg();
+                            $this->removeLastLine();
+                            print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... ' . round(($processedIdsCounter / $rowCount) * 100, 2) . ' % complete.');
                         }
-                        // TODO: Figure out all possible scenarios
+                    }
+                    if ($lastProcessedId < end($ids)) {
+                        // TODO: Add code to add remaining ids
                     }
                 } else {
                     print('                . Creating id chunks with ' . number_format(env('DB_BACKUP_ROW_CHUNK')) . ' ids in each ... ');
@@ -171,8 +193,6 @@ class BackupDatabase extends Command
                     if (env('DB_BACKUP_USE_QUEUE')) {
                         // TODO: Add code to backup table data using queue daemon
                     } else {
-                        exec('rm -rf ' . $chunkStorageFolder); // TODO: remove this obsolete line of code
-                        mkdir($chunkStorageFolder, 0770);
                         $totalBytesWrittenInChunkFiles = 0;
                         $bytesWrittenInChunkFile = 0;
                         $chunkFile = null;
