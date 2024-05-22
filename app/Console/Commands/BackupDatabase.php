@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Date;
 use App\Traits\Miscellaneous;
+use Error;
 
 class BackupDatabase extends Command
 {
@@ -39,7 +40,7 @@ class BackupDatabase extends Command
         // log start time & verify all requirements are met before proceeding
         $startTime = Date::now();
         print('Database backup process initiated on : ' . Date::now()->format(env('DB_BACKUP_DATE_FORMAT', 'd M, Y H:i:s p')) . PHP_EOL . '    A. Checking if backup process requirements are met ... ' . PHP_EOL);
-        // self::checkRequiremmments(); // TODO: Uncomment this line during hosting
+        self::checkRequiremmments();
 
         // declaring backup filename
         $databaseBackupFileName = storage_path(env('DB_BACKUP_STORAGE_FOLDER') . '/DatabaseBackup_' . Date::now()->format('Y_m_d_H_i'));
@@ -156,34 +157,7 @@ class BackupDatabase extends Command
                         $desiredChunkFileSizeInMB = $this->getDesiredChunkSize();
                     }
                     // generating chunk files
-                    $chunkFileData = '';
-                    $chunkFileCounter = 1;
-                    $jsonRowData = $lastProcessedId = null;
-                    $dataFileLengths = ['chunk' => 0, 'currentRow' => 0, 'total' => 0];
-                    $chunkFileSizeLimitInBytes = $desiredChunkFileSizeInMB * pow(2, 20);
-                    $bytesWrittenInChunkFile = $totalBytesWrittenInChunkFiles = $processedIdsCounter = 0;
-                    print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... 0 % complete.');
-                    foreach ($ids as $id) {
-                        $dataFileLengths['chunk'] = strlen($chunkFileData);
-                        $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
-                        $dataFileLengths['currentRow'] = strlen($jsonRowData);
-                        $dataFileLengths['total'] = $dataFileLengths['chunk'] + $dataFileLengths['currentRow'];
-                        if ($dataFileLengths['total'] < $chunkFileSizeLimitInBytes) {
-                            $chunkFileData .= $jsonRowData . PHP_EOL;
-                            $lastProcessedId = $id;
-                            $processedIdsCounter++;
-                        } elseif ($dataFileLengths['total'] >= $chunkFileSizeLimitInBytes) {
-                            $bytesWrittenInChunkFile = file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
-                            $chunkFileData = $jsonRowData . PHP_EOL;
-                            $chunkFileCounter++;
-                            $this->printActionCompletedMsg();
-                            $this->removeLastLine();
-                            print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... ' . round(($processedIdsCounter / $rowCount) * 100, 2) . ' % complete.');
-                        }
-                    }
-                    if ($lastProcessedId < end($ids)) {
-                        // TODO: Add code to add remaining ids
-                    }
+                    $this->generateChunkFiles($ids, $desiredChunkFileSizeInMB, $tableName, $autoIncrementColumnDesc, $chunkStorageFolder, $rowCount);
                 } else {
                     print('                . Creating id chunks with ' . number_format(env('DB_BACKUP_ROW_CHUNK')) . ' ids in each ... ');
                     $idChunks = array_chunk($ids, env('DB_BACKUP_ROW_CHUNK'));
@@ -277,11 +251,13 @@ class BackupDatabase extends Command
         print('        . Database backup storage directory is active.' . PHP_EOL);
 
         // code to authenticate admin access verification
+        // TODO: Uncomment this line during hosting
+        /*
         print('    B. AUTHENTICATING ADMIN USER ... ' . PHP_EOL);
         $userModel = new User;
         if (!$this->authenticateUserViaTerminal($userModel)) {
-            die('User Authenticated FAILED! Process aborted.' . PHP_EOL);
+            throw new Error('User Authenticated FAILED! Process aborted.' . PHP_EOL);
         }
-        return true; // user authenticated
+        */
     }
 }

@@ -630,4 +630,59 @@ trait Miscellaneous
         }
         return $chunkFileSizeLimits;
     }
+
+    /**
+     * Generate chunks
+     */
+    private function generateChunkFiles(
+        array $ids,
+        int $desiredChunkFileSizeInMB,
+        string $tableName,
+        stdClass $autoIncrementColumnDesc,
+        string $chunkStorageFolder,
+        int $rowCount
+    ) {
+        $chunkFileData = '';
+        $chunkFileCounter = 1;
+        $jsonRowData = $lastProcessedId = null;
+        $totalBytesWrittenInChunkFiles = $processedIdsCounter = 0;
+        $dataFileLengths = ['chunk' => 0, 'currentRow' => 0, 'total' => 0];
+        $chunkFileSizeLimitInBytes = $desiredChunkFileSizeInMB * pow(2, 20);
+        print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... 0 % complete.');
+        foreach ($ids as $id) {
+            $dataFileLengths['chunk'] = strlen($chunkFileData);
+            $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
+            $dataFileLengths['currentRow'] = strlen($jsonRowData);
+            $dataFileLengths['total'] = $dataFileLengths['chunk'] + $dataFileLengths['currentRow'];
+            if ($dataFileLengths['total'] < $chunkFileSizeLimitInBytes) {
+                $chunkFileData .= $jsonRowData . PHP_EOL;
+                $lastProcessedId = $id;
+                $processedIdsCounter++;
+            } elseif ($dataFileLengths['total'] >= $chunkFileSizeLimitInBytes) {
+                $totalBytesWrittenInChunkFiles += file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
+                $chunkFileData = $jsonRowData . PHP_EOL;
+                $chunkFileCounter++;
+                $this->printActionCompletedMsg();
+                $this->removeLastLine();
+                print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... ' . round(($processedIdsCounter / $rowCount) * 100, 2) . ' % complete.');
+            }
+        }
+        if ($lastProcessedId < end($ids)) {
+            $unprocessedIds = array_filter($ids, function ($id) use ($lastProcessedId) {
+                return $id >= $lastProcessedId;
+            });
+            $chunkFileData = '';
+            $chunkFileCounter++;
+            foreach ($unprocessedIds as $id) {
+                $this->removeLastLine();
+                print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... ' . round(($processedIdsCounter / $rowCount) * 100, 2) . ' % complete.');
+                $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
+                $chunkFileData .= $jsonRowData . PHP_EOL;
+                $processedIdsCounter++;
+            }
+            $totalBytesWrittenInChunkFiles += file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
+            $this->removeLastLine();
+            print(number_format($totalBytesWrittenInChunkFiles / pow(2, 20), 2) . ' MB written in chunk files.' . PHP_EOL);
+        }
+    }
 }
