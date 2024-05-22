@@ -557,7 +557,7 @@ trait Miscellaneous
      * Calculate optimal data chunk size for fastest possivle processing
      * @param array $ids
      * @param string $tableName
-     * @param stdClass $autoIncrementColumnDesc
+     * @param \stdClass $autoIncrementColumnDesc
      * @param array $chunkFileSizeLimitsInMB - chunk file size samples to test
      * @param boolean $silent - removes printed lines if passed as true
      * @return array - the optimal chunk size in MB & rate
@@ -632,7 +632,14 @@ trait Miscellaneous
     }
 
     /**
-     * Generate chunks
+     * Generate file chunks for table backup based on parameters
+     * @param array $ids
+     * @param integer $desiredChunkFileSizeInMB
+     * @param string $tableName
+     * @param \stdClass $autoIncrementColumnDesc
+     * @param string $chunkStorageFolder
+     * @param integer $rowCount
+     * @return void
      */
     private function generateChunkFiles(
         array $ids,
