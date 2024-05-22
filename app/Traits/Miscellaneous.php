@@ -2,7 +2,6 @@
 
 namespace App\Traits;
 
-use App\Jobs\WriteDatabaseBackupChunks;
 use Error;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
@@ -668,17 +667,7 @@ trait Miscellaneous
                 $chunkFileData .= $jsonRowData . PHP_EOL;
                 $processedIdsCounter++;
             } elseif ($dataFileLengths['total'] >= $chunkFileSizeLimitInBytes) {
-                if (env('DB_BACKUP_USE_QUEUE')) {
-                    WriteDatabaseBackupChunks::dispatch(
-                        $chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl',
-                        $tableName,
-                        $processingIds,
-                        $autoIncrementColumnDesc->Field
-                    );
-                    $totalBytesWrittenInChunkFiles += strlen($chunkFileData);
-                } else {
-                    $totalBytesWrittenInChunkFiles += file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
-                }
+                $totalBytesWrittenInChunkFiles += file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
                 $chunkFileData = $jsonRowData . PHP_EOL;
                 $processingIds = [];
                 $processedIds = array_merge($processingIds, $processedIds);
@@ -691,27 +680,17 @@ trait Miscellaneous
         $unprocessedIds = array_diff($ids, $processedIds);
         asort($unprocessedIds);
         if (!empty($unprocessedIds)) {
-            if (env('DB_BACKUP_USE_QUEUE')) {
-                WriteDatabaseBackupChunks::dispatch(
-                    $chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl',
-                    $tableName,
-                    $unprocessedIds,
-                    $autoIncrementColumnDesc->Field
-                );
-                $totalBytesWrittenInChunkFiles += strlen($chunkFileData);
-            } else {
-                $chunkFileData = '';
-                $chunkFileCounter++;
-                foreach ($unprocessedIds as $id) {
-                    print(PHP_EOL);
-                    $this->removeLastLine();
-                    print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... ' . round(($processedIdsCounter / $rowCount) * 100, 2) . ' % complete.');
-                    $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
-                    $chunkFileData .= $jsonRowData . PHP_EOL;
-                    $processedIdsCounter++;
-                }
-                $totalBytesWrittenInChunkFiles += file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
+            $chunkFileData = '';
+            $chunkFileCounter++;
+            foreach ($unprocessedIds as $id) {
+                print(PHP_EOL);
+                $this->removeLastLine();
+                print('                . Generating chunk "chunk_' . $chunkFileCounter . '.jsonl" ... ' . round(($processedIdsCounter / $rowCount) * 100, 2) . ' % complete.');
+                $jsonRowData = json_encode($this->getRawQueryOutput('select * from ' . $tableName . ' where ' . $autoIncrementColumnDesc->Field . ' = ' . $id));
+                $chunkFileData .= $jsonRowData . PHP_EOL;
+                $processedIdsCounter++;
             }
+            $totalBytesWrittenInChunkFiles += file_put_contents($chunkStorageFolder . 'chunk_' . $chunkFileCounter . '.jsonl', $chunkFileData);
         }
         $this->printActionCompletedMsg();
         $this->removeLastLine();
