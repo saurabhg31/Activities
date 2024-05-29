@@ -7,6 +7,7 @@ use App\Models\Images;
 use Illuminate\Console\Command;
 use App\Traits\Miscellaneous;
 use Error;
+use Illuminate\Database\Eloquent\Builder;
 
 class GeneratePortraitWallpapers extends Command
 {
@@ -17,7 +18,7 @@ class GeneratePortraitWallpapers extends Command
      *
      * @var string
      */
-    protected $signature = 'generate:portrait_wallpapers';
+    protected $signature = 'generate:portrait_wallpapers {dimension?} {allowHigherDimensions?}';
 
     /**
      * The console command description.
@@ -34,7 +35,24 @@ class GeneratePortraitWallpapers extends Command
     public function handle()
     {
         $this->authenticateUserViaTerminal();
-        $imageIds = ImageDimensions::where('is_portrait', true)->select('image_id')->get()->pluck('image_id');
+        $args = $this->arguments();
+        array_shift($args);
+        $dimension = reset($args);
+        $allowHigherDimensions = next($args);
+        if ($dimension) {
+            if (!preg_match('/\b\d{1,5}x\d{1,5}\b/', $dimension, $matches)) {
+                throw new Error('Invalid dimension.');
+            }
+            $allowHigherDimensions = in_array(strtolower($allowHigherDimensions), ['1', 'y', 'yes', 'true']);
+        }
+        $imageIds = ImageDimensions::select('image_id');
+        if ($dimension) {
+            [$xAxis, $yAxis] = explode('x', $dimension);
+            $imageIds = $allowHigherDimensions ? $imageIds->where([['x_axis', '>=', $xAxis], ['y_axis', '>=', $yAxis]]) : $imageIds->where(['x_axis' => $xAxis, 'y_axis' => $yAxis]);
+        } else {
+            $imageIds = $imageIds->where('is_portrait', true);
+        }
+        $imageIds = $imageIds->get()->pluck('image_id');
         print(PHP_EOL . 'Found ' . number_format($imageIds->count()) . ' portrait images.' . PHP_EOL);
         $imgData = $file = $dir = null;
         $dir = $this->readInputFromCli(1, ['    . Enter storage directory: ']);
