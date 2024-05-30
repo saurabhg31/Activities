@@ -18,7 +18,7 @@ class ExportImages extends Command
      *
      * @var string
      */
-    protected $signature = 'export:wallpapers {--d=} {--t=} {--o=} {includePrivateDomain} {allowHigherDimensions?} {preserveAspectRatio?}';
+    protected $signature = 'export:images {--d=900x1600} {--t=} {--o=portrait} {allowHigherDimensions=yes} {preserveAspectRatio=yes} {includePrivateDomain?}';
 
     /**
      * The console command description.
@@ -34,7 +34,7 @@ class ExportImages extends Command
      */
     public function handle()
     {
-        if (env('ALLOW_IMAGE_EXPORT_WITHOUT_AUTHENTICATION', false)) {
+        if (!env('ALLOW_IMAGE_EXPORT_WITHOUT_AUTHENTICATION', false)) {
             $this->authenticateUserViaTerminal();
         }
         print('------------------ Export image process started on ' . now()->format('d M, Y \a\t H:i:s T') . ' ------------------' . PHP_EOL);
@@ -48,11 +48,19 @@ class ExportImages extends Command
             if (!preg_match('/\b\d{1,5}x\d{1,5}\b/', $dimension, $matches)) {
                 throw new Error('Invalid dimension.');
             }
+            $dimension = $this->parseOrientation($dimension);
+            if ($orientation != end($dimension)) {
+                throw new Error('Orientation mismatch, check dimensions.');
+            }
             $allowHigherDimensions = in_array(strtolower($allowHigherDimensions), ['1', 'y', 'yes', 'true']);
         }
+        if ($includePrivateDomain) {
+            $includePrivateDomain = in_array(strtolower($includePrivateDomain), ['1', 'y', 'yes', 'true']);
+        }
         print('    . Config set: ' . PHP_EOL);
-        print('        . Dimension: ' . $dimension . PHP_EOL);
+        print('        . Dimension: ' . implode(' x ', array_slice($dimension, 0, 2)) . PHP_EOL);
         print('        . Tags: ' . $tags . PHP_EOL);
+        print('        . Orientation: ' . $orientation . PHP_EOL);
         print('        . Allow higher dimensions: ' . ($allowHigherDimensions ? 'YES' : 'NO') . PHP_EOL);
         print('        . Preserve aspect ratio: ' . ($preserveAspectRatio ? 'YES' : 'NO') . PHP_EOL);
         $imageIds = ImageDimensions::select('image_id');
@@ -133,5 +141,18 @@ class ExportImages extends Command
     private function addSearchParams(Builder &$builderQuery)
     {
         dd($builderQuery);
+    }
+
+    /**
+     * Get orientation from dimension string
+     * @param string $dimension
+     * @return array [xAxis, yAxis, orientation(portrait/landscape)]
+     */
+    private function parseOrientation(string $dimension)
+    {
+        [$x, $y] = array_map(function ($str) {
+            return trim($str);
+        }, explode('x', $dimension));
+        return [$x, $y, $x > $y ? 'landscape' : ($x < $y ? 'portrait' : 'square')];
     }
 }
