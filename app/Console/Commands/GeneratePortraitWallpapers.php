@@ -18,14 +18,14 @@ class GeneratePortraitWallpapers extends Command
      *
      * @var string
      */
-    protected $signature = 'generate:portrait_wallpapers {dimension?} {allowHigherDimensions?}';
+    protected $signature = 'export:wallpapers {--d=} {--t=} {allowHigherDimensions?}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Command to export images to a directory in system.';
 
     /**
      * Execute the console command.
@@ -34,11 +34,11 @@ class GeneratePortraitWallpapers extends Command
      */
     public function handle()
     {
-        $this->authenticateUserViaTerminal();
-        $args = $this->arguments();
-        array_shift($args);
-        $dimension = reset($args);
-        $allowHigherDimensions = next($args);
+        print('------------------ Export image process started on ' . now()->format('d M, Y \a\t H:i:s T') . ' ------------------' . PHP_EOL);
+        // $this->authenticateUserViaTerminal();
+        $dimension = $this->option('d');
+        $tags = $this->option('t');
+        $allowHigherDimensions = $this->argument('allowHigherDimensions');
         if ($dimension) {
             if (!preg_match('/\b\d{1,5}x\d{1,5}\b/', $dimension, $matches)) {
                 throw new Error('Invalid dimension.');
@@ -46,6 +46,9 @@ class GeneratePortraitWallpapers extends Command
             $allowHigherDimensions = in_array(strtolower($allowHigherDimensions), ['1', 'y', 'yes', 'true']);
         }
         $imageIds = ImageDimensions::select('image_id');
+        if ($this->getConfirmation('    . Use custom search ?')) {
+            $this->addSearchParams($imageIds);
+        }
         if ($dimension) {
             [$xAxis, $yAxis] = explode('x', $dimension);
             $imageIds = $allowHigherDimensions ? $imageIds->where([['x_axis', '>=', $xAxis], ['y_axis', '>=', $yAxis]]) : $imageIds->where(['x_axis' => $xAxis, 'y_axis' => $yAxis]);
@@ -57,6 +60,9 @@ class GeneratePortraitWallpapers extends Command
         $imgData = $file = $dir = null;
         $dir = $this->readInputFromCli(1, ['    . Enter storage directory: ']);
         $dir = reset($dir);
+        if (empty($dir)) {
+            $dir = env('IMAGE_EXPORT_DIRECTORY', '/mnt/c/Users/saura/OneDrive/Pictures/pw');
+        }
         if (!file_exists($dir)) {
             $choice = $this->readInputFromCli(1, ['        . Directory does not exist. Create? (Y|N): ']);
             $choice = reset($choice);
@@ -107,5 +113,15 @@ class GeneratePortraitWallpapers extends Command
             $this->removeLastLine();
         }
         return Command::SUCCESS;
+    }
+
+    /**
+     * Add search parameter
+     * @param \Illuminate\Database\Eloquent\Builder $builderQuery
+     * @return void
+     */
+    private function addSearchParams(Builder &$builderQuery)
+    {
+        dd($builderQuery);
     }
 }

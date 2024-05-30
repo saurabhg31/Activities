@@ -350,4 +350,20 @@ trait Miscellaneous
         unset($password);
         return $checkPassed;
     }
+
+    /**
+     * Get confirmation
+     * @param string $promptMsg
+     * @return boolean - true if confirmed, false otherwise
+     */
+    private function getConfirmation(string $promptMsg)
+    {
+        $promptMsg .= ' (Y|N): ';
+        $yesVals = ['y', 'yes', 'true', '1'];
+        $choice = $this->readInputFromCli(1, [$promptMsg], function ($str) use ($yesVals) {
+            return in_array(strtolower($str), array_merge($yesVals, ['no', 'n', 'false', '0']));
+        }, null, true);
+        $choice = reset($choice);
+        return in_array($choice, $yesVals);
+    }
 }
