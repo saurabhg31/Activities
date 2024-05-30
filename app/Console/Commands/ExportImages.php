@@ -9,7 +9,7 @@ use App\Traits\Miscellaneous;
 use Error;
 use Illuminate\Database\Eloquent\Builder;
 
-class GeneratePortraitWallpapers extends Command
+class ExportImages extends Command
 {
     use Miscellaneous;
 
@@ -18,7 +18,7 @@ class GeneratePortraitWallpapers extends Command
      *
      * @var string
      */
-    protected $signature = 'export:wallpapers {--d=} {--t=} {allowHigherDimensions?}';
+    protected $signature = 'export:wallpapers {--d=} {--t=} {--o=} {includePrivateDomain} {allowHigherDimensions?} {preserveAspectRatio?}';
 
     /**
      * The console command description.
@@ -34,17 +34,27 @@ class GeneratePortraitWallpapers extends Command
      */
     public function handle()
     {
+        if (env('ALLOW_IMAGE_EXPORT_WITHOUT_AUTHENTICATION', false)) {
+            $this->authenticateUserViaTerminal();
+        }
         print('------------------ Export image process started on ' . now()->format('d M, Y \a\t H:i:s T') . ' ------------------' . PHP_EOL);
-        // $this->authenticateUserViaTerminal();
         $dimension = $this->option('d');
         $tags = $this->option('t');
+        $orientation = $this->option('o');
         $allowHigherDimensions = $this->argument('allowHigherDimensions');
+        $includePrivateDomain = $this->argument('includePrivateDomain');
+        $preserveAspectRatio = $this->argument('preserveAspectRatio');
         if ($dimension) {
             if (!preg_match('/\b\d{1,5}x\d{1,5}\b/', $dimension, $matches)) {
                 throw new Error('Invalid dimension.');
             }
             $allowHigherDimensions = in_array(strtolower($allowHigherDimensions), ['1', 'y', 'yes', 'true']);
         }
+        print('    . Config set: ' . PHP_EOL);
+        print('        . Dimension: ' . $dimension . PHP_EOL);
+        print('        . Tags: ' . $tags . PHP_EOL);
+        print('        . Allow higher dimensions: ' . ($allowHigherDimensions ? 'YES' : 'NO') . PHP_EOL);
+        print('        . Preserve aspect ratio: ' . ($preserveAspectRatio ? 'YES' : 'NO') . PHP_EOL);
         $imageIds = ImageDimensions::select('image_id');
         if ($this->getConfirmation('    . Use custom search ?')) {
             $this->addSearchParams($imageIds);
