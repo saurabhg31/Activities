@@ -91,6 +91,18 @@ trait Miscellaneous
     }
 
     /**
+     * print a line
+     * @param string $text
+     * @param integer $subsetCount
+     * @param boolean $appendLineBreak
+     * @return void
+     */
+    function printLine(string $text, int $subsetCount = 0, bool $appendLineBreak = false)
+    {
+        print(str_repeat(' ', $subsetCount * 4) . '. ' . $text . ($appendLineBreak ? PHP_EOL : ' '));
+    }
+
+    /**
      * Remove last line from cli
      * @return void
      */

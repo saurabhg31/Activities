@@ -63,18 +63,42 @@ class ExportImages extends Command
         print('        . Orientation: ' . $orientation . PHP_EOL);
         print('        . Allow higher dimensions: ' . ($allowHigherDimensions ? 'YES' : 'NO') . PHP_EOL);
         print('        . Preserve aspect ratio: ' . ($preserveAspectRatio ? 'YES' : 'NO') . PHP_EOL);
-        $imageIds = ImageDimensions::select('image_id');
+        $imageIds = ImageDimensions::selectRaw('image_id, x_axis, y_axis');
+        if (!empty($tags)) {
+            $this->addTagsFilter($imageIds, $tags);
+        }
         if ($this->getConfirmation('    . Use custom search ?')) {
             $this->addSearchParams($imageIds);
         }
         if ($dimension) {
-            [$xAxis, $yAxis] = explode('x', $dimension);
+            [$xAxis, $yAxis] = array_splice($dimension, 0, 2);
             $imageIds = $allowHigherDimensions ? $imageIds->where([['x_axis', '>=', $xAxis], ['y_axis', '>=', $yAxis]]) : $imageIds->where(['x_axis' => $xAxis, 'y_axis' => $yAxis]);
         } else {
             $imageIds = $imageIds->where('is_portrait', true);
         }
-        $imageIds = $imageIds->get()->pluck('image_id');
+        $imagesData = $imageIds->get();
+        if ($preserveAspectRatio) {
+            $imagesData->filter(function ($obj, $pass = false) use ($orientation) {
+                switch ($orientation) {
+                    case 'portrait':
+                        $pass = $obj->x_axis < $obj->y_axis;
+                        break;
+                    case 'landscape':
+                        $pass = $obj->y_axix < $obj->x_axis;
+                        break;
+                    case 'square':
+                        $pass = $obj->y_axix == $obj->x_axis;
+                        break;
+                    default:
+                        throw new Error('Invalid orientation input');
+                }
+                return $pass;
+            });
+        }
+        $imageIds = $imagesData->pluck('image_id');
         print(PHP_EOL . 'Found ' . number_format($imageIds->count()) . ' portrait images.' . PHP_EOL);
+        $this->printLine('Filtering out images with wrong orientation ...', 1, true);
+
         $imgData = $file = $dir = null;
         $dir = $this->readInputFromCli(1, ['    . Enter storage directory: ']);
         $dir = reset($dir);
@@ -82,7 +106,7 @@ class ExportImages extends Command
             $dir = env('IMAGE_EXPORT_DIRECTORY', '/mnt/c/Users/saura/OneDrive/Pictures/pw');
         }
         if (!file_exists($dir)) {
-            $choice = $this->readInputFromCli(1, ['        . Directory does not exist. Create? (Y|N): ']);
+            $choice = $this->readInputFromCli(1, ['        . Directory (' . $dir . ') does not exist. Create? (Y|N): ']);
             $choice = reset($choice);
             if (in_array(strtolower($choice), ['y', 'yes'])) {
                 mkdir($dir, 0770, true);
@@ -90,30 +114,29 @@ class ExportImages extends Command
                 print('    . Process aborted.' . PHP_EOL);
                 return Command::FAILURE;
             }
-        } else {
-            $filesInDir = array_filter(scandir($dir), function ($str) {
-                return !in_array($str, ['.', '..']);
-            });
-            $fileDirCount = count($filesInDir);
-            if ($fileDirCount) {
-                $choice = $this->readInputFromCli(1, ['        . Directory not empty. Clear All Files (C), Ignore (I): ']);
-                $choice = strtolower(reset($choice));
-                if ('c' == $choice) {
-                    print('            . Removing ' . number_format($fileDirCount) . ' files ... ' . PHP_EOL);
-                    $progress = 0.0;
-                    foreach ($filesInDir as $index => $file) {
-                        print('                . ' . $file . ' ' . str_repeat('.', floor($progress / 10)) . '    ' . number_format($progress, 2) . '%' . PHP_EOL);
-                        unlink($dir . DIRECTORY_SEPARATOR . $file);
-                        $progress = ($index + 1) / $fileDirCount * 100;
-                        $this->removeLastLine();
-                    }
+        }
+        $filesInDir = array_filter(scandir($dir), function ($str) {
+            return !in_array($str, ['.', '..']);
+        });
+        $fileDirCount = count($filesInDir);
+        if ($fileDirCount) {
+            $choice = $this->readInputFromCli(1, ['        . Directory not empty. Clear All Files (C), Ignore (I): ']);
+            $choice = strtolower(reset($choice));
+            if ('c' == $choice) {
+                print('            . Removing ' . number_format($fileDirCount) . ' files ... ' . PHP_EOL);
+                $progress = 0.0;
+                foreach ($filesInDir as $index => $file) {
+                    print('                . ' . $file . ' ' . str_repeat('.', floor($progress / 10)) . '    ' . number_format($progress, 2) . '%' . PHP_EOL);
+                    unlink($dir . DIRECTORY_SEPARATOR . $file);
+                    $progress = ($index + 1) / $fileDirCount * 100;
                     $this->removeLastLine();
-                    print('            . Removed ' . number_format($fileDirCount) . ' files.' . PHP_EOL);
-                } elseif ('i' == $choice) {
-                    print('            . Present files & folders ignored.' . PHP_EOL);
-                } else {
-                    throw new Error('Invalid Choice!');
                 }
+                $this->removeLastLine();
+                print('            . Removed ' . number_format($fileDirCount) . ' files.' . PHP_EOL);
+            } elseif ('i' == $choice) {
+                print('            . Present files & folders ignored.' . PHP_EOL);
+            } else {
+                throw new Error('Invalid Choice!');
             }
         }
         $imageIdCount = $imageIds->count();
@@ -140,7 +163,7 @@ class ExportImages extends Command
      */
     private function addSearchParams(Builder &$builderQuery)
     {
-        dd($builderQuery);
+        $this->printLine('Custom search feature currently in progress.', 2, true);
     }
 
     /**
@@ -154,5 +177,18 @@ class ExportImages extends Command
             return trim($str);
         }, explode('x', $dimension));
         return [$x, $y, $x > $y ? 'landscape' : ($x < $y ? 'portrait' : 'square')];
+    }
+
+    /**
+     * Add tags to builder query
+     * @param \Illuminate\Database\Eloquent\Builder $builderQuery
+     * @param string $tags
+     * @return void
+     */
+    private function addTagsFilter(Builder &$builderQuery, string $tags)
+    {
+        $builderQuery = $builderQuery->join('images', function ($query) use ($tags) {
+            $query->on('images.id', '=', 'image_dimensions.image_id')->where('images.tags', 'like', '%' . $tags . '%');
+        });
     }
 }

@@ -20,7 +20,7 @@ class ProcessAllImages extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Command to process images.';
 
     /**
      * Execute the console command.
@@ -33,7 +33,6 @@ class ProcessAllImages extends Command
         $imageIds = array_column(Images::get('id')->toArray(), 'id');
         print('Done.' . PHP_EOL . 'Processing images in queue ... ' . PHP_EOL);
         $imageIdChunks = array_chunk($imageIds, env('IMAGE_PROCESSING_CHUNK'));
-        // dd(count($imageIdChunks), reset($imageIdChunks), end($imageIdChunks));
         foreach ($imageIdChunks as $idChunk) {
             print('Dispatching ids: ' . implode(', ', $idChunk) . ' ... ' . PHP_EOL);
             ProcessImages::dispatch($idChunk);
