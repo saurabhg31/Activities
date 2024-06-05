@@ -4,6 +4,8 @@ namespace App\Traits;
 
 use App\Models\User;
 use Exception;
+use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Contracts\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -377,5 +379,15 @@ trait Miscellaneous
         }, null, true);
         $choice = reset($choice);
         return in_array($choice, $yesVals);
+    }
+
+    /**
+     * parse & return raw query statement from query object
+     * @param \Illuminate\Database\Eloquent\Builder $queryObj;
+     * @return string
+     */
+    private function getRawStatementFromQueryObject(Builder|QueryBuilder|Model &$queryObj)
+    {
+        return sprintf(str_replace('?', '"%s"', $queryObj->toSql()), ...$queryObj->getBindings());
     }
 }
