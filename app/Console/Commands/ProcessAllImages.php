@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\ProcessImages;
 use App\Models\Images;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class ProcessAllImages extends Command
 {
@@ -40,5 +41,17 @@ class ProcessAllImages extends Command
         }
         print(PHP_EOL);
         return Command::SUCCESS;
+    }
+
+    /**
+     * truncate tables
+     * @param array $tables
+     * @return void
+     */
+    private function truncateTables(array $tables)
+    {
+        array_map(function ($tableName) {
+            DB::table($tableName)->truncate();
+        }, $tables);
     }
 }
