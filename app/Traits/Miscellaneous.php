@@ -390,4 +390,16 @@ trait Miscellaneous
     {
         return sprintf(str_replace('?', '"%s"', $queryObj->toSql()), ...$queryObj->getBindings());
     }
+
+    /**
+     * truncate tables
+     * @param array $tables
+     * @return void
+     */
+    private function truncateTables(array $tables)
+    {
+        array_map(function ($tableName) {
+            DB::table($tableName)->truncate();
+        }, $tables);
+    }
 }

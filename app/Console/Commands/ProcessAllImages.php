@@ -29,6 +29,7 @@ class ProcessAllImages extends Command
      */
     public function handle()
     {
+        $this->truncateTables(['image_dimensions']);
         print(PHP_EOL . 'Fetching all image ids, total: ' . number_format(Images::count()) . ' ... ');
         $imageIds = array_column(Images::get('id')->toArray(), 'id');
         print('Done.' . PHP_EOL . 'Processing images in queue ... ' . PHP_EOL);
