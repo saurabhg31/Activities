@@ -39,7 +39,7 @@ class ExportImages extends Command
             // display username & password prompts in terminal
             $this->authenticateUserViaTerminal();
         }
-        print('------------------ Export image process started on ' . now()->format('d M, Y \a\t H:i:s T') . ' ------------------' . PHP_EOL);
+        print('------------------ Export image process started on ' . now()->format('d M, Y \a\t H:i:s T (p)') . ' ------------------' . PHP_EOL);
 
         // declaring variable & getting input variable values from terminal
         $dimension = strtolower($this->option('d'));
@@ -98,30 +98,41 @@ class ExportImages extends Command
             // adding dimension check query
             [$xAxis, $yAxis] = array_splice($dimension, 0, 2);
             // appending higher dimension inclusion search query if requested
-            $allowHigherDimensions ? $imageIds->where([['image_dimensions.x_axis', '>=', $xAxis], ['image_dimensions.y_axis', '>=', $yAxis]]) : $imageIds->where(['image_dimensions.x_axis' => $xAxis, 'image_dimensions.y_axis' => $yAxis]);
+            if ($allowHigherDimensions) {
+                $imageIds->where([['image_dimensions.x_axis', '>=', $xAxis], ['image_dimensions.y_axis', '>=', $yAxis]]);
+            } else {
+                $imageIds->where(['image_dimensions.x_axis' => $xAxis, 'image_dimensions.y_axis' => $yAxis]);
+            }
         }
 
         // getting image(s) ids along with their respective image dimensions
         $imagesData = $imageIds->get();
-        if ($orientation && $preserveAspectRatio) {
-            // TODO: Refine preserveAspectRatio code
-            // filtering out images whose aspect ration doesn't match with orientation (landscape/portrait/square)
-            $imagesData = $imagesData->filter(function ($obj, $pass = false) use ($orientation) {
-                switch ($orientation) {
-                    case 'portrait':
-                        $pass = $obj->x_axis < $obj->y_axis;
-                        break;
-                    case 'landscape':
-                        $pass = $obj->y_axis < $obj->x_axis;
-                        break;
-                    case 'square':
-                        $pass = $obj->y_axis == $obj->x_axis;
-                        break;
-                    default:
-                        throw new Error('Invalid orientation input');
-                }
-                return $pass;
-            });
+        if ($orientation) {
+            if ($preserveAspectRatio) {
+                $aspectRatio = round($xAxis / $yAxis, 2);
+                // filtering out images whose aspect ration doesn't match with given dimension's aspect ratio
+                $imagesData = $imagesData->filter(function ($obj) use ($aspectRatio) {
+                    return round($obj->x_axis / $obj->y_axis, 2) == $aspectRatio; // comparing aspect ratios
+                });
+            } else {
+                // filtering out images whose orientation does not match the requested value (landscape/portrait/square)
+                $imagesData = $imagesData->filter(function ($obj, $pass = false) use ($orientation) {
+                    switch ($orientation) {
+                        case 'portrait':
+                            $pass = $obj->x_axis < $obj->y_axis;
+                            break;
+                        case 'landscape':
+                            $pass = $obj->y_axis < $obj->x_axis;
+                            break;
+                        case 'square':
+                            $pass = $obj->y_axis == $obj->x_axis;
+                            break;
+                        default:
+                            throw new Error('Invalid orientation input');
+                    }
+                    return $pass;
+                });
+            }
         }
 
         // fetching relevant image ids only matching filter criteria
@@ -135,8 +146,8 @@ class ExportImages extends Command
             $this->printLine('No images matching the given criterial found!', 1, true);
             return Command::FAILURE;
         }
-        $this->printLine('Found ' . number_format($imageIds->count()) . ' portrait images.', 1, true);
-        $this->printLine('Filtering out images with wrong orientation ...', 1, true);
+        $this->printLine('Found ' . number_format($imageIds->count()) . ' ' . strtolower($orientation) . ' images.', 1, true);
+        $this->printLine('Filtering out images with wrong orientation/aspect ratio ...', 1, true);
 
         // declaring variables
         $imgData = $file = $dir = null;
@@ -144,6 +155,7 @@ class ExportImages extends Command
         $dir = reset($dir);
         if (empty($dir)) {
             $dir = env('IMAGE_EXPORT_DIRECTORY', '/mnt/c/Users/saura/OneDrive/Pictures/pw');
+            $this->printLine('Default directory "' . $dir . '" selected.', 2, true);
         }
         if (!file_exists($dir)) {
             // creating directory if allowed by user
@@ -166,17 +178,11 @@ class ExportImages extends Command
             $choice = $this->readInputFromCli(1, ['        . Directory not empty. Clear All Files (C), Ignore (I): ']);
             $choice = strtolower(reset($choice));
             if ('c' == $choice) {
-                // clearing all files within image export directory if option "c" is chosen
-                print('            . Removing ' . number_format($fileDirCount) . ' files ... ' . PHP_EOL);
-                $progress = 0.0;
-                foreach ($filesInDir as $index => $file) {
-                    print('                . ' . $file . ' ' . str_repeat('.', floor($progress / 10)) . '    ' . number_format($progress, 2) . '%' . PHP_EOL);
-                    unlink($dir . DIRECTORY_SEPARATOR . $file);
-                    $progress = ($index + 1) / $fileDirCount * 100;
-                    $this->removeLastLine();
+                $this->printLine('Deleting strorage directory "' . $dir . '" ...', 3);
+                while (count(scandir($dir)) > 2) {
+                    $this->recreateDirectory($dir);
                 }
-                $this->removeLastLine();
-                print('            . Removed ' . number_format($fileDirCount) . ' files.' . PHP_EOL);
+                print('Done.' . PHP_EOL);
             } elseif ('i' == $choice) {
                 // ignoring present files
                 print('            . Present files & folders ignored.' . PHP_EOL);
@@ -200,6 +206,7 @@ class ExportImages extends Command
             print('Done: ' . basename($file) . PHP_EOL);
             $this->removeLastLine();
         }
+        print('------------------ IMAGE(S) EXPORT PROCESS COMPLETED ON ' . now()->format('d M, Y \a\t H:i:s T (p)') . ' ------------------' . PHP_EOL);
         return Command::SUCCESS;
     }
 
@@ -257,5 +264,24 @@ class ExportImages extends Command
                 $tagsSubQuery->orWhere('image_search_indexing.tag', 'like', '%' . $tag . '%');
             }
         });
+    }
+
+    /**
+     * Recreate a directory (destroys entire directory along with contents & recreates an empty directory with same name) - for linux system only
+     * @param string $directoryPath
+     * @return boolean — true on success or false on failure.
+     */
+    private function recreateDirectory(string $directoryPath)
+    {
+        if (file_exists($directoryPath)) {
+            exec('rm -rf "' . $directoryPath . '"');
+            $this->delayExecution(3); // delay added to let file system explorers catch up to process before export begins
+            if (file_exists($directoryPath)) {
+                return $this->recreateDirectory($directoryPath);
+            }
+            return mkdir($directoryPath, 0770);
+        } else {
+            throw new Error('Directory does not exist!');
+        }
     }
 }
