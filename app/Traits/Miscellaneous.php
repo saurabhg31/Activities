@@ -402,4 +402,38 @@ trait Miscellaneous
             DB::table($tableName)->truncate();
         }, $tables);
     }
+
+    /**
+     * Clear terminal screen (linux only)
+     * @return void
+     */
+    private function clearScreen()
+    {
+        popen('clear', 'w');
+    }
+
+    /**
+     * Print terminal heading
+     * @param string $msg
+     * @param string $repeatChar
+     * @param integer $repeatTimes
+     * @param boolean $prependLineBreak
+     * @param boolean $appendLineBreak
+     * @return void
+     */
+    private function printHeading(string $msg, string $repeatChar = '-', int $repeatTimes = 5, bool $prependLineBreak = true, bool $appendLineBreak = true)
+    {
+        $repeatCharPresent = $repeatTimes && !empty($repeatChar);
+        $line = $prependLineBreak ? PHP_EOL : '';
+        $line .= $repeatCharPresent ? str_repeat($repeatChar, $repeatTimes) . ' ' : ' ';
+        $line .= $msg;
+        $line .= $repeatCharPresent ? ' ' . str_repeat($repeatChar, $repeatTimes) : '';
+        $line .= $appendLineBreak ? PHP_EOL : '';
+        print($line);
+    }
+
+    private function printProgressBar(float $progress, string $progressChar = '.', int $maxProgressChars = 16)
+    {
+        return str_repeat($progressChar, ceil($progress / 100 * $maxProgressChars)) . str_repeat(' ', 4) . round($progress, 2) . ' %';
+    }
 }
