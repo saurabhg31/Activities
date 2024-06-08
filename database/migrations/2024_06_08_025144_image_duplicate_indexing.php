@@ -18,7 +18,7 @@ return new class extends Migration
         });
         Schema::create('image_duplicate_indexing', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('image_id');
+            $table->unsignedBigInteger('image_id')->unique();
             $table->foreign('image_id')->references('id')->on('images');
             $table->text('duplicates')->comment('contains ids of duplicate images : id1,id2,id3,....');
             $table->timestamps();

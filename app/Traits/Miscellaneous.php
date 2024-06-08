@@ -432,8 +432,8 @@ trait Miscellaneous
         print($line);
     }
 
-    private function printProgressBar(float $progress, string $progressChar = '.', int $maxProgressChars = 16)
+    private function printProgressBar(float $progressPercentage, string $progressChar = '.', int $maxProgressChars = 16)
     {
-        return str_repeat($progressChar, ceil($progress / 100 * $maxProgressChars)) . str_repeat(' ', 4) . round($progress, 2) . ' %';
+        return str_repeat($progressChar, ceil($progressPercentage / 100 * $maxProgressChars)) . str_repeat(' ', 4) . round($progressPercentage, 2) . ' %';
     }
 }

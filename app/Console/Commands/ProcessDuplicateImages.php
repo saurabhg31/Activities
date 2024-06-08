@@ -8,7 +8,6 @@ use App\Jobs\UpdateImageLength;
 use App\Traits\Miscellaneous;
 use Error;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 class ProcessDuplicateImages extends Command
@@ -54,8 +53,8 @@ class ProcessDuplicateImages extends Command
                 $totalImages = $table->count();
                 print('Done. ' . number_format($totalImages) . ' images found.' . PHP_EOL);
                 $this->printLine('Pass 1: Checking sizes ...', 1, true);
-                $duplicates = $this->getDuplicatesMapping($this->getImagesLengthMapping($table, $totalImages));
-                dd($duplicates);
+                $this->generateImagesLengthData($table);
+                $this->printLine('Pass 1: Checking sizes ... Done.', 1, true);
                 break;
             case 'data':
                 $this->printLine('Duplicate detection for normal data is still under development.', 1, true);
@@ -67,30 +66,26 @@ class ProcessDuplicateImages extends Command
     }
 
     /**
-     * 
+     * generates length of images in images table
+     * @return void
      */
-    private function getImagesLengthMapping(Builder &$table, int &$totalImagesCount)
+    private function generateImagesLengthData()
     {
-        $rate = 0.0; // rate of database hits in a second (changes dynamically based on response from mysql)
-        $limit = 500;
-        $start = null;
-        $delay = 1;
-        for ($offset = 0; $offset < $totalImagesCount; $offset += $limit) {
-            if ($limit < 1) {
-                $limit = 500;
+        $limit = env('IMAGE_PROCESSING_CHUNK', 20);
+        $imageIdsToProcess = DB::table('images')->select('id')->whereNull('length')->orderBy('id', 'asc')->get()->pluck('id')->toArray();
+        $idChunks = array_chunk($imageIdsToProcess, $limit);
+        $totalChunksCount = count($idChunks);
+        $processedCount = $progress = 0;
+        $totalIdsCount = count($imageIdsToProcess);
+        $img = null;
+        foreach ($idChunks as $index => $imageIds) {
+            $this->printLine('Processing image id chunk ' . ($index + 1) . '/' . $totalChunksCount . ' containing ' . $limit . ' id(s) each. ' . $this->printProgressBar($progress * 100, '.', 20), 2, true);
+            foreach ($imageIds as $imgId) {
+                $img = DB::table('images')->select('image')->where('id', $imgId)->first()->image;
+                UpdateImageLength::dispatch($imgId, strlen($img));
+                $processedCount++;
+                $progress = $processedCount / $totalIdsCount;
             }
-            $this->printLine('Mapping sizes ' . $this->printProgressBar($offset / $totalImagesCount * 100) . '   L: ' . $limit . ', R: ' . (isset($hitTime) ? round($rate, 2) : 0) . ', M: ' . number_format($offset), 2);
-            $start = now();
-            $table->skip($offset)->take($limit)->get()->map(function ($img) {
-                UpdateImageLength::dispatch($img->id, strlen($img->image));
-            });
-            $hitTime = now()->diffInMilliseconds($start);
-            $rate = 1000 / $hitTime;
-            if ($rate < env('DUPLICATE_MINIMIUM_DB_RATE')) {
-                $limit--; // limit halfed
-            }
-            $start = now();
-            print(PHP_EOL);
             $this->removeLastLine();
         }
     }
