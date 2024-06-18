@@ -18,3 +18,4 @@ rr
 .rr.yaml
 composer.lock
 package-lock.json
+/nbproject
