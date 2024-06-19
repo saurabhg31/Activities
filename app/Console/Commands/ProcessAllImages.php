@@ -35,12 +35,21 @@ class ProcessAllImages extends Command {
      */
     public function handle() {
         $this->printHeading('IMAGE PROCESSING OPERATION INITIALIZED', '-', 20);
-        $this->printLine('Getting total images count & truncating image dimensions table ...', 1);
-        $this->truncateTables(['image_dimensions']);
-        $totalImages = Images::count();
-        print(' Done.' . PHP_EOL);
+        if (env('IMAGE_PROCESSING_REGENERATE_TABLES', false)) {
+            $this->printLine('Getting total images count & truncating image dimensions table ...', 1);
+            $this->truncateTables(['image_dimensions']);
+            $totalImages = Images::count();
+            print(' Done.' . PHP_EOL);
+        } else {
+            $this->printLine('Getting total unprocessed images ...', 1);
+            $totalImages = Images::join('image_dimensions', 'image_dimensions.image_id', '!=', 'images.id')->distinct('images.id')->count();
+            print(' Done.' . PHP_EOL);
+        }
         $this->printLine('Fetching all image ids, total: ' . number_format($totalImages) . ' ... ', 1);
-        $imageIds = array_column(Images::get('id')->toArray(), 'id');
+        $imageIds = array_column(
+                Images::join('image_dimensions', 'image_dimensions.image_id', '!=', 'images.id')->distinct('images.id')->get('images.id')->toArray(),
+                'id'
+        );
         asort($imageIds);
         print('Done.' . PHP_EOL);
         $this->printLine('Processing images ' . (env('IMAGE_PROCESSING_USE_QUEUE', false) ? ' via queues ' : null) . '... ', 1, true);
@@ -56,7 +65,6 @@ class ProcessAllImages extends Command {
             $processed = 0;
             $progress = 0.0; // processed ids/total ids
             foreach ($imageIdChunks as $index => $idChunk) {
-                /** @var type $idChunk */
                 foreach ($idChunk as $imageId) {
                     if ($processed) {
                         $this->removeLastLine();
@@ -76,7 +84,14 @@ class ProcessAllImages extends Command {
             }
             ImageDimensions::addMultipleImagesDimensionsInfo($imagesDimensionsBag);
         }
-        print(PHP_EOL);
+        $this->printLine('Logging image sizes of ' . number_format($processed) . ' images ... ', 1, true);
+        foreach ($imageIdChunks as $index => $idChunk) {
+            foreach ($idChunk as $imageId) {
+                dd(Image::find($imageId));
+                $this->printLine('Logging length of image having image id: ' . $imageId . ' ' . $this->printProgressBar($progress * 100, '.', 20), 2);
+            }
+        }
+        $this->printLine(number_format($processed) . ' images processed.', 1, true);
         return Command::SUCCESS;
     }
 
