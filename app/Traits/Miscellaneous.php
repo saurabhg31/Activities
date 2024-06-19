@@ -13,16 +13,15 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 
-trait Miscellaneous
-{
+trait Miscellaneous {
+
     /**
      * Flatten an array
      * @param array $array
      * @return array
      * @source: https://stackoverflow.com/a/1320156/12199939
      */
-    public function flattenArray(array $array)
-    {
+    public function flattenArray(array $array) {
         $return = array();
         array_walk_recursive($array, function ($a) use (&$return) {
             $return[] = $a;
@@ -36,8 +35,7 @@ trait Miscellaneous
      * @param string $key - only depth=1 supported for now
      * @return void
      */
-    public function removeDuplicatesByKey(array &$array, string $key)
-    {
+    public function removeDuplicatesByKey(array &$array, string $key) {
         $arrayIndicesToRemove = [];
         $uniqueVals = [];
         foreach ($array as $index => $value) {
@@ -65,11 +63,11 @@ trait Miscellaneous
      * @return array - returns input lines
      */
     public function readInputFromCli(
-        int $maxAllowedLines = 1,
-        array $lineMsgs = [],
-        callable $validateLine = null,
-        callable $terminate = null,
-        bool $throwErrorIfLineValidationFails = false
+            int $maxAllowedLines = 1,
+            array $lineMsgs = [],
+            callable $validateLine = null,
+            callable $terminate = null,
+            bool $throwErrorIfLineValidationFails = false
     ) {
         $input = [];
         for ($i = 0; $i < $maxAllowedLines; $i++) {
@@ -99,8 +97,7 @@ trait Miscellaneous
      * @param boolean $appendLineBreak
      * @return void
      */
-    function printLine(string $text, int $subsetCount = 0, bool $appendLineBreak = false)
-    {
+    function printLine(string $text, int $subsetCount = 0, bool $appendLineBreak = false) {
         print(str_repeat(' ', $subsetCount * 4) . '. ' . $text . ($appendLineBreak ? PHP_EOL : ' '));
     }
 
@@ -108,8 +105,7 @@ trait Miscellaneous
      * Remove last line from cli
      * @return void
      */
-    public function removeLastLine()
-    {
+    public function removeLastLine() {
         print("\033[1A\033[K");
     }
 
@@ -118,8 +114,7 @@ trait Miscellaneous
      * @param array $inputArray - the mutidimensional array
      * @return boolean - returns true if array has duplicate values, false otherwise
      */
-    public function arrayHasDuplicateValues(array &$inputArray)
-    {
+    public function arrayHasDuplicateValues(array &$inputArray) {
         return !count(array_unique(array_map('json_encode', $inputArray))) == count($inputArray);
     }
 
@@ -131,11 +126,10 @@ trait Miscellaneous
      * @param string|null $softDeleteColumn - pass null if deleted_at condition should not be added
      * @return string
      */
-    public function generateExistsQuery(array $values, string $column, string $tableName, string|null $softDeleteColumn = 'deleted_at')
-    {
+    public function generateExistsQuery(array $values, string $column, string $tableName, string|null $softDeleteColumn = 'deleted_at') {
         $values = implode(', ', array_map(function ($val) {
-            return '"' . $val . '"';
-        }, $values));
+                    return '"' . $val . '"';
+                }, $values));
         $statement = "select `{$column}` from `{$tableName}` where `{$column}` in ({$values})";
         if (!is_null($softDeleteColumn)) {
             $statement .= " and `{$tableName}`.`{$softDeleteColumn}` is null";
@@ -149,15 +143,14 @@ trait Miscellaneous
      * @param string $tableName
      * @return string
      */
-    public function generateRawInsertQuery(array &$data, string $tableName)
-    {
+    public function generateRawInsertQuery(array &$data, string $tableName) {
         $columns = implode(', ', array_keys(reset($data)));
         $values = implode(', ', array_values(array_map(function ($row) {
-            $row = array_map(function ($value) {
-                return '"' . $value . '"';
-            }, $row);
-            return '(' . implode(', ', array_values($row)) . ')';
-        }, $data)));
+                            $row = array_map(function ($value) {
+                                return '"' . $value . '"';
+                            }, $row);
+                            return '(' . implode(', ', array_values($row)) . ')';
+                        }, $data)));
         return "INSERT INTO {$tableName} ({$columns}) VALUES {$values}";
     }
 
@@ -168,9 +161,8 @@ trait Miscellaneous
      * @param string $considerExistsCheckOf - pass column name to check exist query
      * @return integer
      */
-    public function findMaxAllowedInsertRows(array &$dataset, string $tableName = 'products', string $considerExistsCheckOf = null)
-    {
-        $maxAllowedBytes = (int)DB::select("show variables like 'max_allowed_packet'")[0]->Value;
+    public function findMaxAllowedInsertRows(array &$dataset, string $tableName = 'products', string $considerExistsCheckOf = null) {
+        $maxAllowedBytes = (int) DB::select("show variables like 'max_allowed_packet'")[0]->Value;
         if ($considerExistsCheckOf) {
             if (in_array('deleted_at', Schema::getColumnListing($tableName))) {
                 $softDeleteColumn = 'deleted_at';
@@ -179,10 +171,10 @@ trait Miscellaneous
             }
             $values = array_column($dataset, $considerExistsCheckOf);
             $requiredBytes = strlen($this->generateExistsQuery(
-                $values,
-                $considerExistsCheckOf,
-                $tableName,
-                $softDeleteColumn
+                            $values,
+                            $considerExistsCheckOf,
+                            $tableName,
+                            $softDeleteColumn
             ));
         } else {
             $requiredBytes = strlen($this->generateRawInsertQuery($dataset, $tableName));
@@ -197,10 +189,10 @@ trait Miscellaneous
                 if ($considerExistsCheckOf) {
                     $values = array_column($subset, $considerExistsCheckOf);
                     $requiredBytes = strlen($this->generateExistsQuery(
-                        $values,
-                        $considerExistsCheckOf,
-                        $tableName,
-                        $softDeleteColumn
+                                    $values,
+                                    $considerExistsCheckOf,
+                                    $tableName,
+                                    $softDeleteColumn
                     ));
                 } else {
                     $requiredBytes = strlen($this->generateRawInsertQuery($subset, $tableName));
@@ -221,18 +213,17 @@ trait Miscellaneous
      * @param string $value
      * @return boolean - true on successful write, false otherwise
      */
-    public function appendToEnv(string $key, string $value)
-    {
+    public function appendToEnv(string $key, string $value) {
         $value = trim($value);
         $envData = file_get_contents(app()->environmentFilePath());
         if (!str_contains($envData, $key . '=')) {
             $envData .= PHP_EOL . $key . '="' . $value . '"' . PHP_EOL;
-            return (bool)file_put_contents(app()->environmentFilePath(), $envData);
+            return (bool) file_put_contents(app()->environmentFilePath(), $envData);
         } else {
-            return (bool)file_put_contents(app()->environmentFilePath(), str_replace(
-                [$key . '=' . env($key), $key . '="' . env($key) . '"'],
-                $key . '="' . $value . '"',
-                $envData
+            return (bool) file_put_contents(app()->environmentFilePath(), str_replace(
+                                    [$key . '=' . env($key), $key . '="' . env($key) . '"'],
+                                    $key . '="' . $value . '"',
+                                    $envData
             ));
         }
     }
@@ -242,8 +233,7 @@ trait Miscellaneous
      * @param integer seconds
      * @return void
      */
-    public function delayExecution(int $seconds)
-    {
+    public function delayExecution(int $seconds) {
         if ($seconds < 1) {
             throw new Exception('Argument $seconds must be at least 1.');
         }
@@ -265,13 +255,13 @@ trait Miscellaneous
      * @return \Illuminate\Http\Client\Response|false
      */
     public function attemptRequest(
-        string $url,
-        string $method,
-        array $payload = null,
-        array $headers = [],
-        int $maxAttempts = 3,
-        bool $throwErrorOnFailure = true,
-        int $attempt = 1
+            string $url,
+            string $method,
+            array $payload = null,
+            array $headers = [],
+            int $maxAttempts = 3,
+            bool $throwErrorOnFailure = true,
+            int $attempt = 1
     ) {
         $request = Http::withHeaders($headers);
         try {
@@ -290,13 +280,13 @@ trait Miscellaneous
             if ($attempt <= $maxAttempts) {
                 $attempt++;
                 return $this->attemptRequest(
-                    $url,
-                    $method,
-                    $payload,
-                    $headers,
-                    $maxAttempts,
-                    $throwErrorOnFailure,
-                    $attempt
+                                $url,
+                                $method,
+                                $payload,
+                                $headers,
+                                $maxAttempts,
+                                $throwErrorOnFailure,
+                                $attempt
                 );
             }
             if ($throwErrorOnFailure) {
@@ -312,8 +302,7 @@ trait Miscellaneous
      * @param array $options (key value pairs that should match)
      * @return boolean
      */
-    private function authenticateUserViaTerminal(string|Model &$table = new User(), array &$options = ['is_admin' => 1])
-    {
+    private function authenticateUserViaTerminal(string|Model &$table = new User(), array &$options = ['is_admin' => 1]) {
         $authCheckStatus = false;
         $email = $this->readInputFromCli(1, ['        . Enter admin account email: ']);
         $email = reset($email);
@@ -345,9 +334,9 @@ trait Miscellaneous
      * @return boolean (true on success, false on failure)
      */
     private function readAndComparePasswordInputFromCli(
-        string &$hashedPasswordString,
-        string|callable $comparisonMethod = 'hash',
-        string $prompt = "Enter Password: ",
+            string &$hashedPasswordString,
+            string|callable $comparisonMethod = 'hash',
+            string $prompt = "Enter Password: ",
     ) {
         $checkPassed = false;
         $command = "/usr/bin/env bash -c 'read -s -p \"" . addslashes($prompt) . "\" mypassword && echo \$mypassword'";
@@ -370,8 +359,7 @@ trait Miscellaneous
      * @param string $promptMsg
      * @return boolean - true if confirmed, false otherwise
      */
-    private function getConfirmation(string $promptMsg)
-    {
+    private function getConfirmation(string $promptMsg) {
         $promptMsg .= ' (Y|N): ';
         $yesVals = ['y', 'yes', 'true', '1'];
         $choice = $this->readInputFromCli(1, [$promptMsg], function ($str) use ($yesVals) {
@@ -386,8 +374,7 @@ trait Miscellaneous
      * @param \Illuminate\Database\Eloquent\Builder $queryObj;
      * @return string
      */
-    private function getRawStatementFromQueryObject(Builder|QueryBuilder|Model &$queryObj)
-    {
+    private function getRawStatementFromQueryObject(Builder|QueryBuilder|Model &$queryObj) {
         return sprintf(str_replace('?', '"%s"', $queryObj->toSql()), ...$queryObj->getBindings());
     }
 
@@ -396,8 +383,7 @@ trait Miscellaneous
      * @param array $tables
      * @return void
      */
-    private function truncateTables(array $tables)
-    {
+    private function truncateTables(array $tables) {
         array_map(function ($tableName) {
             DB::table($tableName)->truncate();
         }, $tables);
@@ -407,8 +393,7 @@ trait Miscellaneous
      * Clear terminal screen (linux only)
      * @return void
      */
-    private function clearScreen()
-    {
+    private function clearScreen() {
         popen('clear', 'w');
     }
 
@@ -421,19 +406,17 @@ trait Miscellaneous
      * @param boolean $appendLineBreak
      * @return void
      */
-    private function printHeading(string $msg, string $repeatChar = '-', int $repeatTimes = 5, bool $prependLineBreak = true, bool $appendLineBreak = true)
-    {
+    private function printHeading(string $msg, string $repeatChar = '-', int $repeatTimes = 5, bool $prependLineBreak = true, bool $appendLineBreak = true) {
         $repeatCharPresent = $repeatTimes && !empty($repeatChar);
         $line = $prependLineBreak ? PHP_EOL : '';
         $line .= $repeatCharPresent ? str_repeat($repeatChar, $repeatTimes) . ' ' : ' ';
         $line .= $msg;
         $line .= $repeatCharPresent ? ' ' . str_repeat($repeatChar, $repeatTimes) : '';
         $line .= $appendLineBreak ? PHP_EOL : '';
-        print($line);
+        print(' ' . $line);
     }
 
-    private function printProgressBar(float $progressPercentage, string $progressChar = '.', int $maxProgressChars = 16)
-    {
+    private function printProgressBar(float $progressPercentage, string $progressChar = '.', int $maxProgressChars = 16) {
         return str_repeat($progressChar, ceil($progressPercentage / 100 * $maxProgressChars)) . str_repeat(' ', 4) . round($progressPercentage, 2) . ' %';
     }
 }

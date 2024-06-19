@@ -4,11 +4,16 @@ namespace App\Console\Commands;
 
 use App\Jobs\ProcessImages;
 use App\Models\Images;
+use App\Models\ImageDimensions;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use App\Traits\Miscellaneous;
+use Illuminate\Support\Facades\Log;
 
-class ProcessAllImages extends Command
-{
+class ProcessAllImages extends Command {
+
+    use Miscellaneous;
+
     /**
      * The name and signature of the console command.
      *
@@ -28,19 +33,56 @@ class ProcessAllImages extends Command
      *
      * @return int
      */
-    public function handle()
-    {
+    public function handle() {
+        $this->printHeading('IMAGE PROCESSING OPERATION INITIALIZED', '-', 20);
+        $this->printLine('Getting total images count & truncating image dimensions table ...', 1);
         $this->truncateTables(['image_dimensions']);
-        print(PHP_EOL . 'Fetching all image ids, total: ' . number_format(Images::count()) . ' ... ');
+        $totalImages = Images::count();
+        print(' Done.' . PHP_EOL);
+        $this->printLine('Fetching all image ids, total: ' . number_format($totalImages) . ' ... ', 1);
         $imageIds = array_column(Images::get('id')->toArray(), 'id');
-        print('Done.' . PHP_EOL . 'Processing images in queue ... ' . PHP_EOL);
+        asort($imageIds);
+        print('Done.' . PHP_EOL);
+        $this->printLine('Processing images ' . (env('IMAGE_PROCESSING_USE_QUEUE', false) ? ' via queues ' : null) . '... ', 1, true);
         $imageIdChunks = array_chunk($imageIds, env('IMAGE_PROCESSING_CHUNK'));
-        foreach ($imageIdChunks as $idChunk) {
-            print('Dispatching ids: ' . implode(', ', $idChunk) . ' ... ' . PHP_EOL);
-            ProcessImages::dispatch($idChunk);
+        if (env('IMAGE_PROCESSING_USE_QUEUE', false)) {
+            foreach ($imageIdChunks as $idChunk) {
+                print('Dispatching ids: ' . implode(', ', $idChunk) . ' ... ' . PHP_EOL);
+                ProcessImages::dispatch($idChunk);
+            }
+        } else {
+            unset($imageIds);
+            $imagesDimensionsBag = [];
+            $processed = 0;
+            $progress = 0.0; // processed ids/total ids
+            foreach ($imageIdChunks as $index => $idChunk) {
+                /** @var type $idChunk */
+                foreach ($idChunk as $imageId) {
+                    if ($processed) {
+                        $this->removeLastLine();
+                    }
+                    $this->printLine('Logging dimensions of image having image id: ' . $imageId . ' ' . $this->printProgressBar($progress * 100, '.', 20), 2);
+                    try {
+                        array_push($imagesDimensionsBag, array_merge([$imageId], $this->getImageDimension($imageId)));
+                        print('Done' . PHP_EOL);
+                    } catch (\ErrorException $error) {
+                        Log::error($error->getMessage());
+                        print('Error: "' . $error->getMessage() . '" encountered! Skipped.' . PHP_EOL);
+                        continue;
+                    }
+                    $processed++;
+                    $progress = $processed / $totalImages;
+                }
+            }
+            ImageDimensions::addMultipleImagesDimensionsInfo($imagesDimensionsBag);
         }
         print(PHP_EOL);
         return Command::SUCCESS;
+    }
+
+    private function getImageDimension(int $id) {
+        $img = imagecreatefromstring(base64_decode(Images::findOrFail($id)->image));
+        return [imagesx($img), imagesy($img)];
     }
 
     /**
@@ -48,8 +90,7 @@ class ProcessAllImages extends Command
      * @param array $tables
      * @return void
      */
-    private function truncateTables(array $tables)
-    {
+    private function truncateTables(array $tables) {
         array_map(function ($tableName) {
             DB::table($tableName)->truncate();
         }, $tables);
