@@ -40,16 +40,28 @@ class ProcessAllImages extends Command {
             $this->truncateTables(['image_dimensions']);
             $totalImages = Images::count();
             print(' Done.' . PHP_EOL);
+            $this->printLine('Fetching all image ids, total: ' . number_format($totalImages) . ' ... ', 1);
+            $imageIds = array_column(
+                    Images::join('image_dimensions', 'image_dimensions.image_id', '!=', 'images.id')->distinct('images.id')->get('images.id')->toArray(),
+                    'id'
+            );
         } else {
             $this->printLine('Getting total unprocessed images ...', 1);
-            $totalImages = Images::join('image_dimensions', 'image_dimensions.image_id', '!=', 'images.id')->distinct('images.id')->count();
+            $totalImages = Images::whereNull('length')->distinct('images.id')->count();
             print(' Done.' . PHP_EOL);
+            if ($totalImages) {
+                $this->printLine('Fetching all unprocessed image ids, total: ' . number_format($totalImages) . '.', 1);
+                $imageIds = array_column(Images::whereNull('length')->distinct('images.id')->get('images.id')->toArray(), 'id');
+            } else {
+                $this->printLine('No unprocessed images found.', 1, true);
+                $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);
+                return Command::SUCCESS;
+            }
         }
-        $this->printLine('Fetching all image ids, total: ' . number_format($totalImages) . ' ... ', 1);
-        $imageIds = array_column(
-                Images::join('image_dimensions', 'image_dimensions.image_id', '!=', 'images.id')->distinct('images.id')->get('images.id')->toArray(),
-                'id'
-        );
+        if (!$this->getConfirmation('Proceed ?')) {
+            $this->printLine('Process aborted by user.', 1, true);
+            return Command::FAILURE;
+        }
         asort($imageIds);
         print('Done.' . PHP_EOL);
         $this->printLine('Processing images ' . (env('IMAGE_PROCESSING_USE_QUEUE', false) ? ' via queues ' : null) . '... ', 1, true);
