@@ -31,10 +31,10 @@ class ResetImageProcessing extends Command
      */
     public function handle()
     {
-        $this->printLine('Truncating image_dimensions table ... ', 1);
+        $this->printLine('Truncating image_dimensions table ... ', 2);
         DB::table('image_dimensions')->truncate();
         $this->printActionCompletedMsg();
-        $this->printLine('Clearing value of length column in images table ... ', 1, true);
+        $this->printLine('Clearing value of length column in images table ... ', 2, true);
         $imageIds = DB::table('images')->select('id')->whereNotNull('length')->get()->pluck('id')->toArray();
         asort($imageIds);
         $progress = 0.0;
@@ -47,14 +47,16 @@ class ResetImageProcessing extends Command
             if ($processedCount) {
                 $this->removeLastLine();
             }
-            $this->printLine(str_repeat(' ', 4) . '(' . number_format($processedCount) . '/' . number_format($totalImgs) . '). ' . str_repeat(' ', 4) . $this->printProgressBar($progress * 100, '.', 20), 1, true);
+            $this->printLine(str_repeat(' ', 4) . '(' . number_format($processedCount) . '/' . number_format($totalImgs) . '). ' . str_repeat(' ', 4) . $this->printProgressBar($progress * 100, '.', 20), 2, true);
             DB::table('images')->whereIn('id', $imageIds)->update(['length' => null]);
             $processedCount += $limit;
             $progress = $processedCount / $totalImgs;
         }
         $this->removeLastLine();
         $this->removeLastLine();
-        $this->printActionCompletedMsg();
+        if ($totalImgs) {
+            $this->printActionCompletedMsg();
+        }
         return Command::SUCCESS;
     }
 }

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Traits\Miscellaneous;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Artisan;
+use Exception;
 
 class ProcessAllImages extends Command
 {
@@ -37,24 +38,28 @@ class ProcessAllImages extends Command
      */
     public function handle()
     {
+        $ignoreImageTypes = ['webp']; // ignoring unsupported image formats
         $this->printHeading('IMAGE PROCESSING OPERATION INITIALIZED', '-', 20);
         if (env('IMAGE_PROCESSING_REGENERATE_TABLES', false)) {
             $this->printLine('Getting total images count & resetting image processing table data ... ', 1, true);
             Artisan::call('reset:images_processing');
-            $totalImages = Images::count();
-            $this->printLine('Done.', 1, true);
+            $totalImages = Images::whereNotIn('imageType', $ignoreImageTypes)->count();
             $this->printLine('Fetching all image ids, total: ' . number_format($totalImages) . ' ... ', 1);
             $imageIds = array_column(
-                Images::join('image_dimensions', 'image_dimensions.image_id', '!=', 'images.id')->distinct('images.id')->get('images.id')->toArray(),
+                Images::select('id')->whereNotIn('imageType', $ignoreImageTypes)->whereNull('length')->get()->toArray(),
                 'id'
             );
+            print ('Done. ');
         } else {
             $this->printLine('Getting total unprocessed images ... ', 1);
-            $totalImages = Images::whereNull('length')->distinct('images.id')->count();
+            $totalImages = Images::whereNull('length')->whereNotIn('imageType', $ignoreImageTypes)->count();
             $this->printActionCompletedMsg();
             if ($totalImages) {
                 $this->printLine('Fetching all unprocessed image ids, total: ' . number_format($totalImages) . '.', 1);
-                $imageIds = array_column(Images::whereNull('length')->distinct('images.id')->get('images.id')->toArray(), 'id');
+                $imageIds = array_column(
+                    Images::select('id')->whereNull('length')->whereNotIn('imageType', $ignoreImageTypes)->get()->toArray(),
+                    'id'
+                );
             } else {
                 $this->printLine('No unprocessed images found.', 1, true);
                 $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);
@@ -89,7 +94,7 @@ class ProcessAllImages extends Command
                     try {
                         array_push($imagesDimensionsBag, array_merge([$imageId], $this->getImageDimension($imageId)));
                         print ('Done' . PHP_EOL);
-                    } catch (\ErrorException $error) {
+                    } catch (Exception $error) {
                         Log::error($error->getMessage());
                         print ('Error: "' . $error->getMessage() . '" encountered! Skipped.' . PHP_EOL);
                         continue;
@@ -101,13 +106,21 @@ class ProcessAllImages extends Command
             ImageDimensions::addMultipleImagesDimensionsInfo($imagesDimensionsBag);
         }
         $this->printLine('Logging image sizes of ' . number_format($processed) . ' images ... ', 1, true);
+        $processed = 0;
+        $progress = 0.0;
         foreach ($imageIdChunks as $idChunk) {
             foreach ($idChunk as $imageId) {
-                $this->printLine('Logging length of image having image id: ' . $imageId . ' ' . $this->printProgressBar($progress * 100, '.', 20), 2);
+                if ($processed) {
+                    $this->removeLastLine();
+                }
+                $this->printLine('Logging length of image having image id: ' . $imageId . ' ' . $this->printProgressBar($progress * 100, '.', 20), 2, true);
                 Images::logImageLength($imageId);
+                $processed++;
+                $progress = $processed / $totalImages;
             }
         }
         $this->printLine(number_format($processed) . ' images processed.', 1, true);
+        $this->printHeading('IMAGE PROCESSING COMPLETED', '-', 20);
         return Command::SUCCESS;
     }
 
