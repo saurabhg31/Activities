@@ -19,3 +19,4 @@ rr
 composer.lock
 package-lock.json
 /nbproject
+.vs/

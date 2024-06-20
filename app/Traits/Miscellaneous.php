@@ -102,6 +102,16 @@ trait Miscellaneous {
     }
 
     /**
+     * print action completed message in terminal
+     * @param string $msg
+     * @return void
+     */
+    private function printActionCompletedMsg(string $msg = 'Done.' . PHP_EOL)
+    {
+        print ($msg);
+    }
+
+    /**
      * Remove last line from cli
      * @return void
      */

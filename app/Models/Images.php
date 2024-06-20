@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Session;
 class Images extends Model
 {
     protected $table = 'images';
-    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'created_at'];
+    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'length', 'created_at'];
 
     /**
      * get images
@@ -131,5 +131,17 @@ class Images extends Model
         return self::select($fields)->when($exceptIds, function ($query) use ($exceptIds) {
             return $query->whereNotIn('id', $exceptIds);
         })->where('image', $imageData->image)->where('id', '!=', $imageData->id)->get();
+    }
+
+    /**
+     * Calculate and store length of image based on id
+     * @param integer $imageId
+     * @return void
+     */
+    public static function logImageLength(int $imageId)
+    {
+        $img = self::find($imageId);
+        $img->length = strlen($img->image);
+        $img->save();
     }
 }
