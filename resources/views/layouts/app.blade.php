@@ -7,6 +7,11 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Laravel') }}</title>
+    @if (Session::has('domain') && Session::get('domain') == 'private')
+    <link rel="icon" sizes="any" href="{{ asset('icons/private_logo.svg') }}" type="image/svg+xml">
+    @else
+    <link rel="icon" sizes="any" href="{{ asset('icons/activities.svg') }}" type="image/svg+xml">
+    @endif
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet">
