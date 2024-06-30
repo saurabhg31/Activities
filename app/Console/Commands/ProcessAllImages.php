@@ -52,14 +52,17 @@ class ProcessAllImages extends Command
             print ('Done. ');
         } else {
             $this->printLine('Getting total unprocessed images ... ', 1);
-            $totalImages = Images::whereNull('length')->whereNotIn('imageType', $ignoreImageTypes)->count();
+            $ignoreImageTypes_str = '"' . str_replace(',', '","', implode(',', $ignoreImageTypes)) . '"';
+            $totalImages = DB::select('select count(images.id) as count from images where images.id not in (select image_dimensions.image_id from image_dimensions) and images.imageType not in (' . $ignoreImageTypes_str . ')')[0]->count;
             $this->printActionCompletedMsg();
             if ($totalImages) {
                 $this->printLine('Fetching all unprocessed image ids, total: ' . number_format($totalImages) . '.', 1);
-                $imageIds = array_column(
-                    Images::select('id')->whereNull('length')->whereNotIn('imageType', $ignoreImageTypes)->get()->toArray(),
-                    'id'
-                );
+                $imageIds = DB::select('select images.id as imageId from images where images.id not in (select image_dimensions.image_id from image_dimensions) and images.imageType not in (' . $ignoreImageTypes_str . ')');
+                if (!empty($imageIds)) {
+                    $imageIds = array_map(function($obj){
+                        return $obj->imageId;
+                    }, $imageIds);
+                }
             } else {
                 $this->printLine('No images with unlogged attributes found.', 1);
             }
@@ -132,7 +135,8 @@ class ProcessAllImages extends Command
             }, $unprocessedImageIds);
             $unprocessedImageIds = array_column($unprocessedImageIds, 'image_id');
         }
-        dd(DB::select('select distinct(imageType) as format from images where id in (' . implode(',', $unprocessedImageIds) . ')'));
+        // dd(DB::select('select distinct(imageType) as format from images where id in (' . implode(',', $unprocessedImageIds) . ')'));
+        // TODO: Add left out images metadata logging code
         $this->printLine('Checking for duplicates in image analytics tables ... ', 1, true);
         Artisan::call('process:remove_image_duplicate_indices');
         $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);

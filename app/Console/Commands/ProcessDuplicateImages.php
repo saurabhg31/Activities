@@ -9,6 +9,7 @@ use App\Traits\Miscellaneous;
 use Error;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 
 class ProcessDuplicateImages extends Command
 {
@@ -41,6 +42,7 @@ class ProcessDuplicateImages extends Command
         ];
         $this->clearScreen();
         $this->printHeading('DUPLICATE IMAGES DETECTION AND PROCESSING OPERATION STARTED ON ' . $time['start']->format('d M, Y \A\T H:i:s A (e)'));
+        Artisan::call('process:images');
         $allowed = [
             'types' => ['images', 'data']
         ];
