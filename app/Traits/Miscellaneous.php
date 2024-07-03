@@ -404,7 +404,8 @@ trait Miscellaneous {
      * @return void
      */
     private function clearScreen() {
-        popen('clear', 'w');
+        $command = PHP_OS == 'WINNT' ? 'cls' : 'clear';
+        popen($command, 'w');
     }
 
     /**
