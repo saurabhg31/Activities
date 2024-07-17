@@ -5,12 +5,14 @@ namespace App\Console\Commands;
 ini_set('max_execution_time', -1); // WARNING: Infinite execution time set
 
 use App\Jobs\UpdateImageLength;
+use App\Models\Images as ImagesModel;
 use App\Traits\Miscellaneous;
 use Error;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use Images;
 
 class ProcessDuplicateImages extends Command
 {
@@ -103,7 +105,7 @@ class ProcessDuplicateImages extends Command
     {
         $tableName = 'images';
         $table = DB::table($tableName)->select([
-            'images.id', 'images.image as data', 'images.length as size', 'image_dimensions.x_axis as length',
+            'images.id', 'image_dimensions.id as dimensionId', 'images.image as data', 'images.length as size', 'image_dimensions.x_axis as length',
             'image_dimensions.y_axis as breadth', 'images.created_at'
         ])->join('image_dimensions', 'image_dimensions.image_id', '=', 'images.id');
         $offset = $possibleDuplicatsCount = $processed = $progress = $possibleDuplicateIdCount = 0;
@@ -115,6 +117,7 @@ class ProcessDuplicateImages extends Command
             $imgs = $table->skip($offset)->limit($limit)->get();
             foreach ($imgs as $img) {
                 if (!$img->length) {
+                    $this->printLine('No image length, skipping image with id: ' . number_format($img->id) . PHP_EOL);
                     continue;
                 }
                 $this->printLine('Checking for image id: ' . $img->id . ' ... ', 2);
@@ -128,21 +131,38 @@ class ProcessDuplicateImages extends Command
                         ]);
                     })->get();
                 $this->printActionCompletedMsg();
-                array_push($possibleDuplicateIdBag, [
-                    'id' => $img->id,
-                    'duplicates' => array_column($possibleDuplicateIds->toArray(), 'id')
-                ]);
+                $duplicates = array_column($possibleDuplicateIds->toArray(), 'id');
+                if (count($duplicates)) {
+                    foreach ($duplicates as $duplicateImageId) {
+                        $tmpImg = DB::table($tableName)->where('images.id', $duplicateImageId)->first();
+                        // dd($tmpImg, $duplicateImageId);
+                        if ($img && $img->image == $tmpImg->image) {
+                            $this->generateImageFromData(new ImagesModel, $img->id);
+                            $this->generateImageFromData(new ImagesModel, $img->$duplicateImageId);
+                            dd('Duplicate Detected!');
+                        } else {
+                            dd('Not actual Duplicate Detected!');
+                        }
+                    }
+                    array_push($possibleDuplicateIdBag, [
+                        'id' => $img->id,
+                        'duplicates' => $duplicates
+                    ]);
+                }
+                $duplicates = [];
                 $processed++;
                 $possibleDuplicateIdCount += $possibleDuplicateIds->count();
                 $possibleDuplicatsCount += $possibleDuplicateIdCount;
                 $progress = $processed / $totalImages * 100;
-                dd($possibleDuplicateIdBag);
+                if (count($possibleDuplicateIdBag)) {
+                    dd($possibleDuplicateIdBag);
+                }
                 $this->removeLastLine();
             }
             $offset += $limit;
             $this->removeLastLine();
         }
-        Log::info('Possible duplicats: ', $possibleDuplicateIdBag);
+        Log::info('Possible duplicates: ', $possibleDuplicateIdBag);
         dd($possibleDuplicateIdBag);
     }
 }
