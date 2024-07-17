@@ -95,7 +95,7 @@ class ProcessAllImages extends Command
                         $this->printLine('Logging dimensions of image having image id: ' . $imageId . ' ' . $this->printProgressBar($progress * 100, '.', 20), 2);
                         try {
                             array_push($imagesDimensionsBag, array_merge([$imageId], $this->getImageDimension($imageId)));
-                            print ('Done' . PHP_EOL);
+                            $this->printActionCompletedMsg();
                         } catch (Exception $error) {
                             Log::error($error->getMessage());
                             print ('Error: "' . $error->getMessage() . '" encountered! Skipped.' . PHP_EOL);
@@ -105,7 +105,9 @@ class ProcessAllImages extends Command
                         $progress = $processed / $totalImages;
                     }
                 }
+                $this->printLine('Inserting/updating dimension data to table ... ', 2);
                 ImageDimensions::addMultipleImagesDimensionsInfo($imagesDimensionsBag);
+                $this->printActionCompletedMsg();
             }
             $this->printLine('Logging image sizes of ' . number_format($processed) . ' images ... ', 1, true);
             $processed = 0;

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-ini_set('max_execution_time', 3600);
+ini_set('max_execution_time', -1); // WARNING: Infinite execution time set
 
 use App\Jobs\UpdateImageLength;
 use App\Traits\Miscellaneous;
@@ -136,6 +136,7 @@ class ProcessDuplicateImages extends Command
                 $possibleDuplicateIdCount += $possibleDuplicateIds->count();
                 $possibleDuplicatsCount += $possibleDuplicateIdCount;
                 $progress = $processed / $totalImages * 100;
+                dd($possibleDuplicateIdBag);
                 $this->removeLastLine();
             }
             $offset += $limit;
