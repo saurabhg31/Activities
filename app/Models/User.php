@@ -21,6 +21,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'defaultWallpaperId',
     ];
 
     /**
@@ -41,4 +42,33 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Store default wallpaper image id in users table
+     * @param integer $imageId
+     * @param \App\Models\User $user
+     * @return void|string
+     */
+    public static function setDefaultWallpaper(int $imageId, self $user)
+    {
+        if (!Images::where('id', $imageId)->exists()) {
+            return 'Invalid image id provided!';
+        }
+        $user->defaultWallpaperId = $imageId;
+        $user->save();
+    }
+
+    /**
+     * Get default wallpaper data
+     * @param \App\Models\User $user
+     * @return string (base64 encoded image data)
+     */
+    public static function getDefaultWallpaperData(self $user)
+    {
+        if (is_null($user->defaultWallpaperId)) {
+            return null;
+        }
+        $imageData = Images::find($user->defaultWallpaperId);
+        return 'data:image/' . $imageData->imageType . ';base64, ' . $imageData->image;
+    }
 }

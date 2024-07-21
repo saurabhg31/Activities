@@ -220,6 +220,12 @@ function postEditImageInfo(form) {
     return false;
 }
 
+function setImageAsWallpaper(imageId, button){
+    transmitData('setWallpaper/'+imageId, 'GET', null, button, {
+        success: () => { console.log(response); }
+    });
+}
+
 $(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType,#updateTags', function (e) {
     buttonHtml = $(this).html();
     if (this.id === 'addNewType') {

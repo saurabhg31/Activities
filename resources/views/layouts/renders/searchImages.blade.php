@@ -49,6 +49,11 @@
             <label>Uploaded on: {{ $image->created_at->format('d M, Y \a\t h:i:s a') }}</label>
             <button type="button" class="btn btn-warning"
                 onclick="editImage({{ $image->id }}, $(this).prev().prev().prev())">Edit</button>
+            @if (!Session::has('domain') || strtolower(Session::get('domain')) == 'public')
+                <button class="btn btn-success"
+                    onclick="setImageAsWallpaper({{ $image->id }}, $(this))">Set As
+                    Wallpaper</button>
+            @endif
             <button class="btn btn-danger" onclick="removeImage({{ $image->id }}, $(this).parent())">Delete</button>
         </div>
         @php($count++)
