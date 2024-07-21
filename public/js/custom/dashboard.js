@@ -222,7 +222,7 @@ function postEditImageInfo(form) {
 
 function setImageAsWallpaper(imageId, button){
     transmitData('setWallpaper/'+imageId, 'GET', null, button, {
-        success: () => { console.log(response); }
+        success: () => { history.go(0); }
     });
 }
 

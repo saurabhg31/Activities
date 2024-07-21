@@ -1,12 +1,12 @@
 @php
-    if (isset($defaultWallpaperData)) {
-        $backgroundImg = $defaultWallpaperData;
-    } else {
+    if (Session::has('domain') && strtolower(Session::get('domain') == 'private')) {
         $privateImages = array_filter(scandir('images/privateDomainImages/'), function ($file) {
             return $file != '.' && $file != '..';
         });
         $backgroundImg = $privateImages[array_rand($privateImages, 1)];
         $backgroundImg = asset("images/privateDomainImages/{$backgroundImg}");
+    } else {
+        $backgroundImg = $defaultWallpaperData;
     }
 @endphp
 
@@ -95,5 +95,5 @@
         </div>
     </div>
     @endsection @section('scripts')
-    <script type="text/javascript" src="{{ asset('js/custom/dashboard.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/custom/dashboard.min.js') }}"></script>
 @endsection
