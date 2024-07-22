@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+// use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 
 class Images extends Model
 {
     protected $table = 'images';
     protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'length', 'created_at'];
+    protected $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl';
 
     /**
      * get images
@@ -153,5 +157,28 @@ class Images extends Model
         $img = self::find($imageId);
         $img->length = strlen($img->image);
         $img->save();
+    }
+
+    /**
+     * show duplicates
+     */
+    public static function showDuplicates(int $page = 1)
+    {
+        $duplicatesMapping = json_decode(Storage::read((new self)->duplicateDataResultFile));
+        $images = new Collection();
+        $counter = 0;
+        $limit = env('PAGINATION', 20);
+        $skip = $page * $limit;
+        foreach ($duplicatesMapping->duplicatesSearchResult->result as $map) {
+            $counter++;
+            if ($counter >= $skip) {
+                $images->add(self::find($map->original));
+                $images->add(self::whereIn('id', $map->duplicates)->get());
+            }
+            if ($images->count() == $limit) {
+                break;
+            }
+        }
+        return $images;
     }
 }

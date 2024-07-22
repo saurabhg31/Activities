@@ -1,4 +1,5 @@
 const MAX_ALLOWED_UPLOAD_ITEMS = 1000;
+let page = 1;
 let display, imgEdit;
 
 $(document).ready(function () {
@@ -226,9 +227,20 @@ function setImageAsWallpaper(imageId, button){
     });
 }
 
-$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType,#updateTags', function (e) {
+function goToNextPageOfImageDuplicates(action = 'next', button){
+    if (action == 'prev') {
+        if (page > 1){
+            page--;
+        }
+    } else if (page == 'next') {
+        page++;
+    }
+    return transmitData('operation/viewDuplicates?page=' + page, 'GET', null, button); 
+}
+
+$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType,#updateTags,#viewDuplicates', function (e) {
     buttonHtml = $(this).html();
-    if (this.id === 'addNewType') {
+    if (this.id == 'addNewType') {
         e.preventDefault();
         let newType = prompt("Enter type:");
         $("#typeSelect").append(new Option(newType, newType));

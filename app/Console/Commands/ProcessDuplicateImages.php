@@ -49,7 +49,7 @@ class ProcessDuplicateImages extends Command
         ];
         $this->clearScreen();
         $this->printHeading('DUPLICATE IMAGES DETECTION AND PROCESSING OPERATION STARTED ON ' . $time['start']->format('d M, Y \A\T H:i:s A (e)'));
-        Artisan::call('process:images');
+        // Artisan::call('process:images');
         $allowed = [
             'types' => ['images', 'data']
         ];
@@ -179,7 +179,7 @@ class ProcessDuplicateImages extends Command
             $originalImgData = Images::find($mappingData->imageId);
             foreach ($mappingData->possibleDuplicateIds as $possibleDuplicateId) {
                 $needleImgData = Images::find($possibleDuplicateId);
-                if ($needleImgData->image == $originalImgData->image) {
+                if (base64_decode($needleImgData->image) === base64_decode($originalImgData->image)) {
                     if (isset($duplicateKeyIdMapping[$originalImgData->id])) {
                         array_push($duplicateKeyIdMapping[$originalImgData->id], $needleImgData->id);
                     } else {
@@ -200,7 +200,7 @@ class ProcessDuplicateImages extends Command
                 'duplicates' => $duplicateImageIds
             ]);
         }
-        Storage::append($this->duplicateDataResultFile, json_encode([
+        Storage::write($this->duplicateDataResultFile, json_encode([
             'duplicatesSearchResult' => ['time' => now()->format('d M, Y \a\t H:i:s A P'), 'result' => $duplicatesDetectionResult]
         ]));
     }
@@ -211,12 +211,6 @@ class ProcessDuplicateImages extends Command
     private function exportDuplicates()
     {
         $results = Storage::read($this->duplicateDataResultFile);
-        if ($results) {
-            $results = array_map(function ($jsonStr) {
-                return json_decode($jsonStr);
-            }, explode(PHP_EOL, $results));
-            $results = new Collection($results);
-        }
-        dd($results->first());
+        dd(json_decode($results));
     }
 }

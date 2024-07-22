@@ -63,12 +63,20 @@
                                 &nbsp;
                                 &nbsp;
                                 <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>&nbsp;
+                                {{-- &nbsp;
                                 &nbsp;
                                 &nbsp;
                                 &nbsp;
                                 &nbsp;
-                                &nbsp;
-                                <button class="btn btn-warning" id="updateTags">Rename/Update Tags</button>
+                                <button class="btn btn-warning" id="updateTags">Rename/Update Tags</button> --}}
+                                @if (strtolower(Session::get('domain')) == 'private')
+                                    &nbsp;
+                                    &nbsp;
+                                    &nbsp;
+                                    &nbsp;
+                                    &nbsp;
+                                    <button class="btn btn-warning" id="viewDuplicates">View Duplicates</button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -96,4 +104,5 @@
     </div>
     @endsection @section('scripts')
     <script type="text/javascript" src="{{ asset('js/custom/dashboard.min.js') }}"></script>
+    {{-- <script type="text/javascript" src="{{ asset('js/custom/dashboard.js') }}"></script> --}}
 @endsection
