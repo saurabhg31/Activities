@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\User;
+use Error;
 use Exception;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Contracts\Database\Query\Builder as QueryBuilder;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use stdClass;
 
 trait Miscellaneous
 {
@@ -467,5 +469,36 @@ trait Miscellaneous
         $img = $table::find($imageId);
         $filename = $storagePath . DIRECTORY_SEPARATOR . str_replace(['#', ' '], '_', $img->tags) . '.' . $img->imageType;
         file_put_contents($filename, base64_decode($img->image));
+    }
+
+    /**
+     * Convert time difference in seconds to hours, days etc ...
+     * @param integer $timeDiffInSeconds - Time difference in seconds
+     * @return string 
+     */
+    private function getHumanReadableTimeDiffFromSeconds(int $timeDiffInSeconds)
+    {
+        // declaring time conventions in seconds
+        $timeChart = new stdClass();
+        $timeChart->minute = 60;
+        $timeChart->hour = 60 * $timeChart->minute;
+        $timeChart->day = 24 * $timeChart->hour;
+        $timeChart->month = 30 * $timeChart->day;
+        $timeChart->year = 12 * $timeChart->month;
+        $timeChart->decade = 10 * $timeChart->year;
+        $timeChart->century = 10 * $timeChart->decade;
+        $timeChart->millennia = 10 * $timeChart->century;
+        $timeOrder = ['minute', 'hour', 'day', 'month', 'year', 'decade', 'century', 'millennia'];
+        $q = 0.0;
+        $key = reset($timeOrder);
+        while ($key) {
+            $q = $timeDiffInSeconds / $timeChart->$key;
+            if ($q < 1) {
+                $key = prev($timeOrder);
+                break;
+            }
+            $key = next($timeOrder);
+        }
+        return number_format($timeDiffInSeconds / $timeChart->$key, 2) . ' ' . $key . '(s)';
     }
 }

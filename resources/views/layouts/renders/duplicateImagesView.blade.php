@@ -34,7 +34,7 @@
 @if (isset($data['images']))
     <legend style="margin-top: 0.4%;">
         Displaying <label id="imageCount">{{ count($data['images']) }}</label> of
-        {{ number_format($data['images']->total()) }} results. Page {{ $data['images']->currentPage() }} of
+        {{ number_format($data['images']->total()) }} possible duplicates. Page {{ $data['images']->currentPage() }} of
         {{ $data['images']->lastPage() }}
     </legend>
     @php($count = 1)
