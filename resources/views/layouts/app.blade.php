@@ -23,7 +23,7 @@
     @yield('css')
 </head>
 
-<body @if (Session::has('domain') && Session::get('domain') == 'private') class="backgroundClass" @endif>
+<body class="backgroundClass">
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">

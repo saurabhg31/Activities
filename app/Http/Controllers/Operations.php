@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Jobs\LogSearchQueries;
 use App\Models\ImageIndex;
 use App\Models\Images;
+use App\Models\User;
 use App\system_files_in_use;
 use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
 class Operations extends Controller
@@ -328,5 +331,27 @@ class Operations extends Controller
             // 'dataForStorage' => array_merge($headers, $data),
             'stored in' => $this->generateSpreadsheet($data, $headers, 'CurrentlyOpenFiles_' . gmdate('Y-m-d_H:i:s', time()) . ($grantSuperUserAccess ? ' (super user access enabled)' : null))
         ];
+    }
+
+    /**
+     * Sets passed image id as wallpaper for public domain
+     * @param integer $imageId
+     * @return json response
+     */
+    public function useImageAsWallpaper(int $imageId, Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $status = User::setDefaultWallpaper($imageId, $request->user());
+            if (is_string($status)) {
+                return $this->sendError($status, ['imageId' => $imageId], 502);
+            }
+            DB::commit();
+            return $this->sendResponse(null, null, ['text' => 'Refreshing page.', 'heading' => 'Wallpaper set successfully']);
+        } catch (Exception $error) {
+            DB::rollBack();
+            Log::error($error->getMessage(), $error->getTrace());
+            return $this->sendError('Unable to set wallpaper, all changes rolled back!');
+        }
     }
 }
