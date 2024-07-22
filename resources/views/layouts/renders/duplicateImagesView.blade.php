@@ -33,8 +33,9 @@
 </form>
 @if (isset($data['images']))
     <legend style="margin-top: 0.4%;">
-        Displaying <label id="imageCount">{{ number_format(count($data['images'])) }} images with possible duplicates
-            found.</label>
+        Displaying <label id="imageCount">{{ count($data['images']) }}</label> of
+        {{ number_format($data['images']->total()) }} results. Page {{ $data['images']->currentPage() }} of
+        {{ $data['images']->lastPage() }}
     </legend>
     @php($count = 1)
     @foreach ($data['images'] as $image)
@@ -64,9 +65,4 @@
         @endif
     @endforeach
 @endif
-<br><br>
-<div style="margin-left:27%;margin-right:0.5%;margin-bottom: -45%;">
-    <button class="btn btn-warning" onclick="goToNextPageOfImageDuplicates('prev', $(this))">Go to previous
-        page</button>
-    <button class="btn btn-primary" onclick="goToNextPageOfImageDuplicates('next', $(this))">Go to next page</button>
-</div>
+<div style="margin-left:1%;margin-right:1%;">{{ $data['images']->links('pagination::bootstrap-5') }}</div>

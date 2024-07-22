@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Database\Eloquent\Collection;
+use Error;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -165,20 +165,18 @@ class Images extends Model
     public static function showDuplicates(int $page = 1)
     {
         $duplicatesMapping = json_decode(Storage::read((new self)->duplicateDataResultFile));
-        $images = new Collection();
-        $counter = 0;
-        $limit = env('PAGINATION', 20);
-        $skip = $page * $limit;
-        foreach ($duplicatesMapping->duplicatesSearchResult->result as $map) {
-            $counter++;
-            if ($counter >= $skip) {
-                $images->add(self::find($map->original));
-                $images->add(self::whereIn('id', $map->duplicates)->get());
-            }
-            if ($images->count() == $limit) {
-                break;
-            }
+        if (!isset($duplicatesMapping->duplicatesSearchResult->result)) {
+            throw new Error('No duplicate data found!');
         }
-        return $images;
+        if (empty($duplicatesMapping->duplicatesSearchResult->result)) {
+            return new Collection();
+        }
+        $duplicatesMappingCollection = new Collection($duplicatesMapping->duplicatesSearchResult->result);
+        $ids = array_unique($duplicatesMappingCollection->pluck('original')->toArray());
+        foreach ($duplicatesMappingCollection->pluck('duplicates')->toArray() as $duplicateIdArrays) {
+            $ids = array_merge($ids, $duplicateIdArrays);
+        }
+        $ids = array_unique($ids);
+        return self::whereIn('id', $ids)->paginate(env('PAGINATION', 20));
     }
 }
