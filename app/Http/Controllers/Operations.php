@@ -69,6 +69,12 @@ class Operations extends Controller
                             $this->renderView($type, ['types' => Images::imageTypes()]),
                             $this->generateMsgBag($type, 'Ready to update tags in bulk', 'Update tags')
                         );
+                    case 'viewDuplicates':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, ['images' => Images::showDuplicates(), 'types' => Images::imageTypes()]),
+                            $this->generateMsgBag($type, 'Ready to search', 'Search Images')
+                        );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }

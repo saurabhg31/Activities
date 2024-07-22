@@ -46,12 +46,11 @@
             <img src="data:image/{{ $image->imageType }};base64, {{ $image->image }}"
                 title="Type: {{ $image->type }} || Tags: {{ $image->tags }}"
                 style="max-width: 100%; max-height: 100%; cursor: pointer;" onclick="openImageInModal($(this))" /><br>
-            <label>Uploaded on: {{ $image->created_at->format('d M, Y \a\t h:i:s a') }}</label>
+            <label>Image Id: {{ $image->id }} : {{ $image->created_at->format('Y\/m\/d h:i a') }}</label>
             <button type="button" class="btn btn-warning"
                 onclick="editImage({{ $image->id }}, $(this).prev().prev().prev())">Edit</button>
             @if (!Session::has('domain') || strtolower(Session::get('domain')) == 'public')
-                <button class="btn btn-success"
-                    onclick="setImageAsWallpaper({{ $image->id }}, $(this))">Set As
+                <button class="btn btn-success" onclick="setImageAsWallpaper({{ $image->id }}, $(this))">Set As
                     Wallpaper</button>
             @endif
             <button class="btn btn-danger" onclick="removeImage({{ $image->id }}, $(this).parent())">Delete</button>

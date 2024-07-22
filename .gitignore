@@ -3,7 +3,7 @@
 /public/hot
 /public/storage
 /storage/*.key
-/storage/pics
+/storage/pics/
 /vendor
 .env
 .env.backup
@@ -20,4 +20,4 @@ rr
 composer.lock
 package-lock.json
 /nbproject
-.vs
+.vs/

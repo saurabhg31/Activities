@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use Error;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 
 class Images extends Model
 {
     protected $table = 'images';
-    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'created_at'];
+    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'length', 'created_at'];
+    protected $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl';
 
     /**
      * get images
@@ -33,17 +37,23 @@ class Images extends Model
      */
     public static function search(array $params = null, bool $useIndexing = true)
     {
-        $tags = [];
+        $tags = preg_split('/[\ \n\,]+/', $params['tags']);
+        $tags = array_map(function ($str) {
+            return trim($str);
+        }, $tags);
+        $ids = array_filter($tags, function ($str) {
+            return is_numeric($str);
+        });
+        $tags = array_diff($tags, $ids);
         $gifDataPresent = false;
         $search = self::select('images.*')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
-        })->when(isset($params['tags']), function ($conditionalQuery) use ($params, $useIndexing, &$tags, &$gifDataPresent) {
-            $tags = preg_split('/[\ \n\,]+/', $params['tags']);
+        })->when(!empty($tags), function ($conditionalQuery) use ($useIndexing, $tags, &$gifDataPresent) {
             if (array_search('gif', $tags) !== false) {
                 $gifDataPresent = true;
             }
             if ($useIndexing) {
-                return $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
+                $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
                     $join->on('image_search_indexing.image_id', '=', 'images.id');
                     if (count($tags) == 1) {
                         $join->where('tag', 'like', '%' . reset($tags) . '%');
@@ -52,13 +62,14 @@ class Images extends Model
                     }
                 });
             } else {
-                return $conditionalQuery->where(function ($query) use ($tags) {
+                $conditionalQuery->where(function ($query) use ($tags) {
                     foreach ($tags as $tag) {
                         $query->where('images.tags', 'like', '%' . $tag . '%');
                     }
                     return $query;
                 });
             }
+            return $conditionalQuery;
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
             $search->where('images.user_id', auth('web')->id());
@@ -67,6 +78,9 @@ class Images extends Model
         }
         if ($useIndexing && count($tags) > 1) {
             $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . count($tags));
+        }
+        if (!empty($ids)) {
+            $search->whereIn('images.id', $ids)->where('images.user_id', auth()->id());
         }
         DB::statement('SET sql_mode=""');
         $search = $search->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 12 : env('PAGINATION', 20));
@@ -131,5 +145,38 @@ class Images extends Model
         return self::select($fields)->when($exceptIds, function ($query) use ($exceptIds) {
             return $query->whereNotIn('id', $exceptIds);
         })->where('image', $imageData->image)->where('id', '!=', $imageData->id)->get();
+    }
+
+    /**
+     * Calculate and store length of image based on id
+     * @param integer $imageId
+     * @return void
+     */
+    public static function logImageLength(int $imageId)
+    {
+        $img = self::find($imageId);
+        $img->length = strlen($img->image);
+        $img->save();
+    }
+
+    /**
+     * show duplicates
+     */
+    public static function showDuplicates(int $page = 1)
+    {
+        $duplicatesMapping = json_decode(Storage::read((new self)->duplicateDataResultFile));
+        if (!isset($duplicatesMapping->duplicatesSearchResult->result)) {
+            throw new Error('No duplicate data found!');
+        }
+        if (empty($duplicatesMapping->duplicatesSearchResult->result)) {
+            return new Collection();
+        }
+        $duplicatesMappingCollection = new Collection($duplicatesMapping->duplicatesSearchResult->result);
+        $ids = array_unique($duplicatesMappingCollection->pluck('original')->toArray());
+        foreach ($duplicatesMappingCollection->pluck('duplicates')->toArray() as $duplicateIdArrays) {
+            $ids = array_merge($ids, $duplicateIdArrays);
+        }
+        $ids = array_unique($ids);
+        return self::whereIn('id', $ids)->paginate(env('PAGINATION', 20));
     }
 }

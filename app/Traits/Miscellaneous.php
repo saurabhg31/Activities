@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Schema;
 
 trait Miscellaneous
 {
+
     /**
      * Flatten an array
      * @param array $array
@@ -105,6 +106,16 @@ trait Miscellaneous
     }
 
     /**
+     * print action completed message in terminal
+     * @param string $msg
+     * @return void
+     */
+    private function printActionCompletedMsg(string $msg = 'Done.' . PHP_EOL)
+    {
+        print($msg);
+    }
+
+    /**
      * Remove last line from cli
      * @return void
      */
@@ -170,7 +181,7 @@ trait Miscellaneous
      */
     public function findMaxAllowedInsertRows(array &$dataset, string $tableName = 'products', string $considerExistsCheckOf = null)
     {
-        $maxAllowedBytes = (int)DB::select("show variables like 'max_allowed_packet'")[0]->Value;
+        $maxAllowedBytes = (int) DB::select("show variables like 'max_allowed_packet'")[0]->Value;
         if ($considerExistsCheckOf) {
             if (in_array('deleted_at', Schema::getColumnListing($tableName))) {
                 $softDeleteColumn = 'deleted_at';
@@ -227,9 +238,9 @@ trait Miscellaneous
         $envData = file_get_contents(app()->environmentFilePath());
         if (!str_contains($envData, $key . '=')) {
             $envData .= PHP_EOL . $key . '="' . $value . '"' . PHP_EOL;
-            return (bool)file_put_contents(app()->environmentFilePath(), $envData);
+            return (bool) file_put_contents(app()->environmentFilePath(), $envData);
         } else {
-            return (bool)file_put_contents(app()->environmentFilePath(), str_replace(
+            return (bool) file_put_contents(app()->environmentFilePath(), str_replace(
                 [$key . '=' . env($key), $key . '="' . env($key) . '"'],
                 $key . '="' . $value . '"',
                 $envData
@@ -401,5 +412,60 @@ trait Miscellaneous
         array_map(function ($tableName) {
             DB::table($tableName)->truncate();
         }, $tables);
+    }
+
+    /**
+     * Clear terminal screen (linux only)
+     * @return void
+     */
+    private function clearScreen()
+    {
+        $command = PHP_OS == 'WINNT' ? 'cls' : 'clear';
+        popen($command, 'w');
+    }
+
+    /**
+     * Print terminal heading
+     * @param string $msg
+     * @param string $repeatChar
+     * @param integer $repeatTimes
+     * @param boolean $prependLineBreak
+     * @param boolean $appendLineBreak
+     * @return void
+     */
+    private function printHeading(string $msg, string $repeatChar = '-', int $repeatTimes = 5, bool $prependLineBreak = true, bool $appendLineBreak = true)
+    {
+        $repeatCharPresent = $repeatTimes && !empty($repeatChar);
+        $line = $prependLineBreak ? PHP_EOL : '';
+        $line .= $repeatCharPresent ? str_repeat($repeatChar, $repeatTimes) . ' ' : ' ';
+        $line .= $msg;
+        $line .= $repeatCharPresent ? ' ' . str_repeat($repeatChar, $repeatTimes) : '';
+        $line .= $appendLineBreak ? PHP_EOL : '';
+        print(' ' . $line);
+    }
+
+    /**
+     * prints a progress bar
+     */
+    private function printProgressBar(float $progressPercentage, string $progressChar = '.', int $maxProgressChars = 16)
+    {
+        return str_repeat($progressChar, ceil($progressPercentage / 100 * $maxProgressChars)) . str_repeat(' ', 4) . round($progressPercentage, 2) . ' %';
+    }
+
+    /**
+     * generates image from base-64 encoded string data
+     * @return void
+     */
+    private function generateImageFromData(Model $table, int $imageId, string $storagePath = null)
+    {
+        if (!$storagePath) {
+            $storagePath = storage_path('pics' . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . 'generated');
+        }
+        if (!file_exists($storagePath)) {
+            mkdir($storagePath, 0775, true);
+        }
+        $img = $table::find($imageId);
+        $filename = $storagePath . DIRECTORY_SEPARATOR . str_replace(['#', ' '], '_', $img->tags) . '.' . $img->imageType;
+        file_put_contents($filename, base64_decode($img->image));
     }
 }
