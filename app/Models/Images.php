@@ -162,7 +162,7 @@ class Images extends Model
     /**
      * show duplicates
      */
-    public static function showDuplicates(int $page = 1)
+    public static function showDuplicates()
     {
         $duplicatesMapping = json_decode(Storage::read((new self)->duplicateDataResultFile));
         if (!isset($duplicatesMapping->duplicatesSearchResult->result)) {

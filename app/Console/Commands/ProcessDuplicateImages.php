@@ -49,7 +49,7 @@ class ProcessDuplicateImages extends Command
         ];
         $this->clearScreen();
         $this->printHeading('DUPLICATE IMAGES DETECTION AND PROCESSING OPERATION STARTED ON ' . $time['start']->format('d M, Y \A\T H:i:s A (e)'));
-        // Artisan::call('process:images');
+        Artisan::call('process:images');
         $allowed = [
             'types' => ['images', 'data']
         ];
@@ -179,7 +179,8 @@ class ProcessDuplicateImages extends Command
             $originalImgData = Images::find($mappingData->imageId);
             foreach ($mappingData->possibleDuplicateIds as $possibleDuplicateId) {
                 $needleImgData = Images::find($possibleDuplicateId);
-                if (base64_decode($needleImgData->image) === base64_decode($originalImgData->image)) {
+                // if (base64_decode($needleImgData->image) === base64_decode($originalImgData->image)) {
+                if (strcmp($needleImgData->image, $originalImgData->image) === 0) {
                     if (isset($duplicateKeyIdMapping[$originalImgData->id])) {
                         array_push($duplicateKeyIdMapping[$originalImgData->id], $needleImgData->id);
                     } else {
@@ -207,6 +208,7 @@ class ProcessDuplicateImages extends Command
 
     /**
      * Export duplicate images
+     * TODO: Add required code
      */
     private function exportDuplicates()
     {
