@@ -47,7 +47,7 @@ class FindDuplicatesUsingHardSearch extends Command
             $statusMsg = 'Searching for duplicates of image with id: ' . number_format($needleImg->id) . '. ';
             $statusMsg .= str_repeat('.', floor($progress * 20)) . ' ' . number_format($progress * 100, 5);
             $statusMsg .= ' % ---- Duplicates: ' . number_format($duplicateCount);
-            $statusMsg .= ' ---- ( ' . number_format($processed) . ' / ' . number_format($totalImages) . ' )';
+            $statusMsg .= ' ---- ( ' . number_format($processed + 1) . ' / ' . number_format($totalImages) . ' )';
             if ($etaInSeconds !== false) {
                 $statusMsg .= ' ---- ETA: ' . $this->getHumanReadableTimeDiffFromSeconds($etaInSeconds);
             }
