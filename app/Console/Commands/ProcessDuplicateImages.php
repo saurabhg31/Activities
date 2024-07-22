@@ -4,16 +4,16 @@ namespace App\Console\Commands;
 
 ini_set('max_execution_time', -1); // WARNING: Infinite execution time set
 
+use Error;
+use App\Models\Images;
+use App\Traits\Miscellaneous;
 use App\Jobs\UpdateImageLength;
 use App\Models\ImageDimensions;
-use App\Models\Images as ImagesModel;
-use App\Traits\Miscellaneous;
-use Error;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Images;
+use Illuminate\Support\Facades\Artisan;
 
 class ProcessDuplicateImages extends Command
 {
@@ -32,6 +32,8 @@ class ProcessDuplicateImages extends Command
      * @var string
      */
     protected $description = 'Command to detect & process duplicate images';
+    protected $duplicateMappingDataFile = 'data/duplicatesMapping.jsonl'; // used by "findPossibleDuplicates" method
+    protected $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl'; // used by "findPossibleDuplicates" method
 
     /**
      * Execute the console command.
@@ -46,7 +48,7 @@ class ProcessDuplicateImages extends Command
         ];
         $this->clearScreen();
         $this->printHeading('DUPLICATE IMAGES DETECTION AND PROCESSING OPERATION STARTED ON ' . $time['start']->format('d M, Y \A\T H:i:s A (e)'));
-        // Artisan::call('process:images');
+        Artisan::call('process:images');
         $allowed = [
             'types' => ['images', 'data']
         ];
@@ -62,8 +64,9 @@ class ProcessDuplicateImages extends Command
                 $this->generateImagesLengthData($table);
                 $this->printLine('Pass 1: Checking sizes ... Done.', 1, true);
                 $this->printLine('Searching for duplicates', 1, true);
-                $this->findDuplicates($totalImages);
-                $this->printLine('Done', 0, true);
+                $this->findPossibleDuplicates($totalImages);
+                $this->findActualDuplicates(); // uses $storageFile to hone in on actual duplicates (method used for performance benefits)
+                $this->printLine('Done.', 0, true);
                 break;
             case 'data':
                 $this->printLine('Duplicate detection for normal data is still under development.', 1, true);
@@ -71,11 +74,12 @@ class ProcessDuplicateImages extends Command
             default:
                 throw new Error('Invalid type argument! Allowed types: ' . implode(', ', $allowed['types']));
         }
+        $this->printHeading('DUPLICATE(S) DATA MAPPING GENERATED IN FILE: ' . $this->duplicateMappingDataFile);
         return Command::SUCCESS;
     }
 
     /**
-     * generates length of images in images table
+     * Generates length of images in images table
      * @return void
      */
     private function generateImagesLengthData()
@@ -100,13 +104,14 @@ class ProcessDuplicateImages extends Command
     }
 
     /**
-     * 
+     * Finds possible duplicates & stores output as a jsonl file ($storageFile)
+     * @param integer $totalImages
+     * @return void
      */
-    private function findDuplicates(int $totalImages)
+    private function findPossibleDuplicates(int $totalImages)
     {
-        $storageFile = 'data/possibleDuplicates.jsonl';
-        if (Storage::exists($storageFile)) {
-            Storage::delete($storageFile);
+        if (Storage::exists($this->duplicateMappingDataFile)) {
+            Storage::delete($this->duplicateMappingDataFile);
         }
         $tableObj = DB::table('images');
         $table = $tableObj->select([
@@ -133,7 +138,7 @@ class ProcessDuplicateImages extends Command
                     ])->where('image_id', '!=', $img->id)
                     ->pluck('image_id')->toArray();
                 if (!empty($possibleDuplicateIds)) {
-                    Storage::append($storageFile, json_encode([
+                    Storage::append($this->duplicateMappingDataFile, json_encode([
                         'imageId' => $img->id,
                         'possibleDuplicateIds' => $possibleDuplicateIds
                     ]));
@@ -144,5 +149,57 @@ class ProcessDuplicateImages extends Command
             $progress = $processed / $totalImages;
             $this->removeLastLine();
         }
+    }
+
+    /**
+     * Generates actual duplicate images id mapping, uses $storageFile to hone in on actual duplicates and appends result to $storageFile
+     * @return void
+     */
+    private function findActualDuplicates()
+    {
+        $this->printLine('Finding actual duplicates ...', 2, true);
+        $possibleDuplicateIdMapping = Storage::read($this->duplicateMappingDataFile);
+        $possibleDuplicateIdMapping = new Collection(array_map(function ($data) {
+            return json_decode($data);
+        }, explode(PHP_EOL, $possibleDuplicateIdMapping)));
+        $totalPossibleDuplicateFileSourceCount = $possibleDuplicateIdMapping->pluck('imageId')->count();
+        $needleImgData = null;
+        $originalImgData = null;
+        $result = $status = null;
+        $resultBag = [];
+        $duplicateCount = $progress = $processed = 0;
+        foreach ($possibleDuplicateIdMapping as $mappingData) {
+            $status = 'Comparing possible duplicate data for image id: ' . number_format($mappingData->imageId) . '. ';
+            $status .= 'Duplicate(s) found: ' . number_format($duplicateCount) . '. ';
+            $status .= str_repeat('.', floor($progress * 20)) . ' ' . number_format(($progress * 100), 5) . ' %';
+            $this->printLine($status, 3, true);
+            $originalImgData = Images::find($mappingData->imageId);
+            $result[$originalImgData->id] = [];
+            foreach ($mappingData->possibleDuplicateIds as $possibleDuplicateId) {
+                $needleImgData = Images::find($possibleDuplicateId);
+                if ($needleImgData->image == $originalImgData->image) {
+                    array_push($result[$originalImgData->id], ['id' => $needleImgData->id, 'tags' => $needleImgData->tags]);
+                    $duplicateCount++;
+                }
+            }
+            array_push($resultBag, $result);
+            $result = null;
+            $processed++;
+            $progress = $processed / $totalPossibleDuplicateFileSourceCount;
+            $this->removeLastLine();
+        }
+        $this->printActionCompletedMsg();
+        $resultBag = array_filter($resultBag, function ($arr) {
+            $count = 0;
+            foreach (array_keys($arr) as $id) {
+                if (!empty($arr[$id])) {
+                    $count++;
+                }
+            }
+            return $count > 0;
+        });
+        Storage::append($this->duplicateDataResultFile, json_encode([
+            'duplicatesSearchResult' => ['time' => now()->format('d M, Y \a\t H:i:s A P'), 'result' => $resultBag]
+        ]));
     }
 }
