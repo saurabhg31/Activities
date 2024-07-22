@@ -43,7 +43,7 @@ class Images extends Model
                 $gifDataPresent = true;
             }
             if ($useIndexing) {
-                return $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
+                $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
                     $join->on('image_search_indexing.image_id', '=', 'images.id');
                     if (count($tags) == 1) {
                         $join->where('tag', 'like', '%' . reset($tags) . '%');
@@ -52,13 +52,22 @@ class Images extends Model
                     }
                 });
             } else {
-                return $conditionalQuery->where(function ($query) use ($tags) {
+                $conditionalQuery->where(function ($query) use ($tags) {
                     foreach ($tags as $tag) {
                         $query->where('images.tags', 'like', '%' . $tag . '%');
                     }
                     return $query;
                 });
             }
+            $ids = array_filter($tags, function ($str) {
+                return is_numeric(trim($str));
+            });
+            if (!empty($ids)) {
+                $conditionalQuery->orWhere(function ($subQuery) use ($ids) {
+                    return $subQuery->where('images.user_id', auth()->id())->whereIn('images.id', $ids);
+                });
+            }
+            return $conditionalQuery;
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
             $search->where('images.user_id', auth('web')->id());

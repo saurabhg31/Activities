@@ -34,6 +34,7 @@ class ProcessDuplicateImages extends Command
     protected $description = 'Command to detect & process duplicate images';
     protected $duplicateMappingDataFile = 'data/duplicatesMapping.jsonl'; // used by "findPossibleDuplicates" method
     protected $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl'; // used by "findPossibleDuplicates" method
+    protected $duplicateExportDir = 'data/duplicates';
 
     /**
      * Execute the console command.
@@ -48,10 +49,10 @@ class ProcessDuplicateImages extends Command
         ];
         $this->clearScreen();
         $this->printHeading('DUPLICATE IMAGES DETECTION AND PROCESSING OPERATION STARTED ON ' . $time['start']->format('d M, Y \A\T H:i:s A (e)'));
-        Artisan::call('process:images');
+        // Artisan::call('process:images');
         $allowed = [
             'types' => ['images', 'data']
-        ];
+        ];/*
         print(str_repeat('-', 120) . PHP_EOL);
         switch ($this->argument('type')) {
             case null:
@@ -73,8 +74,11 @@ class ProcessDuplicateImages extends Command
                 break;
             default:
                 throw new Error('Invalid type argument! Allowed types: ' . implode(', ', $allowed['types']));
-        }
+        }*/
         $this->printHeading('DUPLICATE(S) DATA MAPPING GENERATED IN FILE: ' . $this->duplicateMappingDataFile);
+        if ($this->getConfirmation('Export duplicates to "' . $this->duplicateExportDir . '" ?')) {
+            $this->exportDuplicates();
+        }
         return Command::SUCCESS;
     }
 
@@ -201,5 +205,20 @@ class ProcessDuplicateImages extends Command
         Storage::append($this->duplicateDataResultFile, json_encode([
             'duplicatesSearchResult' => ['time' => now()->format('d M, Y \a\t H:i:s A P'), 'result' => $resultBag]
         ]));
+    }
+
+    /**
+     * Export duplicate images
+     */
+    private function exportDuplicates()
+    {
+        $results = Storage::read($this->duplicateDataResultFile);
+        if ($results) {
+            $results = array_map(function ($jsonStr) {
+                return json_decode($jsonStr);
+            }, explode(PHP_EOL, $results));
+            $results = new Collection($results);
+        }
+        dd($results->first());
     }
 }
