@@ -177,6 +177,7 @@ class Images extends Model
             $ids = array_merge($ids, $duplicateIdArrays);
         }
         $ids = array_unique($ids);
+        asort($ids);
         return self::whereIn('id', $ids)->paginate(env('PAGINATION', 20));
     }
 }
