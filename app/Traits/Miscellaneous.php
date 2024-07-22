@@ -483,12 +483,13 @@ trait Miscellaneous
         $timeChart->minute = 60;
         $timeChart->hour = 60 * $timeChart->minute;
         $timeChart->day = 24 * $timeChart->hour;
+        $timeChart->week = 7 * $timeChart->day;
         $timeChart->month = 30 * $timeChart->day;
-        $timeChart->year = 12 * $timeChart->month;
+        $timeChart->year = 12 * $timeChart->month + (0.25 * $timeChart->day);
         $timeChart->decade = 10 * $timeChart->year;
         $timeChart->century = 10 * $timeChart->decade;
         $timeChart->millennia = 10 * $timeChart->century;
-        $timeOrder = ['minute', 'hour', 'day', 'month', 'year', 'decade', 'century', 'millennia'];
+        $timeOrder = ['minute', 'hour', 'day', 'week', 'month', 'year', 'decade', 'century', 'millennia'];
         $q = 0.0;
         $key = reset($timeOrder);
         while ($key) {
