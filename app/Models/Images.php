@@ -33,12 +33,18 @@ class Images extends Model
      */
     public static function search(array $params = null, bool $useIndexing = true)
     {
-        $tags = [];
+        $tags = preg_split('/[\ \n\,]+/', $params['tags']);
+        $tags = array_map(function ($str) {
+            return trim($str);
+        }, $tags);
+        $ids = array_filter($tags, function ($str) {
+            return is_numeric($str);
+        });
+        $tags = array_diff($tags, $ids);
         $gifDataPresent = false;
         $search = self::select('images.*')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
-        })->when(isset($params['tags']), function ($conditionalQuery) use ($params, $useIndexing, &$tags, &$gifDataPresent) {
-            $tags = preg_split('/[\ \n\,]+/', $params['tags']);
+        })->when(!empty($tags), function ($conditionalQuery) use ($useIndexing, $tags, &$gifDataPresent) {
             if (array_search('gif', $tags) !== false) {
                 $gifDataPresent = true;
             }
@@ -59,14 +65,6 @@ class Images extends Model
                     return $query;
                 });
             }
-            $ids = array_filter($tags, function ($str) {
-                return is_numeric(trim($str));
-            });
-            if (!empty($ids)) {
-                $conditionalQuery->orWhere(function ($subQuery) use ($ids) {
-                    return $subQuery->where('images.user_id', auth()->id())->whereIn('images.id', $ids);
-                });
-            }
             return $conditionalQuery;
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
@@ -76,6 +74,9 @@ class Images extends Model
         }
         if ($useIndexing && count($tags) > 1) {
             $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . count($tags));
+        }
+        if (!empty($ids)) {
+            $search->whereIn('images.id', $ids)->where('images.user_id', auth()->id());
         }
         DB::statement('SET sql_mode=""');
         $search = $search->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 12 : env('PAGINATION', 20));
