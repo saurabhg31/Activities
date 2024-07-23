@@ -481,6 +481,9 @@ trait Miscellaneous
         // declaring time conventions in seconds
         $timeChart = new stdClass();
         $timeChart->minute = 60;
+        if ($timeDiffInSeconds < $timeChart->minute) {
+            return $timeDiffInSeconds . ' second(s)';
+        }
         $timeChart->hour = 60 * $timeChart->minute;
         $timeChart->day = 24 * $timeChart->hour;
         $timeChart->week = 7 * $timeChart->day;
