@@ -52,7 +52,7 @@ class FindDuplicatesUsingHardSearch extends Command
                     $this->getConfirmation('Log file data present, last processed id: ' . number_format($progressData['lastProcessedImage']) . ', continue?')
                 ) {
                     $processed = $progressData['processedCount'];
-                    $duplicateCount = isset($progressData['progress']) ? $progressData['progress'] : $progress;
+                    $progress = isset($progressData['progress']) ? $progressData['progress'] : $progress;
                     $duplicateCount = isset($progressData['duplicatesCount']) ? $progressData['duplicatesCount'] : $duplicateCount;
                 }
             }
