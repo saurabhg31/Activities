@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class FindDuplicatesUsingHardSearch extends Command
 {
     use Miscellaneous;
+
     /**
      * The name and signature of the console command.
      *
@@ -19,6 +20,8 @@ class FindDuplicatesUsingHardSearch extends Command
      */
     protected $signature = 'hardSearchFind:duplicates';
     protected $duplicateDataResultFile = 'data/duplicatesHardSearchResult.jsonl';
+    protected $resultFile = 'data/duplicatesSearchResult.jsonl';
+    protected $logFile = 'data/hardDulplicateSearchLog.json';
 
     /**
      * The console command description.
@@ -34,13 +37,35 @@ class FindDuplicatesUsingHardSearch extends Command
      */
     public function handle()
     {
-        $timeFormat = 'Y-m-d H:i a p';
         $startTime = now();
+        $timeFormat = 'Y-m-d H:i a p';
         $this->printHeading('HARD DUPLICATE IMAGE SEARCH STARTED AT ' . $startTime->format($timeFormat));
         $duplicateCount = $processed = $progress = 0;
         $totalImages = Images::count();
-        $needleImg = Images::first();
-        $duplicateIds = /*$duplicateIdBag = */ [];
+        $duplicateIds = [];
+        if (Storage::exists($this->logFile)) {
+            $progressData = Storage::read($this->logFile);
+            if ($progressData) {
+                $progressData = (array)json_decode($progressData);
+                if (
+                    isset($progressData['processedCount']) && $progressData['processedCount'] > 0 &&
+                    $this->getConfirmation('Log file data present, last processed id: ' . number_format($progressData['lastProcessedImage']) . ', continue?')
+                ) {
+                    $processed = $progressData['processedCount'];
+                    $duplicateCount = isset($progressData['progress']) ? $progressData['progress'] : $progress;
+                    $duplicateCount = isset($progressData['duplicatesCount']) ? $progressData['duplicatesCount'] : $duplicateCount;
+                }
+            }
+        } else {
+            $progressData = [
+                'lastProcessedImage' => null,
+                'duplicatesCount' => $duplicateCount,
+                'processedCount' => $processed,
+                'progress' => $progress
+            ];
+        }
+        $needleImg = $processed > 0 ? Images::skip($processed)->first() : Images::first();
+        Storage::write($this->logFile, json_encode($progressData));
         $etaInSeconds = $loopStartTime = false;
         while ($needleImg) {
             $loopStartTime = now();
@@ -56,10 +81,6 @@ class FindDuplicatesUsingHardSearch extends Command
             $duplicateIds = Images::select('id')->where('id', '!=', $needleImg->id)
                 ->where('image', 'like', '%' . $needleImg->image . '%')->get()->pluck('id')->toArray();
             if (!empty($duplicateIds)) {
-                /*array_push($duplicateIdBag, [
-                    'original' => $needleImg->id,
-                    'duplicates' => $duplicateIds
-                ]);*/
                 Storage::append($this->duplicateDataResultFile, json_encode([
                     'original' => $needleImg->id,
                     'duplicates' => $duplicateIds
@@ -70,6 +91,13 @@ class FindDuplicatesUsingHardSearch extends Command
             $progress = $processed / $totalImages;
             $timeTakenForOneIteration = now()->diffInSeconds($loopStartTime);
             $etaInSeconds = ($totalImages - $processed) * $timeTakenForOneIteration;
+            $progressData = [
+                'lastProcessedImage' => $needleImg->id,
+                'duplicatesCount' => $duplicateCount,
+                'processedCount' => $processed,
+                'progress' => $progress
+            ];
+            Storage::write($this->logFile, json_encode($progressData));
             $needleImg = Images::skip($processed)->first();
             $this->removeLastLine();
         }
