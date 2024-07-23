@@ -49,7 +49,7 @@ class FindDuplicatesUsingHardSearch extends Command
                 $progressData = (array)json_decode($progressData);
                 if (
                     isset($progressData['processedCount']) && $progressData['processedCount'] > 0 &&
-                    $this->getConfirmation('Log file data present, last processed id: ' . number_format($progressData['lastProcessedImage']) . ', continue?')
+                    $this->getConfirmation('    . Log file data present, last processed id: ' . number_format($progressData['lastProcessedImage']) . ', continue?')
                 ) {
                     $processed = $progressData['processedCount'];
                     $progress = isset($progressData['progress']) ? $progressData['progress'] : $progress;
