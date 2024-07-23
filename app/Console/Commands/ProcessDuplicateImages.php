@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-ini_set('max_execution_time', 7200); // maximum execution time set to 2 hours
+set_time_limit(0); // WARNING: SCRIPT CAN RUN INDEFINITELY (RETURN VALUE MANDATORY)
 
 use Error;
 use App\Models\Images;

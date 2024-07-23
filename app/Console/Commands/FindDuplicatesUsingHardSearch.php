@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-ini_set('max_execution_time', -1); // WARNING: SCRIPT CAN RUN INDEFINITELY (RETURN VALUE MANDATORY)
+set_time_limit(0); // WARNING: SCRIPT CAN RUN INDEFINITELY (RETURN VALUE MANDATORY)
 
 use App\Models\Images;
 use App\Traits\Miscellaneous;
@@ -18,7 +18,7 @@ class FindDuplicatesUsingHardSearch extends Command
      * @var string
      */
     protected $signature = 'hardSearchFind:duplicates';
-    protected $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl';
+    protected $duplicateDataResultFile = 'data/duplicatesHardSearchResult.jsonl';
 
     /**
      * The console command description.
@@ -53,12 +53,16 @@ class FindDuplicatesUsingHardSearch extends Command
             }
             $this->printLine($statusMsg, 1, true);
             $duplicateIds = Images::select('id')->where('id', '!=', $needleImg->id)
-                ->where('image', $needleImg->image)->get()->pluck('id')->toArray();
+                ->where('image', 'like', '%' . $needleImg->image . '%')->get()->pluck('id')->toArray();
             if (!empty($duplicateIds)) {
-                array_push($duplicateIdBag, [
+                /*array_push($duplicateIdBag, [
                     'original' => $needleImg->id,
                     'duplicates' => $duplicateIds
-                ]);
+                ]);*/
+                Storage::append($this->duplicateDataResultFile, json_encode([
+                    'original' => $needleImg->id,
+                    'duplicates' => $duplicateIds
+                ]));
                 $duplicateCount += count($duplicateIds);
             }
             $processed++;
@@ -70,7 +74,7 @@ class FindDuplicatesUsingHardSearch extends Command
         if (!$duplicateCount) {
             $this->printLine('No duplicates found!', 1, true);
         }
-        Storage::write($this->duplicateDataResultFile, json_encode([
+        /*Storage::write($this->duplicateDataResultFile, json_encode([
             'duplicatesSearchResult' => [
                 'time' => now()->format($timeFormat),
                 'result' => $duplicateIdBag,
@@ -81,7 +85,7 @@ class FindDuplicatesUsingHardSearch extends Command
                     'totalTimeRequired' => $this->getHumanReadableTimeDiffFromSeconds(now()->diffInSeconds($startTime))
                 ]
             ]
-        ]));
+        ]));*/
         return Command::SUCCESS;
     }
 }
