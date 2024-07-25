@@ -69,12 +69,11 @@ class FindDuplicatesUsingHardSearch extends Command
         $etaInSeconds = $loopStartTime = false;
         while ($needleImg) {
             $loopStartTime = now();
-            $statusMsg = 'Searching for image: ' . number_format($needleImg->id) . '. ';
-            $statusMsg .= str_repeat('.', floor($progress * 20)) . ' ' . number_format($progress * 100, 5);
-            $statusMsg .= ' % ---- Duplicates: ' . number_format($duplicateCount);
-            $statusMsg .= ' ---- ( ' . number_format($processed + 1) . ' / ' . number_format($totalImages) . ' )';
+            $statusMsg = 'Searching duplicates of image: ' . number_format($needleImg->id) . ' | ';
+            $statusMsg .= number_format($progress * 100, 5) . ' % | Duplicates: ' . number_format($duplicateCount);
+            $statusMsg .= ' | (' . number_format($processed + 1) . '/' . number_format($totalImages) . ')';
             if ($etaInSeconds !== false) {
-                $statusMsg .= ' ---- TIME: [Passed: ' . $this->getHumanReadableTimeDiffFromSeconds(now()->diffInSeconds($startTime)) . ', ';
+                $statusMsg .= ' | TIME: [Elapsed: ' . $this->getHumanReadableTimeDiffFromSeconds(now()->diffInSeconds($startTime)) . ', ';
                 $statusMsg .= 'Remaining: ' . $this->getHumanReadableTimeDiffFromSeconds($etaInSeconds) . ']';
             }
             $this->printLine($statusMsg, 1, true);
