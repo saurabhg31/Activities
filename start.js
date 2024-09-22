@@ -1,6 +1,7 @@
 const LOG_ERRORS_ONLY = false;
 const CHECK_MYSQL_SERVICE = true;
 const { exec } = require('child_process');
+const { exit } = require('process');
 
 checkMySqlServiceStatus();
 executeCommand('php artisan serve');
@@ -30,9 +31,11 @@ async function checkMySqlServiceStatus() {
   if (CHECK_MYSQL_SERVICE) {
     console.log('Checking mysql service ... ');
     exec('mysql', (error, stdout, stderr) => {
-      if (stderr.includes("Can't connect to local MySQL server through socket")) {
-        console.log('MySQL service inactive, restarting (may require `sudo` access) ... ');
-        executeCommand('service mysql start');
+      if (stderr.includes("Can't connect to local MySQL server through socket") || stderr.includes("Can't connect to MySQL server on")) {
+        // console.log('MySQL service inactive, restarting (may require `sudo` access) ... ');
+        console.log('MySQL service inactive, exiting ... ');
+        exit(1);
+        // executeCommand('service mysql start');
       } else {
         console.log('DONE.\n');
       }
