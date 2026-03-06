@@ -19,7 +19,7 @@ class Images extends Model
     /**
      * get images
      */
-    public static function list(array $types = null)
+    public static function list(?array $types = null)
     {
         $query = self::when($types, function ($typeQuery) use ($types) {
             return $typeQuery->whereIn('type', $types);
@@ -35,7 +35,7 @@ class Images extends Model
     /**
      * search images
      */
-    public static function search(array $params = null, bool $useIndexing = true)
+    public static function search(?array $params = null, bool $useIndexing = true)
     {
         $tags = preg_split('/[\ \n\,]+/', $params['tags']);
         $tags = array_map(function ($str) {
@@ -46,7 +46,7 @@ class Images extends Model
         });
         $tags = array_diff($tags, $ids);
         $gifDataPresent = false;
-        $search = self::select('images.*')->when(isset($params['types']), function ($query) use ($params) {
+        $search = self::select('images.id')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
         })->when(!empty($tags), function ($conditionalQuery) use ($useIndexing, $tags, &$gifDataPresent) {
             if (array_search('gif', $tags) !== false) {
@@ -83,8 +83,12 @@ class Images extends Model
             $search->whereIn('images.id', $ids)->where('images.user_id', auth()->id());
         }
         DB::statement('SET sql_mode=""');
-        $search = $search->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 12 : env('PAGINATION', 20));
+        // $search = $search->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 12 : env('PAGINATION', 20));
+        $imageIds = $search->pluck('id');
         DB::statement('SET sql_mode="only_full_group_by"');
+        // paginating in two steps, first take ids then paginating based on that as mysql is unable to search with image data in table
+        $search = self::whereIn('id', $imageIds->toArray())
+            ->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 12 : env('PAGINATION', 20));
         $search->response = 'Search complete';
         return $search;
     }
@@ -140,7 +144,7 @@ class Images extends Model
      * @param array $exceptIds (ids of images whose duplicate search is already completed)
      * @param array $fields (required fields)
      */
-    public static function listDuplicatesOf(self $imageData, array $exceptIds = null, array $fields = ['id'])
+    public static function listDuplicatesOf(self $imageData, ?array $exceptIds = null, array $fields = ['id'])
     {
         return self::select($fields)->when($exceptIds, function ($query) use ($exceptIds) {
             return $query->whereNotIn('id', $exceptIds);

@@ -67,7 +67,7 @@ class Controller extends BaseController
      * @param float $cap (minimum recommended free memory in GB)
      * @return boolean (true: requirements met, false: requirements not met)
      */
-    public function runRequirementsCheck(float $cap = null)
+    public function runRequirementsCheck(?float $cap = null)
     {
         if (!$cap) {
             $cap = MemoryRequirements::getMemoryCap();
@@ -137,7 +137,7 @@ class Controller extends BaseController
      * Standard response
      * @return json
      */
-    protected function sendResponse($data = null, string $html = null, array $message = ['text' => 'Backend response', 'heading' => 'Output'], int $status = 200)
+    protected function sendResponse($data = null, ?string $html = null, array $message = ['text' => 'Backend response', 'heading' => 'Output'], int $status = 200)
     {
         return response()->json(['msg' => $message, 'data' => $data, 'html' => $html], $status);
     }
@@ -160,7 +160,7 @@ class Controller extends BaseController
      * @param array $data
      * @return string view html data
      */
-    protected function renderView(String $type, array $data = null)
+    protected function renderView(String $type, ?array $data = null)
     {
         $viewData = array(
             'expenses' => 'layouts.renders.expenses',
@@ -203,7 +203,7 @@ class Controller extends BaseController
     /**
      * generate message bag
      */
-    protected function generateMsgBag(string $type, string $text = null, string $heading = null)
+    protected function generateMsgBag(string $type, ?string $text = null, ?string $heading = null)
     {
         return [
             'text' => $text ? $text : $this->generateText($type),
@@ -306,7 +306,7 @@ class Controller extends BaseController
      * @return integer $uploadedImagesCount
      * TODO: resolve extension issue
      */
-    protected function addImages(array $images, string $tags = null, string $type = 'WALLPAPER', string $domain = 'public')
+    protected function addImages(array $images, ?string $tags = null, string $type = 'WALLPAPER', string $domain = 'public')
     {
         $userId = $domain == 'private' ? Auth::id() : NULL;
         $imagesDataSizeInBytes = $uploadedImagesCount = 0;
@@ -388,27 +388,27 @@ class Controller extends BaseController
      * @param array $data
      * @return array $data
      */
-    protected function expenses(array $data = null)
+    protected function expenses(?array $data = null)
     {
         dd($data);
     }
 
-    protected function reminders(array $data = null)
+    protected function reminders(?array $data = null)
     {
         dd($data);
     }
 
-    protected function aps(array $data = null)
+    protected function aps(?array $data = null)
     {
         dd($data);
     }
 
-    protected function travelLogs(array $data = null)
+    protected function travelLogs(?array $data = null)
     {
         dd($data);
     }
 
-    protected function marketing(array $data = null)
+    protected function marketing(?array $data = null)
     {
         dd($data);
     }
