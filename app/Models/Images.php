@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Error;
+use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -44,7 +45,7 @@ class Images extends Model
         $ids = array_filter($tags, function ($str) {
             return is_numeric($str);
         });
-        $tags = array_diff($tags, $ids);
+        $tags = array_filter(array_diff($tags, $ids));
         $gifDataPresent = false;
         $search = self::select('images.id')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
@@ -81,6 +82,11 @@ class Images extends Model
         }
         if (!empty($ids)) {
             $search->whereIn('images.id', $ids)->where('images.user_id', auth()->id());
+        }
+        if (isset($params['page'])) {
+            if (!is_numeric($params['page'])) {
+                throw new Exception('Pagination page number not numeric.');
+            }
         }
         DB::statement('SET sql_mode=""');
         // $search = $search->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 12 : env('PAGINATION', 20));
