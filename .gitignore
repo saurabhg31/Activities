@@ -21,3 +21,4 @@ composer.lock
 package-lock.json
 /nbproject
 .vs/
+/public/images/privateDomainImages
