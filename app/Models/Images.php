@@ -94,7 +94,7 @@ class Images extends Model
         DB::statement('SET sql_mode="only_full_group_by"');
         // paginating in two steps, first take ids then paginating based on that as mysql is unable to search with image data in table
         $search = self::whereIn('id', $imageIds->toArray())
-            ->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 12 : env('PAGINATION', 20));
+            ->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 8 : env('PAGINATION', 20));
         $search->response = 'Search complete';
         return $search;
     }

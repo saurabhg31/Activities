@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Session;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -68,7 +69,21 @@ class User extends Authenticatable implements MustVerifyEmail
         if (is_null($user->defaultWallpaperId)) {
             return null;
         }
-        $imageData = Images::find($user->defaultWallpaperId);
+        if (Session::has('domain') && strtolower(Session::get('domain') === 'private')) {
+            $imageDataId = ImageDimensions::select('images.id')
+                ->join('images', function ($query) use ($user) {
+                    $query->on('images.id', '=', 'image_dimensions.image_id')
+                        ->where('images.user_id', $user->id);
+                })->where([
+                    'image_dimensions.is_portrait' => false,
+                    'image_dimensions.is_square' => false
+                ])->whereIn('images.imageType', ['gif', 'webp', 'avif'])
+                ->whereRaw('CAST(image_dimensions.x_axis as FLOAT) / image_dimensions.y_axis BETWEEN ? AND ?', config('constants.ASPECT_RATIO_FLOAT_RANGE'))
+                ->inRandomOrder()->first();
+            $imageData = Images::find($imageDataId->id);
+        } else {
+            $imageData = Images::find($user->defaultWallpaperId);
+        }
         return 'data:image/' . $imageData->imageType . ';base64, ' . $imageData->image;
     }
 }

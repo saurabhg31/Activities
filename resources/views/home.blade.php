@@ -1,4 +1,4 @@
-@php
+{{-- @php
     if (Session::has('domain') && strtolower(Session::get('domain') == 'private')) {
         $privateImages = array_filter(scandir('images/privateDomainImages/'), function ($file) {
             return $file != '.' && $file != '..';
@@ -8,7 +8,7 @@
     } else {
         $backgroundImg = $defaultWallpaperData;
     }
-@endphp
+@endphp --}}
 
 @extends('layouts.app')
 @section('css')
@@ -25,7 +25,7 @@
         }
 
         .backgroundClass {
-            background-image: url("{{ $backgroundImg }}");
+            background-image: url("{{ $defaultWallpaperData }}");
             background-repeat: no-repeat;
             background-size: cover;
             height: 100%;
