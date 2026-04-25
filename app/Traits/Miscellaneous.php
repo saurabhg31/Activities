@@ -3,7 +3,6 @@
 namespace App\Traits;
 
 use App\Models\User;
-use Error;
 use Exception;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Contracts\Database\Query\Builder as QueryBuilder;
@@ -13,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
-use stdClass;
 
 trait Miscellaneous
 {
@@ -479,7 +477,7 @@ trait Miscellaneous
     private function getHumanReadableTimeDiffFromSeconds(int $timeDiffInSeconds)
     {
         // declaring time conventions in seconds
-        $timeChart = new stdClass();
+        $timeChart = new \stdClass();
         $timeChart->minute = 60;
         if ($timeDiffInSeconds < $timeChart->minute) {
             return $timeDiffInSeconds . ' second(s)';

@@ -8,9 +8,10 @@ use App\Models\ImageDimensions;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use App\Traits\Miscellaneous;
+use Error;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Artisan;
-use Exception;
+use Throwable;
 
 class ProcessAllImages extends Command
 {
@@ -38,7 +39,7 @@ class ProcessAllImages extends Command
      */
     public function handle()
     {
-        $ignoreImageTypes = ['webp', 'gif']; // ignoring unsupported image formats
+        $ignoreImageTypes = [/*'webp', 'gif'*/]; // ignoring unsupported image formats
         $this->printHeading('IMAGE PROCESSING OPERATION INITIALIZED', '-', 20);
         if (env('IMAGE_PROCESSING_REGENERATE_TABLES', false)) {
             $this->printLine('Getting total images count & resetting image processing table data ... ', 1, true);
@@ -49,7 +50,7 @@ class ProcessAllImages extends Command
                 Images::select('id')->whereNotIn('imageType', $ignoreImageTypes)->whereNull('length')->get()->toArray(),
                 'id'
             );
-            print ('Done. ');
+            print('Done. ');
         } else {
             $this->printLine('Getting total unprocessed images ... ', 1);
             $ignoreImageTypes_str = '"' . str_replace(',', '","', implode(',', $ignoreImageTypes)) . '"';
@@ -59,7 +60,7 @@ class ProcessAllImages extends Command
                 $this->printLine('Fetching all unprocessed image ids, total: ' . number_format($totalImages) . '.', 1);
                 $imageIds = DB::select('select images.id as imageId from images where images.id not in (select image_dimensions.image_id from image_dimensions) and images.imageType not in (' . $ignoreImageTypes_str . ')');
                 if (!empty($imageIds)) {
-                    $imageIds = array_map(function($obj){
+                    $imageIds = array_map(function ($obj) {
                         return $obj->imageId;
                     }, $imageIds);
                 }
@@ -79,7 +80,7 @@ class ProcessAllImages extends Command
             $imageIdChunks = array_chunk($imageIds, env('IMAGE_PROCESSING_CHUNK'));
             if (env('IMAGE_PROCESSING_USE_QUEUE', false)) {
                 foreach ($imageIdChunks as $idChunk) {
-                    print ('Dispatching ids: ' . implode(', ', $idChunk) . ' ... ' . PHP_EOL);
+                    print('Dispatching ids: ' . implode(', ', $idChunk) . ' ... ' . PHP_EOL);
                     ProcessImages::dispatch($idChunk);
                 }
             } else {
@@ -96,9 +97,9 @@ class ProcessAllImages extends Command
                         try {
                             array_push($imagesDimensionsBag, array_merge([$imageId], $this->getImageDimension($imageId)));
                             $this->printActionCompletedMsg();
-                        } catch (Exception $error) {
+                        } catch (Throwable $error) {
                             Log::error($error->getMessage());
-                            print ('Error: "' . $error->getMessage() . '" encountered! Skipped.' . PHP_EOL);
+                            print('Error: "' . $error->getMessage() . '" encountered! Skipped.' . PHP_EOL);
                             continue;
                         }
                         $processed++;
@@ -145,10 +146,18 @@ class ProcessAllImages extends Command
         return Command::SUCCESS;
     }
 
+    /**
+     * Get image width and height
+     * @param integer $id - image id
+     * @return array [image_width, image_height]
+     */
     private function getImageDimension(int $id)
     {
-        $img = imagecreatefromstring(base64_decode(Images::findOrFail($id)->image));
-        return [imagesx($img), imagesy($img)];
+        $dimensions = getimagesizefromstring(base64_decode(Images::findOrFail($id)->image));
+        if ($dimensions === false) {
+            throw new Error('Unable to decipher the dimensions of the image.');
+        }
+        return [$dimensions[0], $dimensions[1]];
     }
 
     /**
