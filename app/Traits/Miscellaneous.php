@@ -70,8 +70,8 @@ trait Miscellaneous
     public function readInputFromCli(
         int $maxAllowedLines = 1,
         array $lineMsgs = [],
-        callable $validateLine = null,
-        callable $terminate = null,
+        ?callable $validateLine = null,
+        ?callable $terminate = null,
         bool $throwErrorIfLineValidationFails = false
     ) {
         $input = [];
@@ -280,7 +280,7 @@ trait Miscellaneous
     public function attemptRequest(
         string $url,
         string $method,
-        array $payload = null,
+        ?array $payload = null,
         array $headers = [],
         int $maxAttempts = 3,
         bool $throwErrorOnFailure = true,
@@ -458,7 +458,7 @@ trait Miscellaneous
      * generates image from base-64 encoded string data
      * @return void
      */
-    private function generateImageFromData(Model $table, int $imageId, string $storagePath = null)
+    private function generateImageFromData(Model $table, int $imageId, ?string $storagePath = null)
     {
         if (!$storagePath) {
             $storagePath = storage_path('pics' . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . 'generated');
