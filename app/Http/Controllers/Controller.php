@@ -308,7 +308,7 @@ class Controller extends BaseController
      */
     protected function addImages(array $images, ?string $tags = null, string $type = 'WALLPAPER', string $domain = 'public')
     {
-        $userId = $domain == 'private' ? Auth::id() : NULL;
+        $userId = $domain === 'private' ? Auth::id() : null;
         $imagesDataSizeInBytes = $uploadedImagesCount = 0;
         $file = $contents = $extension = $imageData = $fileSize = null;
         $imageTypeModel = new ImageType();
