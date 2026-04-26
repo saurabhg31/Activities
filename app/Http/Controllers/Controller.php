@@ -303,6 +303,7 @@ class Controller extends BaseController
      * add wallpapers or resource images
      * @param array $images
      * @param string $type
+     * @param string $domain
      * @return integer $uploadedImagesCount
      * TODO: resolve extension issue
      */
