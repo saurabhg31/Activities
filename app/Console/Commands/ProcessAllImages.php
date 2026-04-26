@@ -66,10 +66,14 @@ class ProcessAllImages extends Command
                 }
             } else {
                 $this->printLine('No images with unlogged attributes found.', 1);
+                $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);
+                print(PHP_EOL);
+                return Command::SUCCESS;
             }
         }
         if (!$this->getConfirmation('Proceed ?')) {
             $this->printLine('Process aborted by user.', 1, true);
+            print(PHP_EOL);
             return Command::FAILURE;
         }
         if (isset($imageIds)) {
@@ -126,23 +130,8 @@ class ProcessAllImages extends Command
             }
             $this->printLine(number_format($processed) . ' images processed.', 1, true);
         }
-        $this->printLine('Checking if any images are remaining to be logged in analytics tables ... ', 1, true);
-        $ignoreImageTypes_str = '"' . str_replace(',', '","', implode(',', $ignoreImageTypes)) . '"';
-        $unprocessedImageIds = DB::select('select count(images.id) as count from images where images.id not in (select image_dimensions.image_id from image_dimensions) and images.imageType not in (' . $ignoreImageTypes_str . ')');
-        $unprocessedImageIds = reset($unprocessedImageIds);
-        if (isset($unprocessedImageIds->count) && $unprocessedImageIds->count) {
-            $this->printLine(number_format($unprocessedImageIds->count) . ' unlogged image analytics ids found! Correcting ... ', 2, true);
-            $unprocessedImageIds = DB::select('select images.id as image_id from images where images.id not in (select image_dimensions.image_id from image_dimensions) and images.imageType not in (' . $ignoreImageTypes_str . ')');
-            $unprocessedImageIds = array_map(function ($obj) {
-                return (array) $obj;
-            }, $unprocessedImageIds);
-            $unprocessedImageIds = array_column($unprocessedImageIds, 'image_id');
-        }
-        // dd(DB::select('select distinct(imageType) as format from images where id in (' . implode(',', $unprocessedImageIds) . ')'));
-        // TODO: Add left out images metadata logging code
-        $this->printLine('Checking for duplicates in image analytics tables ... ', 1, true);
-        Artisan::call('process:remove_image_duplicate_indices');
         $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);
+        print(PHP_EOL);
         return Command::SUCCESS;
     }
 
