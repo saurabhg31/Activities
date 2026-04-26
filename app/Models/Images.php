@@ -22,6 +22,7 @@ class Images extends Model
      */
     public static function list(?array $types = null)
     {
+        // TODO: Optimize loading by segregating ids then loading images
         $query = self::when($types, function ($typeQuery) use ($types) {
             return $typeQuery->whereIn('type', $types);
         });
