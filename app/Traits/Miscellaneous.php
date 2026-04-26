@@ -349,20 +349,24 @@ trait Miscellaneous
     }
 
     /**
-     * Securely read & compare password input from cli (for linux only)
+     * Securely read & compare password input from cli
      * @param string $hashedPasswordString (hashed or encrypted password string to compare with)
      * @param string|callable $comparisonMethod (hash or callable function, must have two params in order of password & hashed password and should return a value)
      * @param string $prompt (Message to display for entering password)
      * @return boolean (true on success, false on failure)
      */
     private function readAndComparePasswordInputFromCli(
-        string &$hashedPasswordString,
+        string $hashedPasswordString,
         string|callable $comparisonMethod = 'hash',
         string $prompt = "Enter Password: ",
     ) {
         $checkPassed = false;
-        $command = "/usr/bin/env bash -c 'read -s -p \"" . addslashes($prompt) . "\" mypassword && echo \$mypassword'";
-        $password = rtrim(shell_exec($command));
+        if (PHP_OS_FAMILY === 'Linux') {
+            $command = "/usr/bin/env bash -c 'read -s -p \"" . addslashes($prompt) . "\" mypassword && echo \$mypassword'";
+        } elseif (PHP_OS_FAMILY === 'Windows') {
+            $command = 'powershell -Command "$p = Read-Host -AsSecureString; [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p))"';
+        }
+        $password = trim(shell_exec($command));
         print(PHP_EOL);
         unset($command);
         if ($comparisonMethod === 'hash') {
@@ -381,7 +385,7 @@ trait Miscellaneous
      * @param string $promptMsg
      * @return boolean - true if confirmed, false otherwise
      */
-    private function getConfirmation(string $promptMsg)
+    private function getConfirmation(?string $promptMsg = null)
     {
         $promptMsg .= ' (Y|N): ';
         $yesVals = ['y', 'yes', 'true', '1'];
