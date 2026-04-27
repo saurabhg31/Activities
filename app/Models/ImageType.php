@@ -10,7 +10,8 @@ class ImageType extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'type', 'user_id'
+        'type',
+        'user_id'
     ];
 
     /**
@@ -34,8 +35,8 @@ class ImageType extends Model
     public static function addType(string $type)
     {
         $data = [
-            'type' => $type,
-            'user_id' => (Session::has('domain') && Session::get('domain') == 'private') ? auth('web')->id() : NULL
+            'type' => strtoupper(trim($type)),
+            'user_id' => (Session::has('domain') && Session::get('domain') == 'private') ? auth('web')->id() : null
         ];
         if (!self::where($data)->exists()) {
             self::create($data);

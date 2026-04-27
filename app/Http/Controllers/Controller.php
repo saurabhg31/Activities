@@ -312,7 +312,7 @@ class Controller extends BaseController
         $userId = $domain === 'private' ? Auth::id() : null;
         $imagesDataSizeInBytes = $uploadedImagesCount = 0;
         $file = $contents = $extension = $imageData = $fileSize = null;
-        $imageTypeModel = new ImageType();
+        ImageType::addType($type);
         $imageModel = new Images();
         $imageIndexModel = new ImageIndex();
         foreach ($images as $image) {
@@ -326,7 +326,6 @@ class Controller extends BaseController
                 $contents = file_get_contents($image);
                 $fileSize = strlen($image);
             }
-            $imageTypeModel->addType($type);
             $imageData = array(
                 'type' => strtoupper($type),
                 'image' => base64_encode($contents),

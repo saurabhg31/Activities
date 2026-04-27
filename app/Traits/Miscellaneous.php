@@ -449,7 +449,7 @@ trait Miscellaneous
     }
 
     /**
-     * prints a progress bar
+     * return a progress bar line
      */
     private function printProgressBar(float $progressPercentage, string $progressChar = '.', int $maxProgressChars = 16)
     {
