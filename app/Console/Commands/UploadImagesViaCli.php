@@ -2,9 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Models\ImageIndex;
+use App\Models\Images;
+use App\Models\ImageType;
+use App\Models\MemoryRequirements;
 use App\Models\User;
 use Illuminate\Console\Command;
 use App\Traits\Miscellaneous;
+use Illuminate\Support\Facades\File;
 
 class UploadImagesViaCli extends Command
 {
@@ -36,7 +41,8 @@ class UploadImagesViaCli extends Command
         $imageFiles = array_filter(scandir($dir), function ($str) {
             return $str !== '.' && $str !== '..';
         });
-        $this->printLine(number_format(count($imageFiles)) . ' files found. Proceed?', 1);
+        $totalImages = count($imageFiles);
+        $this->printLine(number_format($totalImages) . ' files found. Proceed?', 1);
         if ($this->getConfirmation()) {
             $this->printLine('Select domain (public/private):', 1);
             $choice = $this->readInputFromCli(1, [], function ($str) {
@@ -61,16 +67,70 @@ class UploadImagesViaCli extends Command
                 $this->printLine('Enter password:', 2);
                 if ($this->readAndComparePasswordInputFromCli($user->password)) {
                     $userId = $user->id;
+                    $this->printLine('Authentication successful, user id: ' . $userId, 1, true);
+                    unset($user);
                 } else {
                     $this->printLine('Invalid password. PROCESS ABORTED.', 2, true);
                     return Command::FAILURE;
                 }
             }
+            $this->printLine('Add image type:', 1);
+            [$type] = $this->readInputFromCli(1, [], function ($str) {
+                return !is_numeric($str);
+            }, null, true);
+            $type = strtoupper(trim($type));
+            $this->printLine('Add image tags:', 1);
+            [$tags] = $this->readInputFromCli(1);
+            $tags = trim($tags);
+            $this->printLine('Uploading ' . number_format($totalImages) . ' images, each image will be deleted after successful upload.', 1, true);
+            $this->printLine('Image Type: ' . $type . ', Tags: ' . $tags, 2, true);
+            $uploadedCount = 0;
+            $imagesDataSizeInBytes = 0;
+            $imageModel = new Images();
+            $imageIndexModel = new ImageIndex();
+            $this->addImageCategory($type, $userId);
+            foreach ($imageFiles as $imageFileName) {
+                $this->printLine('Uploading image: ' . $imageFileName . '. Progress: ' . $this->printProgressBar(($uploadedCount / $totalImages) * 100), 3);
+                $filePath = $dir . DIRECTORY_SEPARATOR . $imageFileName;
+                $imageData = array(
+                    'type' => $type,
+                    'image' => base64_encode(file_get_contents($filePath)),
+                    'imageType' => File::extension($filePath),
+                    'tags' => $tags,
+                    'user_id' => $userId,
+                    'created_at' => now()
+                );
+                if ($imageId = $imageModel->create($imageData)->id) {
+                    $imagesDataSizeInBytes += File::size($filePath);
+                    $imageIndexModel->addIndices($imageId, $tags);
+                }
+                unlink($filePath);
+                $uploadedCount++;
+                $this->printActionCompletedMsg();
+                $this->removeLastLine();
+            }
+            $this->printLine('Adding memory requirements to table ... ', 2);
+            if ($imagesDataSizeInBytes) {
+                MemoryRequirements::appendExtraDataToRequirements($imagesDataSizeInBytes);
+            }
+            $this->printActionCompletedMsg();
+            $this->printLine(number_format($uploadedCount) . ' images successfully uploaded to database.', 1);
         } else {
             $this->printLine('PROCESS ABORTED BY USER', 1);
         }
         $this->printHeading('OPERATION COMPLETED', '-', 15);
         print(PHP_EOL);
         return Command::SUCCESS;
+    }
+
+    private function addImageCategory(string $type, ?int $userId = null)
+    {
+        $data = [
+            'type' => $type,
+            'user_id' => $userId
+        ];
+        if (!ImageType::where($data)->exists()) {
+            ImageType::create($data);
+        }
     }
 }
