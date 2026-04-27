@@ -84,6 +84,6 @@ class User extends Authenticatable implements MustVerifyEmail
             }
             $imageData = Images::find($user->defaultWallpaperId);
         }
-        return 'data:image/' . $imageData->imageType . ';base64, ' . $imageData->image;
+        return 'data:image/' . $imageData->imageType . ';base64,' . $imageData->image;
     }
 }
