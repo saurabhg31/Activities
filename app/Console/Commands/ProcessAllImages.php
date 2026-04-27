@@ -65,7 +65,25 @@ class ProcessAllImages extends Command
                     }, $imageIds);
                 }
             } else {
-                $this->printLine('No images with unlogged attributes found.', 1);
+                $this->printLine('No images with unlogged attributes found.', 1, true);
+                $this->printLine('Checking for images without length attribute ...', 1);
+                $imageIdsWithoutLength = Images::select('id')->whereNull('length')->pluck('id');
+                if ($imageIdsWithoutLength->isNotEmpty()) {
+                    $processed = 0;
+                    $imageIdsWithoutLengthCount = $imageIdsWithoutLength->count();
+                    print(number_format($imageIdsWithoutLengthCount) . ' images found.' . PHP_EOL);
+                    $this->printLine('Logging length of the images ... ', 2, true);
+                    foreach ($imageIdsWithoutLength as $imageId) {
+                        $this->printLine('Logging length of image id: ' . $imageId . ' ' . $this->printProgressBar(($processed / $imageIdsWithoutLengthCount) * 100), 3, true);
+                        Images::logImageLength($imageId);
+                        $processed++;
+                        $this->removeLastLine();
+                    }
+                    $this->removeLastLine();
+                    $this->printLine('Logged image lengths of ' . number_format($imageIdsWithoutLengthCount) . ' images.', 1, true);
+                } else {
+                    print('None found.' . PHP_EOL);
+                }
                 $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);
                 print(PHP_EOL);
                 return Command::SUCCESS;
