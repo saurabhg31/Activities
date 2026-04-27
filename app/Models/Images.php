@@ -22,8 +22,7 @@ class Images extends Model
      */
     public static function list(?array $types = null)
     {
-        // TODO: Optimize loading by segregating ids then loading images
-        $query = self::when($types, function ($typeQuery) use ($types) {
+        $query = self::select('id')->when($types, function ($typeQuery) use ($types) {
             return $typeQuery->whereIn('type', $types);
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
@@ -31,7 +30,8 @@ class Images extends Model
         } else {
             $query->whereNull('user_id');
         }
-        return $query->orderBy('id', 'desc')->paginate(env('PAGINATION', 20));
+        $imageIds = $query->pluck('id');
+        return self::whereIn('id', $imageIds)->orderBy('id', 'desc')->paginate(env('PAGINATION', 20));
     }
 
     /**
@@ -94,7 +94,7 @@ class Images extends Model
         $imageIds = $search->pluck('id');
         DB::statement('SET sql_mode="only_full_group_by"');
         // paginating in two steps, first take ids then paginating based on that as mysql is unable to search with image data in table
-        $search = self::whereIn('id', $imageIds->toArray())
+        $search = self::whereIn('id', $imageIds)
             ->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 8 : env('PAGINATION', 20));
         $search->response = 'Search complete';
         return $search;
@@ -106,16 +106,6 @@ class Images extends Model
      */
     public static function imageTypes(bool $checkDomain = true)
     {
-        /* Obsolete code. TODO: Remove
-        return self::select('type')->distinct('type')->when($checkDomain, function ($query) {
-            if (Session::has('domain') && Session::get('domain') == 'private') {
-                $query->where('user_id', auth('web')->id());
-            } else {
-                $query->whereNull('user_id');
-            }
-            return $query;
-        })->orderBy('type', 'asc')->get();
-        */
         return ImageType::getTypes($checkDomain);
     }
 
