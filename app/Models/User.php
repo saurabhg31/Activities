@@ -66,9 +66,6 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public static function getDefaultWallpaperData(self $user)
     {
-        if (is_null($user->defaultWallpaperId)) {
-            return null;
-        }
         if (Session::has('domain') && strtolower(Session::get('domain') === 'private')) {
             $imageDataId = ImageDimensions::select('images.id')
                 ->join('images', function ($query) use ($user) {
@@ -82,6 +79,9 @@ class User extends Authenticatable implements MustVerifyEmail
                 ->inRandomOrder()->first();
             $imageData = Images::find($imageDataId->id);
         } else {
+            if (is_null($user->defaultWallpaperId)) {
+                return null;
+            }
             $imageData = Images::find($user->defaultWallpaperId);
         }
         return 'data:image/' . $imageData->imageType . ';base64, ' . $imageData->image;
