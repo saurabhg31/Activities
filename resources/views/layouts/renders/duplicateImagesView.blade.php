@@ -46,7 +46,7 @@
             <div class="form-inline">
         @endif
         <div class="col-sm-3">
-            <img src="data:image/{{ $image->imageType }};base64, {{ $image->image }}"
+            <img src="data:image/{{ $image->imageType }};base64,{{ $image->image }}"
                 title="Type: {{ $image->type }} || Tags: {{ $image->tags }}"
                 style="max-width: 100%; max-height: 100%; cursor: pointer;" onclick="openImageInModal($(this))" /><br>
             <label>Image Id: {{ $image->id }} : {{ $image->created_at->format('Y\/m\/d h:i a') }}</label>
