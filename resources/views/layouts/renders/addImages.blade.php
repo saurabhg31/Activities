@@ -3,7 +3,7 @@
     <div class="form-inline">
         <div class="col-sm-4" style="margin-top: -10%;">
             <input type="file" name="images[]" class="form-control" multiple onchange="listFileNames($(this));"
-                id="addImagesInput" accept="image/*" style="width: 100%;">
+                id="addImagesInput" accept="image/*" style="width: 100%;" required>
         </div>
         <div class="col-sm-8">
             <label for="fileListOutput" style="float: left;">File list:</label><br>
