@@ -66,7 +66,7 @@ class ProcessAllImages extends Command
                 }
             } else {
                 $this->printLine('No images with unlogged attributes found.', 1, true);
-                $this->printLine('Checking for images without length attribute ...', 1);
+                $this->printLine('Checking for images without length attribute in images table ...', 1);
                 $imageIdsWithoutLength = Images::select('id')->whereNull('length')->pluck('id');
                 if ($imageIdsWithoutLength->isNotEmpty()) {
                     $processed = 0;
@@ -76,6 +76,26 @@ class ProcessAllImages extends Command
                     foreach ($imageIdsWithoutLength as $imageId) {
                         $this->printLine('Logging length of image id: ' . $imageId . ' ' . $this->printProgressBar(($processed / $imageIdsWithoutLengthCount) * 100), 3, true);
                         Images::logImageLength($imageId);
+                        $processed++;
+                        $this->removeLastLine();
+                    }
+                    $this->removeLastLine();
+                    $this->printLine('Logged image lengths of ' . number_format($imageIdsWithoutLengthCount) . ' images.', 1, true);
+                } else {
+                    print('None found.' . PHP_EOL);
+                }
+                $this->printLine('Checking for images without length attribute in image_dimensions table ...', 1);
+                $imageIdsWithoutLength = ImageDimensions::select('image_id')->whereNull('length')->pluck('image_id');
+                if ($imageIdsWithoutLength->isNotEmpty()) {
+                    $processed = 0;
+                    $imageIdsWithoutLengthCount = $imageIdsWithoutLength->count();
+                    print(number_format($imageIdsWithoutLengthCount) . ' images found.' . PHP_EOL);
+                    $this->printLine('Logging length of the images ... ', 2, true);
+                    foreach ($imageIdsWithoutLength as $imageId) {
+                        $this->printLine('Logging length of image id: ' . $imageId . ' ' . $this->printProgressBar(($processed / $imageIdsWithoutLengthCount) * 100), 3, true);
+                        ImageDimensions::where('image_id', $imageId)->update([
+                            'length' => Images::select('length')->where('id', $imageId)->first()->length
+                        ]);
                         $processed++;
                         $this->removeLastLine();
                     }
@@ -99,6 +119,7 @@ class ProcessAllImages extends Command
             asort($imageIds);
             $this->printActionCompletedMsg();
             $this->printLine('Processing images ' . (env('IMAGE_PROCESSING_USE_QUEUE', false) ? ' via queues ' : null) . '... ', 1, true);
+            $imageIdsCount = count($imageIds);
             $imageIdChunks = array_chunk($imageIds, env('IMAGE_PROCESSING_CHUNK'));
             if (env('IMAGE_PROCESSING_USE_QUEUE', false)) {
                 foreach ($imageIdChunks as $idChunk) {
@@ -132,7 +153,7 @@ class ProcessAllImages extends Command
                 ImageDimensions::addMultipleImagesDimensionsInfo($imagesDimensionsBag);
                 $this->printActionCompletedMsg();
             }
-            $this->printLine('Logging image sizes of ' . number_format($processed) . ' images ... ', 1, true);
+            $this->printLine('Logging image sizes of ' . number_format($imageIdsCount) . ' images ... ', 1, true);
             $processed = 0;
             $progress = 0.0;
             foreach ($imageIdChunks as $idChunk) {

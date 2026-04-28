@@ -156,8 +156,10 @@ class Images extends Model
     public static function logImageLength(int $imageId)
     {
         $img = self::find($imageId);
-        $img->length = strlen($img->image);
+        $imageLength = strlen($img->image);
+        $img->length = $imageLength;
         $img->save();
+        ImageDimensions::where('image_id', $imageId)->update(['length' => $imageLength]);
     }
 
     /**

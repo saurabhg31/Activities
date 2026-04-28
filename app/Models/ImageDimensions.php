@@ -10,7 +10,7 @@ class ImageDimensions extends Model
     use HasFactory;
     const UPDATED_AT = null;
     protected $fillable = [
-        'image_id', 'x_axis', 'y_axis', 'is_portrait', 'is_square'
+        'image_id', 'x_axis', 'y_axis', 'is_portrait', 'is_square', 'length'
     ];
 
     public static function addImageDimensionInfo(int $imageId, int $x, int $y)
