@@ -1,15 +1,3 @@
-{{-- @php
-    if (Session::has('domain') && strtolower(Session::get('domain') == 'private')) {
-        $privateImages = array_filter(scandir('images/privateDomainImages/'), function ($file) {
-            return $file != '.' && $file != '..';
-        });
-        $backgroundImg = $privateImages[array_rand($privateImages, 1)];
-        $backgroundImg = asset("images/privateDomainImages/{$backgroundImg}");
-    } else {
-        $backgroundImg = $defaultWallpaperData;
-    }
-@endphp --}}
-
 @extends('layouts.app')
 @section('css')
     <style>
