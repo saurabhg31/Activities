@@ -49,14 +49,22 @@ class Images extends Model
         $tags = array_filter(array_diff($tags, $ids));
         $extensionTags = [];
         $gifDataPresent = false;
+        $animationsOnly = false;
         if (!empty($tags)) {
             $availableExtensions = self::select('imageType')->distinct()->pluck('imageType')->toArray();
             $extensionTags = array_intersect($availableExtensions, $tags);
             $tags = array_filter(array_diff($tags, $extensionTags));
             $gifDataPresent = !empty(array_intersect(config('constants.ANIMATED_IMG_EXTENSIONS'), $extensionTags));
         }
+        if (in_array(config('constants.ANIMATION_ONLY_TAG'), $tags)) {
+            $animationsOnly = true;
+            $tags = array_filter(array_diff($tags, [config('constants.ANIMATION_ONLY_TAG')]));
+            $gifDataPresent = true;
+        }
         $search = self::select('images.id')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
+        })->when($animationsOnly, function ($animationsOnlyQuery) {
+            $animationsOnlyQuery->where('images.isAnimated', true);
         })->when(!empty($extensionTags), function ($extensionsQuery) use ($extensionTags) {
             if (count($extensionTags) === 1) {
                 $extensionsQuery->where('images.imageType', reset($extensionTags));

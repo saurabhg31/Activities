@@ -74,7 +74,8 @@ class User extends Authenticatable implements MustVerifyEmail
                 })->where([
                     'image_dimensions.is_portrait' => false,
                     'image_dimensions.is_square' => false
-                ])->whereIn('images.imageType', config('constants.PRIVATE_DASHBOARD_WALLPAPER_EXTENSIONS'))
+                ])/*->whereIn('images.imageType', config('constants.PRIVATE_DASHBOARD_WALLPAPER_EXTENSIONS'))*/
+                ->where('images.isAnimated', true)
                 ->whereRaw('CAST(image_dimensions.x_axis as FLOAT) / image_dimensions.y_axis BETWEEN ? AND ?', config('constants.LANDSCAPE_ASPECT_RATIO_FLOAT_RANGE'))
                 ->inRandomOrder()->first();
             $imageData = Images::find($imageDataId->id);

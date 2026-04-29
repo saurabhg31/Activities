@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Artisan;
 use Throwable;
 
+use function App\Helpers\isAnimatedComplete;
+
 class ProcessAllImages extends Command
 {
 
@@ -104,6 +106,7 @@ class ProcessAllImages extends Command
                 } else {
                     print('None found.' . PHP_EOL);
                 }
+                $this->detectAnimatedImages();
                 $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);
                 print(PHP_EOL);
                 return Command::SUCCESS;
@@ -169,6 +172,7 @@ class ProcessAllImages extends Command
             }
             $this->printLine(number_format($processed) . ' images processed.', 1, true);
         }
+        $this->detectAnimatedImages();
         $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);
         print(PHP_EOL);
         return Command::SUCCESS;
@@ -198,5 +202,40 @@ class ProcessAllImages extends Command
         array_map(function ($tableName) {
             DB::table($tableName)->truncate();
         }, $tables);
+    }
+
+    /**
+     * Detects animated images
+     * @return void
+     */
+    private function detectAnimatedImages()
+    {
+        $this->printLine('Detecting animation images ...', 1);
+        $animatedImageExtensions = config('constants.ANIMATED_IMG_EXTENSIONS');
+        $imageIdsToScan = Images::select('id')->where('isAnimated', false)
+            ->where(function ($query) use (&$animatedImageExtensions) {
+                $query->where('imageType', reset($animatedImageExtensions));
+                array_shift($animatedImageExtensions);
+                foreach ($animatedImageExtensions as $extension) {
+                    $query->orWhere('imageType', $extension);
+                }
+            })->pluck('id');
+        $totalImagesCount = $imageIdsToScan->count();
+        print(number_format($totalImagesCount) . ' images found.' . PHP_EOL);
+        $processed = 0;
+        $animatedImagesCount = 0;
+        foreach ($imageIdsToScan as $imageId) {
+            $this->printLine('Analyzing image id: ' . $imageId . '. ' . $this->printProgressBar(($processed / $totalImagesCount) * 100), 2, true);
+            $imageData = Images::find($imageId);
+            $imageBase64String = 'data:image/' . $imageData->imageType . ';base64,' . $imageData->image;
+            $imageData->isAnimated = isAnimatedComplete($imageBase64String);
+            $imageData->save();
+            if ($imageData->isAnimated) {
+                $animatedImagesCount++;
+            }
+            $processed++;
+            $this->removeLastLine();
+        }
+        $this->printLine(number_format($processed) . ' images processed, ' . number_format($animatedImagesCount) . ' new animated images found & logged.', 1, true);
     }
 }
