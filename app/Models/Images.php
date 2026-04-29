@@ -15,7 +15,7 @@ class Images extends Model
 {
     protected $table = 'images';
     protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'length', 'created_at'];
-    protected $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl';
+    protected string $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl';
 
     /**
      * get images
@@ -47,13 +47,30 @@ class Images extends Model
             return is_numeric($str);
         });
         $tags = array_filter(array_diff($tags, $ids));
+        $extensionTags = [];
         $gifDataPresent = false;
+        if (!empty($tags)) {
+            $availableExtensions = self::select('imageType')->distinct()->pluck('imageType')->toArray();
+            $extensionTags = array_intersect($availableExtensions, $tags);
+            $tags = array_filter(array_diff($tags, $extensionTags));
+            $gifDataPresent = !empty(array_intersect(config('constants.ANIMATED_IMG_EXTENSIONS'), $extensionTags));
+        }
         $search = self::select('images.id')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
-        })->when(!empty($tags), function ($conditionalQuery) use ($useIndexing, $tags, &$gifDataPresent) {
-            if (array_search('gif', $tags) !== false) {
-                $gifDataPresent = true;
+        })->when(!empty($extensionTags), function ($extensionsQuery) use ($extensionTags) {
+            if (count($extensionTags) === 1) {
+                $extensionsQuery->where('images.imageType', reset($extensionTags));
+            } else {
+                $extensionsQuery->where(function ($query) use ($extensionTags) {
+                    $query->where('images.imageType', reset($extensionTags));
+                    array_shift($extensionTags);
+                    foreach ($extensionTags as $extensionTag) {
+                        $query->orWhere('images.imageType', $extensionTag);
+                    }
+                });
             }
+            return $extensionsQuery;
+        })->when(!empty($tags), function ($conditionalQuery) use ($useIndexing, $tags) {
             if ($useIndexing) {
                 $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
                     $join->on('image_search_indexing.image_id', '=', 'images.id');

@@ -14,7 +14,8 @@ class ImageIndex extends Model
     use HasFactory;
     protected $table = 'image_search_indexing';
     protected $fillable = [
-        'tag', 'image_id'
+        'tag',
+        'image_id'
     ];
 
     /**
@@ -74,7 +75,7 @@ class ImageIndex extends Model
      * @param integer $userId
      * @return \Illuminate\Support\Collection
      */
-    public static function getImageTags(int $userId = null, string $domain = null)
+    public static function getImageTags(?int $userId = null, ?string $domain = null)
     {
         if (auth()->check()) {
             $userId = auth('web')->id();
@@ -95,7 +96,7 @@ class ImageIndex extends Model
      * Get cached image tags
      * @return \Illuminate\Support\Collection
      */
-    public static function getCachedImageTags(string $domain = 'public', int $userId = null)
+    public static function getCachedImageTags(string $domain = 'public', ?int $userId = null)
     {
         if (!$userId && auth('web')->check()) {
             $userId = auth('web')->id();
@@ -104,6 +105,8 @@ class ImageIndex extends Model
         if (!Cache::has($cacheName)) {
             cacheImageSearchPrompts($domain, $userId);
         }
-        return Cache::get($cacheName);
+        $tags = Cache::get($cacheName)->toArray();
+        $extensions = Images::select('imageType')->distinct()->pluck('imageType')->toArray();
+        return array_merge($tags, $extensions);
     }
 }
