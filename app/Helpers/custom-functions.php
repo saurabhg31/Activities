@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
+// use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Drivers\Imagick\Driver;
 use Intervention\Image\Encoders\AvifEncoder;
 use Throwable;
 
@@ -50,7 +51,7 @@ if (!function_exists('cacheImageSearchPrompts')) {
      * @param string $domain
      * @return boolean
      */
-    function cacheImageSearchPrompts(string $domain, int $userId = null)
+    function cacheImageSearchPrompts(string $domain, ?int $userId = null)
     {
         $cacheName = "image_tags_{$domain}";
         if ($userId) {
@@ -147,7 +148,7 @@ if (!function_exists('compressImage')) {
      * Compress image to avif
      * @source: https://gemini.google.com/app/b173ef1bc062842b
      * @param integer $imageId
-     * @return boolean (true on success, false on failure)
+     * @return boolean|null (true on success, false on failure, null if compression resulted in bigger/equal filesize)
      */
     function compressImage(int $imageId)
     {
@@ -158,7 +159,6 @@ if (!function_exists('compressImage')) {
             return true;
         }
         try {
-            DB::beginTransaction();
             // 2. Decode the Base64 data directly
             // v4's decode() is highly versatile and handles raw base64 strings well
             $image = $manager->decode(base64_decode($imageData->image));
@@ -171,16 +171,22 @@ if (!function_exists('compressImage')) {
             $newBase64 = $encoded->toBase64();
             $newBase64Length = strlen($newBase64);
 
+            // comparing image sizes, cancelling if new image size is larger
+            if ($imageData->length <= $newBase64Length) {
+                Log::channel('imageCompressionErrors')->warning('New file size greater than or equal to old filesize for image id: ' . $imageId . '. New size: ' . number_format($newBase64Length) . ' bytes, old size: ' . number_format($imageData->length) . ' bytes, difference: ' . number_format($newBase64Length - $imageData->length) . ' bytes');
+                return null;
+            }
+
             // Saving image
-            $imageData->imageType = 'avif';
-            $imageData->image = $newBase64;
-            $imageData->length = $newBase64Length;
-            $imageData->save();
-            ImageDimensions::where('image_id', $imageId)->update(['length' => $newBase64Length]);
-            DB::commit();
+            DB::transaction(function () use (&$imageData, &$newBase64, &$newBase64Length, &$imageId) {
+                $imageData->imageType = 'avif';
+                $imageData->image = $newBase64;
+                $imageData->length = $newBase64Length;
+                $imageData->save();
+                ImageDimensions::where('image_id', $imageId)->update(['length' => $newBase64Length]);
+            });
             return true;
         } catch (Throwable $error) {
-            DB::rollBack();
             Log::channel('imageCompressionErrors')->error($error->getMessage(), $error->getTrace());
             return false;
         }

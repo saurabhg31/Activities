@@ -40,11 +40,16 @@ class CompressImages extends Command
         $processed = 0;
         $successCount = 0;
         $failedImageIds = [];
+        $compressionResultedInGreaterFilesizeForImageIds = [];
         foreach ($imageIds as $imageId) {
             $this->printLine('Converting image id: ' . $imageId . '. ' . $this->printProgressBar(($processed / $imagesCount) * 100), 2, true);
-            if (compressImage($imageId)) {
+            $compression = compressImage($imageId);
+            if ($compression === true) {
                 $successCount++;
             } else {
+                if (is_null($compression)) {
+                    array_push($compressionResultedInGreaterFilesizeForImageIds, $imageId);
+                }
                 array_push($failedImageIds, $imageId);
             }
             $processed++;
@@ -55,6 +60,10 @@ class CompressImages extends Command
         if (!empty($failedImageIds)) {
             $this->printLine('Logging failed image ids ... ', 1);
             Log::channel('imageCompression')->info('Failed to compress image ids at ' . now() . '. Failed image ids: ' . implode(', ', $failedImageIds));
+            $this->printActionCompletedMsg();
+            if (!empty($compressionResultedInGreaterFilesizeForImageIds)) {
+                $this->printLine(number_format(count($compressionResultedInGreaterFilesizeForImageIds)) . ' images\' compression resulted in greater than or equal to old filesize', 1, true);
+            }
             $this->printActionCompletedMsg();
         }
         $this->printHeading('OPERATION COMPLETED', '-', 30);
