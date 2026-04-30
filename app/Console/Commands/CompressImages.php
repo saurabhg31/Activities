@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Images;
 use App\Traits\Miscellaneous;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 use function App\Helpers\compressImage;
@@ -66,6 +67,9 @@ class CompressImages extends Command
             }
             $this->printActionCompletedMsg();
         }
+        $this->printLine('Purging sql logs ... ', 1);
+        DB::statement('PURGE BINARY LOGS BEFORE NOW();');
+        $this->printActionCompletedMsg();
         $this->printHeading('OPERATION COMPLETED', '-', 30);
         return Command::SUCCESS;
     }
