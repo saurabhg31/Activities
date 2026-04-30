@@ -107,7 +107,7 @@ class Images extends Model
             $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . count($tags));
         }
         if (!empty($ids)) {
-            $search->whereIn('images.id', $ids)->where('images.user_id', auth()->id());
+            $search->whereIn('images.id', $ids);
         }
         if (isset($params['page'])) {
             if (!is_numeric($params['page'])) {
