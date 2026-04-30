@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Intervention\Image\ImageManager;
 // use Intervention\Image\Drivers\Gd\Driver;
-use Intervention\Image\Drivers\Imagick\Driver;
+use Intervention\Image\Drivers\Imagick\Driver; // faster for .avif conversion
 use Intervention\Image\Encoders\AvifEncoder;
 use Throwable;
 
