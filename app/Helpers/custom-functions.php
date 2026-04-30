@@ -2,9 +2,17 @@
 
 namespace App\Helpers;
 
+use App\Models\ImageDimensions;
 use App\Models\ImageIndex;
+use App\Models\Images;
 use App\Models\SearchQueryIndexing;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Encoders\AvifEncoder;
+use Throwable;
 
 if (!function_exists('translate')) {
     /**
@@ -131,5 +139,50 @@ if (!function_exists('isAnimatedComplete')) {
 
         fclose($fp);
         return $isAnimated;
+    }
+}
+
+if (!function_exists('compressImage')) {
+    /**
+     * Compress image to avif
+     * @source: https://gemini.google.com/app/b173ef1bc062842b
+     * @param integer $imageId
+     * @return boolean (true on success, false on failure)
+     */
+    function compressImage(int $imageId)
+    {
+        // 1. Initialize Image Manager
+        $manager = new ImageManager(new Driver());
+        $imageData = Images::find($imageId);
+        if (!$imageData) {
+            return true;
+        }
+        try {
+            DB::beginTransaction();
+            // 2. Decode the Base64 data directly
+            // v4's decode() is highly versatile and handles raw base64 strings well
+            $image = $manager->decode(base64_decode($imageData->image));
+
+            // 3. Encode to AVIF
+            // In v4, you use the encodeByExtension or encode() methods
+            $encoded = $image->encode(new AvifEncoder(quality: 100));
+
+            // 4. Save back to Base64
+            $newBase64 = $encoded->toBase64();
+            $newBase64Length = strlen($newBase64);
+
+            // Saving image
+            $imageData->imageType = 'avif';
+            $imageData->image = $newBase64;
+            $imageData->length = $newBase64Length;
+            $imageData->save();
+            ImageDimensions::where('image_id', $imageId)->update(['length' => $newBase64Length]);
+            DB::commit();
+            return true;
+        } catch (Throwable $error) {
+            DB::rollBack();
+            Log::channel('imageCompressionErrors')->error($error->getMessage(), $error->getTrace());
+            return false;
+        }
     }
 }

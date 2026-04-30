@@ -8,6 +8,7 @@
         "php": "^8.0.2",
         "doctrine/dbal": "^3.6",
         "guzzlehttp/guzzle": "^7.2",
+        "intervention/image": "^4.0",
         "laravel/framework": "^9.19",
         "laravel/octane": "*",
         "laravel/sanctum": "^3.0",
