@@ -148,6 +148,7 @@ if (!function_exists('isAnimatedComplete')) {
 if (!function_exists('compressImage')) {
     /**
      * Attempt to do lossless compression of image to .avif format
+     * TODO: Change to Optimized Brute-Force Function (Intervention v4) - loops through .avif, .webp & .png formats to do best possible compression.
      * @source: https://gemini.google.com/app/b173ef1bc062842b
      * @param integer $imageId
      * @return boolean|null (true on success, false on failure, null if compression resulted in bigger/equal filesize)

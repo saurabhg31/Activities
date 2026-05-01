@@ -71,6 +71,7 @@ class CompressImages extends Command
         DB::statement('PURGE BINARY LOGS BEFORE NOW();');
         $this->printActionCompletedMsg();
         $this->printHeading('OPERATION COMPLETED', '-', 30);
+        // TODO: Add logic to compress animation images from https://gemini.google.com/app/b173ef1bc062842b
         return Command::SUCCESS;
     }
 }
