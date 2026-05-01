@@ -50,6 +50,7 @@ class Images extends Model
         $extensionTags = [];
         $gifDataPresent = false;
         $animationsOnly = false;
+        $nullTagsOnly = false; // if true, show images with null tags only
         if (!empty($tags)) {
             $availableExtensions = self::select('imageType')->distinct()->pluck('imageType')->toArray();
             $extensionTags = array_intersect($availableExtensions, $tags);
@@ -61,10 +62,16 @@ class Images extends Model
             $tags = array_filter(array_diff($tags, [config('constants.ANIMATION_ONLY_TAG')]));
             $gifDataPresent = true;
         }
+        if (in_array(config('constants.NO_TAGS_SEARCH_TAG'), $tags)) {
+            $nullTagsOnly = true;
+            $tags = array_filter(array_diff($tags, [config('constants.NO_TAGS_SEARCH_TAG')]));
+        }
         $search = self::select('images.id')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
         })->when($animationsOnly, function ($animationsOnlyQuery) {
-            $animationsOnlyQuery->where('images.isAnimated', true);
+            return $animationsOnlyQuery->where('images.isAnimated', true);
+        })->when($nullTagsOnly, function ($nullTagsQuery) {
+            return $nullTagsQuery->whereNull('images.tags');
         })->when(!empty($extensionTags), function ($extensionsQuery) use ($extensionTags) {
             if (count($extensionTags) === 1) {
                 $extensionsQuery->where('images.imageType', reset($extensionTags));

@@ -6,4 +6,5 @@ return [
     'PRIVATE_DASHBOARD_WALLPAPER_EXTENSIONS' => ['gif', 'webp', 'avif', 'png'],
     'ANIMATED_IMG_EXTENSIONS' => ['gif', 'webp', 'avif', 'apng', 'svg', 'fli', 'flc'],
     'ANIMATION_ONLY_TAG' => '#animationsOnly',
+    'NO_TAGS_SEARCH_TAG' => '#noTags',
 ];

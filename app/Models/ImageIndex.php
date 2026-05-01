@@ -107,6 +107,9 @@ class ImageIndex extends Model
         }
         $tags = Cache::get($cacheName)->toArray();
         $extensions = Images::select('imageType')->distinct()->pluck('imageType')->toArray();
-        return array_merge($tags, $extensions, [config('constants.ANIMATION_ONLY_TAG')]);
+        return array_merge($tags, $extensions, [
+            config('constants.ANIMATION_ONLY_TAG'),
+            config('constants.NO_TAGS_SEARCH_TAG')
+        ]);
     }
 }
