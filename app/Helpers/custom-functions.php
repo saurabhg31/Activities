@@ -2,10 +2,12 @@
 
 namespace App\Helpers;
 
+use App\Models\ImageCompressionLog;
 use App\Models\ImageDimensions;
 use App\Models\ImageIndex;
 use App\Models\Images;
 use App\Models\SearchQueryIndexing;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -145,7 +147,7 @@ if (!function_exists('isAnimatedComplete')) {
 
 if (!function_exists('compressImage')) {
     /**
-     * Compress image to avif
+     * Attempt to do lossless compression of image to .avif format
      * @source: https://gemini.google.com/app/b173ef1bc062842b
      * @param integer $imageId
      * @return boolean|null (true on success, false on failure, null if compression resulted in bigger/equal filesize)
@@ -157,6 +159,11 @@ if (!function_exists('compressImage')) {
         $imageData = Images::find($imageId);
         if (!$imageData) {
             return true;
+        }
+        $oldExtension = $imageData->imageType;
+        $oldFilesize = $imageData->length;
+        if (!$oldFilesize) {
+            throw new Exception('Image id: ' . $imageId . ' does not have length parameter in table. Please run process:images command first.');
         }
         try {
             // 2. Decode the Base64 data directly
@@ -173,21 +180,23 @@ if (!function_exists('compressImage')) {
 
             // comparing image sizes, cancelling if new image size is larger
             if ($imageData->length <= $newBase64Length) {
-                Log::channel('imageCompressionErrors')->warning('New file size greater than or equal to old filesize for image id: ' . $imageId . '. New size: ' . number_format($newBase64Length) . ' bytes, old size: ' . number_format($imageData->length) . ' bytes, difference: ' . number_format($newBase64Length - $imageData->length) . ' bytes');
+                ImageCompressionLog::addLog($imageId, $oldExtension, $oldExtension, $imageData->length, $newBase64Length);
                 return null;
             }
 
             // Saving image
-            DB::transaction(function () use (&$imageData, &$newBase64, &$newBase64Length, &$imageId) {
+            DB::transaction(function () use (&$imageData, &$newBase64, &$newBase64Length, &$imageId, &$oldExtension, &$oldFilesize) {
                 $imageData->imageType = 'avif';
                 $imageData->image = $newBase64;
                 $imageData->length = $newBase64Length;
                 $imageData->save();
                 ImageDimensions::where('image_id', $imageId)->update(['length' => $newBase64Length]);
+                ImageCompressionLog::addLog($imageId, $oldExtension, 'avif', $oldFilesize, $newBase64Length);
             });
             return true;
         } catch (Throwable $error) {
             Log::channel('imageCompressionErrors')->error($error->getMessage(), $error->getTrace());
+            ImageCompressionLog::addLog($imageId, $oldExtension, $oldExtension, $oldFilesize, $oldFilesize, $error->getMessage());
             return false;
         }
     }
