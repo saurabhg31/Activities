@@ -15,6 +15,8 @@ use Intervention\Image\ImageManager;
 // use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Drivers\Imagick\Driver; // faster for .avif conversion
 use Intervention\Image\Encoders\AvifEncoder;
+use Intervention\Image\Encoders\PngEncoder;
+use Intervention\Image\Encoders\WebpEncoder;
 use Throwable;
 
 if (!function_exists('translate')) {
@@ -147,16 +149,13 @@ if (!function_exists('isAnimatedComplete')) {
 
 if (!function_exists('compressImage')) {
     /**
-     * Attempt to do lossless compression of image to .avif format
-     * TODO: Change to Optimized Brute-Force Function (Intervention v4) - loops through .avif, .webp & .png formats to do best possible compression.
+     * Attempt to do lossless compression of image to most compressible format
      * @source: https://gemini.google.com/app/b173ef1bc062842b
      * @param integer $imageId
      * @return boolean|null (true on success, false on failure, null if compression resulted in bigger/equal filesize)
      */
     function compressImage(int $imageId)
     {
-        // 1. Initialize Image Manager
-        $manager = new ImageManager(new Driver());
         $imageData = Images::find($imageId);
         if (!$imageData) {
             return true;
@@ -166,33 +165,71 @@ if (!function_exists('compressImage')) {
         if (!$oldFilesize) {
             throw new Exception('Image id: ' . $imageId . ' does not have length parameter in table. Please run process:images command first.');
         }
+        // TODO: Add compression logic for animated images
+        if (isAnimatedComplete('data:image/' . $imageData->imageType . ';base64,' . $imageData->image)) {
+            compressAnimatedImage($imageData);
+        }
         try {
+            // 1. Initialize Image Manager
+            $manager = new ImageManager(new Driver());
+
             // 2. Decode the Base64 data directly
             // v4's decode() is highly versatile and handles raw base64 strings well
             $image = $manager->decode(base64_decode($imageData->image));
 
-            // 3. Encode to AVIF
-            // In v4, you use the encodeByExtension or encode() methods
-            $encoded = $image->encode(new AvifEncoder(quality: 100));
+            // Define our target lossless encoders
+            $encoders = [
+                'avif' => new AvifEncoder(quality: 100),
+                'webp' => new WebpEncoder(quality: 100),
+                // We include PNG in the brute force because v4's PngEncoder might beat original source if the original was poorly optimized.
+                'png'  => new PngEncoder(),
+            ];
 
-            // 4. Save back to Base64
-            $newBase64 = $encoded->toBase64();
-            $newBase64Length = strlen($newBase64);
+            $bestLength = $oldFilesize; // taking old file size as best length at first
+            $bestBase64 = null;
+            $bestType = null;
+            $wasCompressed = false;
 
-            // comparing image sizes, cancelling if new image size is larger
-            if ($imageData->length <= $newBase64Length) {
-                ImageCompressionLog::addLog($imageId, $oldExtension, $oldExtension, $imageData->length, $newBase64Length);
+            foreach ($encoders as $type => $encoder) {
+                // Skip encoding if we are already in that format (to save CPU)
+                if ($type === $oldExtension && $type !== 'png') continue;
+
+                $encoded = $image->encode($encoder);
+                $currentBase64 = $encoded->toBase64();
+                $currentLength = strlen($currentBase64);
+
+                // 4. Comparison Logic
+                if ($currentLength < $bestLength) {
+                    $bestLength = $currentLength;
+                    $bestBase64 = $currentBase64;
+                    $bestType = $type;
+                    $wasCompressed = true;
+                }
+            }
+            unset($image);
+
+            // adding log if compression failed
+            if (!$wasCompressed) {
+                ImageCompressionLog::addLog($imageId, $oldExtension, $oldExtension, $oldFilesize, $oldFilesize);
                 return null;
             }
 
             // Saving image
-            DB::transaction(function () use (&$imageData, &$newBase64, &$newBase64Length, &$imageId, &$oldExtension, &$oldFilesize) {
-                $imageData->imageType = 'avif';
-                $imageData->image = $newBase64;
-                $imageData->length = $newBase64Length;
+            DB::transaction(function () use (
+                &$imageData,
+                &$bestType,
+                &$bestLength,
+                &$bestBase64,
+                &$imageId,
+                &$oldExtension,
+                &$oldFilesize
+            ) {
+                $imageData->imageType = $bestType;
+                $imageData->image = $bestBase64;
+                $imageData->length = $bestLength;
                 $imageData->save();
-                ImageDimensions::where('image_id', $imageId)->update(['length' => $newBase64Length]);
-                ImageCompressionLog::addLog($imageId, $oldExtension, 'avif', $oldFilesize, $newBase64Length);
+                ImageDimensions::where('image_id', $imageId)->update(['length' => $bestLength]);
+                ImageCompressionLog::addLog($imageId, $oldExtension, $bestType, $oldFilesize, $bestLength);
             });
             return true;
         } catch (Throwable $error) {
@@ -200,5 +237,11 @@ if (!function_exists('compressImage')) {
             ImageCompressionLog::addLog($imageId, $oldExtension, $oldExtension, $oldFilesize, $oldFilesize, $error->getMessage());
             return false;
         }
+    }
+}
+
+if (!function_exists('compressAnimatedImage')) {
+    function compressAnimatedImage(Images &$imageData) {
+        // TODO: complete this function
     }
 }

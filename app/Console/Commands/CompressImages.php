@@ -34,15 +34,19 @@ class CompressImages extends Command
      */
     public function handle()
     {
-        $this->printHeading('Compressing unanimated images (converting to .avif)', '-', 20);
-        $imageIds = Images::select('id')->where('isAnimated', false)->whereNot('imageType', 'avif')->pluck('id');
-        $imagesCount = $imageIds->count();
+        $this->printHeading('Attempting images\' compression (will automatically choose best format)', '-', 20);
+        $imageIds = DB::select('select images.id from images where not exists (select 1 from image_compression_logs where image_compression_logs.image_id=images.id)');
+        $imageIds = array_map(function ($item) {
+            return $item->id;
+        }, $imageIds);
+        $imagesCount = count($imageIds);
         $this->printLine(number_format($imagesCount) . ' images to convert ...', 1, true);
         $processed = 0;
         $successCount = 0;
         $failedImageIds = [];
         $compressionResultedInGreaterFilesizeForImageIds = [];
         foreach ($imageIds as $imageId) {
+            $imageId = 12149;
             $this->printLine('Converting image id: ' . $imageId . '. ' . $this->printProgressBar(($processed / $imagesCount) * 100), 2, true);
             $compression = compressImage($imageId);
             if ($compression === true) {
@@ -55,6 +59,7 @@ class CompressImages extends Command
             }
             $processed++;
             $this->removeLastLine();
+            break;
         }
         $this->printLine(number_format($successCount) . ' images successfully converted.', 1, true);
         $this->printLine('Failed to convert ' . number_format(count($failedImageIds)) . ' images.', 1, true);
@@ -71,7 +76,6 @@ class CompressImages extends Command
         DB::statement('PURGE BINARY LOGS BEFORE NOW();');
         $this->printActionCompletedMsg();
         $this->printHeading('OPERATION COMPLETED', '-', 30);
-        // TODO: Add logic to compress animation images from https://gemini.google.com/app/b173ef1bc062842b
         return Command::SUCCESS;
     }
 }
