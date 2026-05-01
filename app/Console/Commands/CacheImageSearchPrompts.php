@@ -32,14 +32,14 @@ class CacheImageSearchPrompts extends Command
     {
         $offset = 0;
         $limit = 10;
-        $users = User::select('id')->limit($limit)->get();
+        $users = User::select('id')->orderBy('id', 'asc')->limit($limit)->get();
         while ($users->isNotEmpty()) {
             foreach ($users as $user) {
                 cacheImageSearchPrompts('public', $user->id);
                 cacheImageSearchPrompts('private', $user->id);
                 $offset++;
             }
-            $users = User::select('id')->offset($offset)->limit($limit)->get();
+            $users = User::select('id')->orderBy('id', 'asc')->offset($offset)->limit($limit)->get();
         }
         return Command::SUCCESS;
     }
