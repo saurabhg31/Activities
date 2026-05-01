@@ -46,7 +46,6 @@ class CompressImages extends Command
         $failedImageIds = [];
         $compressionResultedInGreaterFilesizeForImageIds = [];
         foreach ($imageIds as $imageId) {
-            $imageId = 12149;
             $this->printLine('Converting image id: ' . $imageId . '. ' . $this->printProgressBar(($processed / $imagesCount) * 100), 2, true);
             $compression = compressImage($imageId);
             if ($compression === true) {
@@ -59,7 +58,6 @@ class CompressImages extends Command
             }
             $processed++;
             $this->removeLastLine();
-            break;
         }
         $this->printLine(number_format($successCount) . ' images successfully converted.', 1, true);
         $this->printLine('Failed to convert ' . number_format(count($failedImageIds)) . ' images.', 1, true);

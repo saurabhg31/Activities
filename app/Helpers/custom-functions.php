@@ -167,7 +167,7 @@ if (!function_exists('compressImage')) {
         }
         // TODO: Add compression logic for animated images
         if (isAnimatedComplete('data:image/' . $imageData->imageType . ';base64,' . $imageData->image)) {
-            compressAnimatedImage($imageData);
+            return compressAnimatedImage($imageData);
         }
         try {
             // 1. Initialize Image Manager
@@ -241,7 +241,86 @@ if (!function_exists('compressImage')) {
 }
 
 if (!function_exists('compressAnimatedImage')) {
-    function compressAnimatedImage(Images &$imageData) {
-        // TODO: complete this function
+    /**
+     * compress animated image
+     * @source: https://gemini.google.com/app/b173ef1bc062842b
+     * @param \App\Models\Images $imageData
+     * @return boolean|null
+     */
+    function compressAnimatedImage(Images &$imageData)
+    {
+        // 1. MUST use Imagick for animation support
+        $manager = new ImageManager(new Driver());
+
+        if (!$imageData->isAnimated) {
+            Images::where('id', $imageData->id)->update(['isAnimated' => true]);
+        }
+
+        $oldExtension = $imageData->imageType;
+        $oldFilesize = $imageData->length;
+        if (!$oldFilesize) {
+            throw new Exception('Image id: ' . $imageData->id . ' does not have length parameter in table. Please run process:images command first.');
+        }
+
+        try {
+            // decode() in v4 with Imagick preserves animation frames
+            $image = $manager->decode(base64_decode($imageData->image));
+
+            $bestBase64 = null;
+            $bestLength = $oldFilesize;
+            $bestType = $oldExtension;
+            $wasCompressed = false;
+
+            // 2. Animation-Compatible Encoders
+            $encoders = [
+                'webp' => new WebpEncoder(quality: 100), // Lossless Animated WebP
+                'avif' => new AvifEncoder(quality: 100), // Lossless Animated AVIF
+            ];
+
+            foreach ($encoders as $type => $encoder) {
+                if ($type === $oldExtension) continue;
+
+                // encode() processes all frames when using the Imagick driver
+                $encoded = $image->encode($encoder);
+                $currentBase64 = $encoded->toBase64();
+
+                // Calculate length as it would be stored (Base64)
+                $currentLength = strlen($currentBase64);
+
+                if ($currentLength < $bestLength) {
+                    $bestLength = $currentLength;
+                    $bestBase64 = $currentBase64;
+                    $bestType = $type;
+                    $wasCompressed = true;
+                }
+            }
+            unset($image);
+
+            if (!$wasCompressed) {
+                ImageCompressionLog::addLog($imageData->id, $oldExtension, $oldExtension, $oldFilesize, $oldFilesize);
+                return null;
+            }
+
+            DB::transaction(function () use (
+                &$imageData,
+                &$bestType,
+                &$bestBase64,
+                &$bestLength,
+                &$oldExtension,
+                &$oldFilesize
+            ) {
+                $imageData->imageType = $bestType;
+                $imageData->image = $bestBase64;
+                $imageData->length = $bestLength;
+                $imageData->save();
+                ImageDimensions::where('image_id', $imageData->id)->update(['length' => $bestLength]);
+                ImageCompressionLog::addLog($imageData->id, $oldExtension, $bestType, $oldFilesize, $bestLength);
+            });
+            return true;
+        } catch (\Throwable $error) {
+            Log::channel('imageCompressionErrors')->error($error->getMessage(), $error->getTrace());
+            ImageCompressionLog::addLog($imageData->id, $oldExtension, $oldExtension, $oldFilesize, $oldFilesize, $error->getMessage());
+            return false;
+        }
     }
 }

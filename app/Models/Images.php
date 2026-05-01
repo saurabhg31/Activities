@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 class Images extends Model
 {
     protected $table = 'images';
-    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'length', 'created_at'];
+    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'length', 'isAnimated'];
     protected string $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl';
 
     /**
