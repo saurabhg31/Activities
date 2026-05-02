@@ -51,6 +51,7 @@ class Images extends Model
         $gifDataPresent = false;
         $animationsOnly = false;
         $nullTagsOnly = false; // if true, show images with null tags only
+        $compressedImagesOnly = false;
         if (!empty($tags)) {
             $availableExtensions = self::select('imageType')->distinct()->pluck('imageType')->toArray();
             $extensionTags = array_intersect($availableExtensions, $tags);
@@ -66,12 +67,21 @@ class Images extends Model
             $nullTagsOnly = true;
             $tags = array_filter(array_diff($tags, [config('constants.NO_TAGS_SEARCH_TAG')]));
         }
+        if (in_array(config('constants.COMPRESSION_TAG'), $tags)) {
+            $compressedImagesOnly = true;
+            $tags = array_filter(array_diff($tags, [config('constants.COMPRESSION_TAG')]));
+        }
         $search = self::select('images.id')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
         })->when($animationsOnly, function ($animationsOnlyQuery) {
             return $animationsOnlyQuery->where('images.isAnimated', true);
         })->when($nullTagsOnly, function ($nullTagsQuery) {
             return $nullTagsQuery->whereNull('images.tags');
+        })->when($compressedImagesOnly, function ($compressedOnlyQuery) {
+            return $compressedOnlyQuery->join('image_compression_logs', function ($query) {
+                $query->on('image_compression_logs.image_id', '=', 'images.id')
+                    ->where('image_compression_logs.file_update_accepted', true);
+            });
         })->when(!empty($extensionTags), function ($extensionsQuery) use ($extensionTags) {
             if (count($extensionTags) === 1) {
                 $extensionsQuery->where('images.imageType', reset($extensionTags));

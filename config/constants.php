@@ -7,4 +7,5 @@ return [
     'ANIMATED_IMG_EXTENSIONS' => ['gif', 'webp', 'avif', 'apng', 'svg', 'fli', 'flc'],
     'ANIMATION_ONLY_TAG' => '#animationsOnly',
     'NO_TAGS_SEARCH_TAG' => '#noTags',
+    'COMPRESSION_TAG' => '#compressedOnly'
 ];

@@ -109,7 +109,8 @@ class ImageIndex extends Model
         $extensions = Images::select('imageType')->distinct()->pluck('imageType')->toArray();
         return array_merge($tags, $extensions, [
             config('constants.ANIMATION_ONLY_TAG'),
-            config('constants.NO_TAGS_SEARCH_TAG')
+            config('constants.NO_TAGS_SEARCH_TAG'),
+            config('constants.COMPRESSION_TAG')
         ]);
     }
 }
