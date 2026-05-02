@@ -222,6 +222,8 @@ if (!function_exists('compressImage')) {
         }
         if (isAnimatedComplete(getBase64StringFromImageData($imageData))) {
             return compressAnimatedImage($imageData);
+        } elseif ($imageData->isAnimated) {
+            Images::where('id', $imageId)->update(['isAnimated' => false]);
         }
         try {
             // 1. Initialize Image Manager
