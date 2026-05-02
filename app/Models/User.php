@@ -9,6 +9,8 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Session;
 use Laravel\Sanctum\HasApiTokens;
 
+use function App\Helpers\getBase64StringFromImageData;
+
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -85,6 +87,6 @@ class User extends Authenticatable implements MustVerifyEmail
             }
             $imageData = Images::find($user->defaultWallpaperId);
         }
-        return 'data:image/' . $imageData->imageType . ';base64,' . $imageData->image;
+        return getBase64StringFromImageData($imageData);
     }
 }

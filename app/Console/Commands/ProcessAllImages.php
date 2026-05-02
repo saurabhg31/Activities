@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Artisan;
 use Throwable;
 
+use function App\Helpers\getBase64StringFromImageData;
 use function App\Helpers\isAnimatedComplete;
 
 class ProcessAllImages extends Command
@@ -227,7 +228,7 @@ class ProcessAllImages extends Command
         foreach ($imageIdsToScan as $imageId) {
             $this->printLine('Analyzing image id: ' . $imageId . '. ' . $this->printProgressBar(($processed / $totalImagesCount) * 100), 2, true);
             $imageData = Images::find($imageId);
-            $imageBase64String = 'data:image/' . $imageData->imageType . ';base64,' . $imageData->image;
+            $imageBase64String = getBase64StringFromImageData($imageData);
             $imageData->isAnimated = isAnimatedComplete($imageBase64String);
             $imageData->save();
             if ($imageData->isAnimated) {

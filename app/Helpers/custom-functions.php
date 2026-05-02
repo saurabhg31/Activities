@@ -68,6 +68,18 @@ if (!function_exists('cacheImageSearchPrompts')) {
     }
 }
 
+if (!function_exists('getBase64StringFromImageData')) {
+    /**
+     * Return a base64 formed string from image data
+     * @param \App\Models\Images $imageData
+     * @return string
+     */
+    function getBase64StringFromImageData(Images &$imageData): string
+    {
+        return 'data:image/' . $imageData->imageType . ';base64,' . $imageData->image;
+    }
+}
+
 if (!function_exists('isAnimatedComplete')) {
     /**
      * Detect if images are animations
@@ -166,7 +178,7 @@ if (!function_exists('compressImage')) {
             throw new Exception('Image id: ' . $imageId . ' does not have length parameter in table. Please run process:images command first.');
         }
         // TODO: Add compression logic for animated images
-        if (isAnimatedComplete('data:image/' . $imageData->imageType . ';base64,' . $imageData->image)) {
+        if (isAnimatedComplete(getBase64StringFromImageData($imageData))) {
             return compressAnimatedImage($imageData);
         }
         try {
