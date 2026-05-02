@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Images;
 use App\Traits\Miscellaneous;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
