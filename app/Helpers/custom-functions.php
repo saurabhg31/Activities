@@ -177,7 +177,6 @@ if (!function_exists('compressImage')) {
         if (!$oldFilesize) {
             throw new Exception('Image id: ' . $imageId . ' does not have length parameter in table. Please run process:images command first.');
         }
-        // TODO: Add compression logic for animated images
         if (isAnimatedComplete(getBase64StringFromImageData($imageData))) {
             return compressAnimatedImage($imageData);
         }
