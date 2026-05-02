@@ -507,4 +507,29 @@ trait Miscellaneous
         }
         return number_format($timeDiffInSeconds / $timeChart->$key, 2) . ' ' . $key . '(s)';
     }
+
+    /**
+     * Convert bytes to maximum possible unit greater than 1
+     * @param integer $bytesCount
+     * @return string
+     */
+    public function convertByteCountToGreatestUnit(int $bytesCount): string
+    {
+        $unit = 'bytes';
+        if ($bytesCount < 1024) {
+            return number_format($bytesCount) . ' ' . $unit;
+        }
+        $sizes = [
+            'KB' => 1024, // 1KB = 1024 bytes
+            'MB' => 1048576, // 1MB = 1024KB = 1048576 bytes
+            'GB' => 1073741824 // 1GB = 1024MB = 1073741824 bytes
+        ];
+        foreach ($sizes as $key => $bytes) {
+            if ($bytesCount < $bytes) {
+                break;
+            }
+            $unit = $key;
+        }
+        return number_format($bytesCount / $sizes[$unit], 2) . ' ' . $unit;
+    }
 }
