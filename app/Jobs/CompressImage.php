@@ -2,17 +2,17 @@
 
 namespace App\Jobs;
 
-use App\Models\ImageDimensions;
-use App\Models\Images;
-use Error;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class ProcessImage implements ShouldQueue
+use function App\Helpers\compressImage;
+
+class CompressImage implements ShouldQueue
 {
+    // must use minimum  --timeout=300 --memory=512 in queue worker for it to work
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
     protected int $imageId;
 
@@ -33,12 +33,6 @@ class ProcessImage implements ShouldQueue
      */
     public function handle()
     {
-        $dimensions = getimagesizefromstring(base64_decode(Images::findOrFail($this->imageId)->image));
-        if ($dimensions === false) {
-            throw new Error('Unable to decipher the dimensions of the image.');
-        }
-        ImageDimensions::addImageDimensionInfo($this->imageId, $dimensions[0], $dimensions[1]);
-        Images::logImageLength($this->imageId);
-        CompressImage::dispatch($this->imageId);
+        compressImage($this->imageId);
     }
 }

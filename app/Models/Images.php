@@ -197,10 +197,11 @@ class Images extends Model
      */
     public static function logImageLength(int $imageId)
     {
-        $img = self::find($imageId);
-        $imageLength = strlen($img->image);
-        $img->length = $imageLength;
-        $img->save();
+        $imageLength = self::selectRaw('length(image) as length')->where('id', $imageId)->first()->length;
+        self::where('id', $imageId)->update([
+            'length' => $imageLength,
+            'updated_at' => now()
+        ]);
         ImageDimensions::where('image_id', $imageId)->update(['length' => $imageLength]);
     }
 

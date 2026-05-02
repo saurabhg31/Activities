@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessImage;
 use App\Models\ImageIndex;
 use App\Models\Images;
 use App\Models\ImageType;
@@ -338,6 +339,7 @@ class Controller extends BaseController
                 $imagesDataSizeInBytes += $fileSize;
                 $uploadedImagesCount++;
                 $imageIndexModel->addIndices($imageId, $tags);
+                ProcessImage::dispatch($imageId);
             }
         }
         $file = $contents = $extension = $imageData = null;

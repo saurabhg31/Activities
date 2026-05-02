@@ -223,7 +223,10 @@ if (!function_exists('compressImage')) {
         if (isAnimatedComplete(getBase64StringFromImageData($imageData))) {
             return compressAnimatedImage($imageData);
         } elseif ($imageData->isAnimated) {
-            Images::where('id', $imageId)->update(['isAnimated' => false]);
+            Images::where('id', $imageId)->update([
+                'isAnimated' => false,
+                'updated_at' => now()
+            ]);
         }
         try {
             // 1. Initialize Image Manager
@@ -309,7 +312,10 @@ if (!function_exists('compressAnimatedImage')) {
         $manager = new ImageManager(new Driver());
 
         if (!$imageData->isAnimated) {
-            Images::where('id', $imageData->id)->update(['isAnimated' => true]);
+            Images::where('id', $imageData->id)->update([
+                'isAnimated' => true,
+                'updated_at' => now()
+            ]);
         }
 
         $oldExtension = $imageData->imageType;
