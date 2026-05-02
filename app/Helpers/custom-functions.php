@@ -18,6 +18,7 @@ use Intervention\Image\Encoders\AvifEncoder;
 use Intervention\Image\Encoders\PngEncoder;
 use Intervention\Image\Encoders\WebpEncoder;
 use Throwable;
+use Imagick;
 
 if (!function_exists('translate')) {
     /**
@@ -80,15 +81,57 @@ if (!function_exists('getBase64StringFromImageData')) {
     }
 }
 
+if (!function_exists('isAnimatedImagick')) {
+    /**
+     * Detect if an image is an animation (consumes more RAM but generates negligible false positives)
+     * @source: https://gemini.google.com/app/764957464c6b6a4c
+     * @param string $base64String (image base64 string)
+     * @return boolean
+     */
+    function isAnimatedImagick(string &$base64String)
+    {
+        try {
+            // Clean the base64 string if it contains the data URI scheme
+            if (str_contains($base64String, ',')) {
+                $base64String = explode(',', $base64String)[1];
+            }
+
+            $data = base64_decode($base64String);
+
+            if (!$data) {
+                return false;
+            }
+
+            $img = new Imagick();
+
+            // readImageBlob is memory intensive for large files
+            $img->readImageBlob($data);
+
+            $frameCount = $img->getNumberImages();
+
+            // Clean up resources immediately
+            $img->clear();
+            unset($img);
+
+            return $frameCount > 1;
+        } catch (Exception $e) {
+            // Log the error if the blob is not a valid image format
+            Log::error("Imagick Animation Check Failed: " . $e->getMessage(), $e->getTrace());
+            return false;
+        }
+    }
+}
+
 if (!function_exists('isAnimatedComplete')) {
     /**
-     * Detect if images are animations
+     * Detect if images are animations (consumes less RAM but may generate false positives)
      * @source: https://gemini.google.com/app/6a1fb4ae7ac0e109
      * @param string $base64String
      * @return boolean
      */
     function isAnimatedComplete(string $base64String)
     {
+        return isAnimatedImagick($base64String); // deferred to Imagick library for accuracy
         if ($commaPos = strpos($base64String, ',')) {
             $base64String = substr($base64String, $commaPos + 1);
         }
