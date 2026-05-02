@@ -124,14 +124,14 @@ if (!function_exists('isAnimatedImagick')) {
 
 if (!function_exists('isAnimatedComplete')) {
     /**
-     * Detect if images are animations (consumes less RAM but may generate false positives)
+     * Detect if images are animations (consumes less RAM but may generate false positives) - forwarded to isAnimatedImagick
      * @source: https://gemini.google.com/app/6a1fb4ae7ac0e109
      * @param string $base64String
      * @return boolean
      */
     function isAnimatedComplete(string $base64String)
     {
-        return isAnimatedImagick($base64String); // deferred to Imagick library for accuracy
+        return isAnimatedImagick($base64String); // forwarded to Imagick library for accuracy
         if ($commaPos = strpos($base64String, ',')) {
             $base64String = substr($base64String, $commaPos + 1);
         }
