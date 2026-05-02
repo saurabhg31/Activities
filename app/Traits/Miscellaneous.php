@@ -179,7 +179,7 @@ trait Miscellaneous
      * @param string $considerExistsCheckOf - pass column name to check exist query
      * @return integer
      */
-    public function findMaxAllowedInsertRows(array &$dataset, string $tableName = 'products', string $considerExistsCheckOf = null)
+    public function findMaxAllowedInsertRows(array &$dataset, string $tableName = 'products', ?string $considerExistsCheckOf = null)
     {
         $maxAllowedBytes = (int) DB::select("show variables like 'max_allowed_packet'")[0]->Value;
         if ($considerExistsCheckOf) {
@@ -211,7 +211,7 @@ trait Miscellaneous
                         $values,
                         $considerExistsCheckOf,
                         $tableName,
-                        $softDeleteColumn
+                        $softDeleteColumn ?? null
                     ));
                 } else {
                     $requiredBytes = strlen($this->generateRawInsertQuery($subset, $tableName));
@@ -365,6 +365,8 @@ trait Miscellaneous
             $command = "/usr/bin/env bash -c 'read -s -p \"" . addslashes($prompt) . "\" mypassword && echo \$mypassword'";
         } elseif (PHP_OS_FAMILY === 'Windows') {
             $command = 'powershell -Command "$p = Read-Host -AsSecureString; [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p))"';
+        } else {
+            throw new Exception('Unsupported OS detected!');
         }
         $password = trim(shell_exec($command));
         print(PHP_EOL);
