@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 class UpdateImageLength implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    protected $imageId, $imageLength;
+    protected int $imageId, $imageLength;
 
     /**
      * Create a new job instance.

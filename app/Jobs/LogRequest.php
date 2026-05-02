@@ -14,7 +14,11 @@ class LogRequest implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $startTime, $requestData, $responseData, $timeTaken, $peakMemoryUsage;
+    protected Carbon $startTime;
+    protected array $requestData;
+    protected array $responseData;
+    protected int $timeTaken;
+    protected float $peakMemoryUsage;
     /**
      * Create a new job instance.
      */

@@ -350,12 +350,15 @@ class Controller extends BaseController
     /**
      * convert data size type
      */
-    public function convertDataSizes(&$dataSize, string &$inputDataSizeType = 'bytes', string &$outputDataSizeType = 'GB')
+    public function convertDataSizes(int &$dataSize, string &$inputDataSizeType = 'bytes', string &$outputDataSizeType = 'GB')
     {
         switch ($inputDataSizeType) {
             case 'bytes':
                 $dataSizeInBytes = $dataSize;
                 break;
+        }
+        if (!isset($dataSizeInBytes)) {
+            throw new Exception('Unhandled input data size type.');
         }
         switch ($outputDataSizeType) {
             case 'GB':

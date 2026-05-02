@@ -2,29 +2,24 @@
 
 namespace App\Jobs;
 
-use App\Models\SearchQueryIndexing;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class LogSearchQueries implements ShouldQueue
+class ProcessImage implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
-    protected array $requestData;
-    protected string $domain;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(array $requestData, string $domain)
+    public function __construct()
     {
-        $this->requestData = $requestData;
-        $this->domain = $domain;
+        //
     }
 
     /**
@@ -34,6 +29,6 @@ class LogSearchQueries implements ShouldQueue
      */
     public function handle()
     {
-        SearchQueryIndexing::logSearchQuery($this->requestData, $this->domain);
+        //
     }
 }

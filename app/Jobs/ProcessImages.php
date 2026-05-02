@@ -13,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 class ProcessImages implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    protected $imageIds;
+    protected array $imageIds;
 
     /**
      * Create a new job instance.
