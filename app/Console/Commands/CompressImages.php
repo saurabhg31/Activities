@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Traits\Miscellaneous;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 use function App\Helpers\compressImage;
 
