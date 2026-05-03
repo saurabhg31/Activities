@@ -61,13 +61,9 @@ class CompressImages extends Command
         $this->printLine(number_format($successCount) . ' images successfully converted.', 1, true);
         $this->printLine('Failed to convert ' . number_format(count($failedImageIds)) . ' images.', 1, true);
         if (!empty($failedImageIds)) {
-            $this->printLine('Logging failed image ids ... ', 1);
-            Log::channel('imageCompression')->info('Failed to compress image ids at ' . now() . '. Failed image ids: ' . implode(', ', $failedImageIds));
-            $this->printActionCompletedMsg();
             if (!empty($compressionResultedInGreaterFilesizeForImageIds)) {
-                $this->printLine(number_format(count($compressionResultedInGreaterFilesizeForImageIds)) . ' images\' compression resulted in greater than or equal to old filesize', 1, true);
+                $this->printLine(number_format(count($compressionResultedInGreaterFilesizeForImageIds)) . ' images\' compression resulted in greater than or equal to old filesize.', 1, true);
             }
-            $this->printActionCompletedMsg();
         }
         $this->printLine('Purging sql logs ... ', 1);
         DB::statement('PURGE BINARY LOGS BEFORE NOW();');
