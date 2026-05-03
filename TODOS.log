@@ -1,0 +1,3 @@
+1. Refine duplicate image searching, create proper front-end for it, for finding duplicates refer: https://gemini.google.com/app/b8ba636642e65796 || use table "image_duplicate_indexing" instead of storing results in json files, remove json file codes & overhaul duplicate detecting logic & code.
+2. List out all functions/methods that need linux environment
+3. Remove obsolete MemoryRequirements model and it's related code & methods from all files
