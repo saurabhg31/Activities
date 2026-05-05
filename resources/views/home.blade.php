@@ -51,20 +51,12 @@
                                 &nbsp;
                                 &nbsp;
                                 <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>&nbsp;
-                                {{-- &nbsp;
                                 &nbsp;
                                 &nbsp;
                                 &nbsp;
                                 &nbsp;
-                                <button class="btn btn-warning" id="updateTags">Rename/Update Tags</button> --}}
-                                @if (strtolower(Session::get('domain')) == 'private')
-                                    &nbsp;
-                                    &nbsp;
-                                    &nbsp;
-                                    &nbsp;
-                                    &nbsp;
-                                    <button class="btn btn-warning" id="viewDuplicates">View Duplicates</button>
-                                @endif
+                                &nbsp;
+                                <button class="btn btn-warning" id="viewDuplicates">View Duplicates</button>
                             </div>
                         </div>
                     </div>

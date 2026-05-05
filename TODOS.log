@@ -1,3 +1,4 @@
-1. Refine duplicate image searching, create proper front-end for it, for finding duplicates refer: https://gemini.google.com/app/b8ba636642e65796 || use table "image_duplicate_indexing" instead of storing results in json files, remove json file codes & overhaul duplicate detecting logic & code. -> using dHash now, add dHash calculation logic for animated images
-2. List out all functions/methods that need linux environment
-3. Remove obsolete MemoryRequirements model and it's related code & methods from all files
+1. create proper front-end for duplicate image searching, remove json file codes  -> using dHash now, TODO: find an efficient way to order the images in the order the database provides, refer: https://gemini.google.com/app/affdc22adabc199e
+2. add dHash & duplicate display calculation logic for animated images
+3. List out all functions/methods that need linux environment
+4. Remove obsolete MemoryRequirements model and it's related code & methods from all files

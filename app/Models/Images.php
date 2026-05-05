@@ -2,20 +2,16 @@
 
 namespace App\Models;
 
-use Error;
 use Exception;
-use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Storage;
 
 class Images extends Model
 {
     protected $table = 'images';
     protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'length', 'isAnimated'];
-    protected string $duplicateDataResultFile = 'data/duplicatesSearchResult.jsonl';
 
     /**
      * get images
@@ -207,23 +203,21 @@ class Images extends Model
 
     /**
      * show duplicates
+     * TODO: find an efficient way to order the images in the order the database provides, refer: https://gemini.google.com/app/affdc22adabc199e
      */
     public static function showDuplicates()
     {
-        $duplicatesMapping = json_decode(Storage::read((new self)->duplicateDataResultFile));
-        if (!isset($duplicatesMapping->duplicatesSearchResult->result)) {
-            throw new Error('No duplicate data found!');
+        $userIdSubstr = 'user_id is null';
+        if (Session::has('domain') && Session::get('domain') === 'private') {
+            $userIdSubstr = 'user_id=' . Auth::id();
         }
-        if (empty($duplicatesMapping->duplicatesSearchResult->result)) {
-            return new Collection();
+        $duplicateImageIdsData = DB::select('select d_hash,GROUP_CONCAT(image_id, ",") as imageIds from images_difference_hash join images on images.id=images_difference_hash.image_id where ' . $userIdSubstr . ' group by d_hash having count(image_id)>1;');
+        $imageIds = [];
+        foreach ($duplicateImageIdsData as $data) {
+            $imageIds = array_merge($imageIds, array_filter(explode(',', $data->imageIds)));
         }
-        $duplicatesMappingCollection = new Collection($duplicatesMapping->duplicatesSearchResult->result);
-        $ids = array_unique($duplicatesMappingCollection->pluck('original')->toArray());
-        foreach ($duplicatesMappingCollection->pluck('duplicates')->toArray() as $duplicateIdArrays) {
-            $ids = array_merge($ids, $duplicateIdArrays);
-        }
-        $ids = array_unique($ids);
-        asort($ids);
-        return self::whereIn('id', $ids)->paginate(env('PAGINATION', 20));
+        return self::whereIn('id', $imageIds)
+            ->orderByRaw("FIELD(id, " . implode(',', $imageIds) . ")")
+            ->paginate(env('PAGINATION', 20));
     }
 }
