@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Intervention\Image\ImageManager;
-// use Intervention\Image\Drivers\Gd\Driver;
-use Intervention\Image\Drivers\Imagick\Driver; // faster for .avif conversion
+use Intervention\Image\Drivers\Imagick\Driver; // faster at image conversion
 use Intervention\Image\Encoders\AvifEncoder;
 use Intervention\Image\Encoders\PngEncoder;
 use Intervention\Image\Encoders\WebpEncoder;
@@ -96,7 +95,7 @@ if (!function_exists('isAnimatedImagick')) {
                 $base64String = explode(',', $base64String)[1];
             }
 
-            $data = base64_decode($base64String);
+            $data = base64_decode($base64String, true);
 
             if (!$data) {
                 return false;
@@ -234,7 +233,7 @@ if (!function_exists('compressImage')) {
 
             // 2. Decode the Base64 data directly
             // v4's decode() is highly versatile and handles raw base64 strings well
-            $image = $manager->decode(base64_decode($imageData->image));
+            $image = $manager->decode(base64_decode($imageData->image, true));
 
             // Define our target lossless encoders
             $encoders = [
@@ -326,7 +325,7 @@ if (!function_exists('compressAnimatedImage')) {
 
         try {
             // decode() in v4 with Imagick preserves animation frames
-            $image = $manager->decode(base64_decode($imageData->image));
+            $image = $manager->decode(base64_decode($imageData->image, true));
 
             $bestBase64 = null;
             $bestLength = $oldFilesize;
@@ -384,5 +383,82 @@ if (!function_exists('compressAnimatedImage')) {
             ImageCompressionLog::addLog($imageData->id, $oldExtension, $oldExtension, $oldFilesize, $oldFilesize, $error->getMessage());
             return false;
         }
+    }
+}
+
+if (!function_exists('generateImagePerceptualHash')) {
+    /**
+     * Generate image difference hash (used to identify duplicate images)
+     * @source: https://gemini.google.com/app/b8ba636642e65796
+     * @param \App\Models\Images $imageData
+     * @return string|null
+     */
+    function generateImageDifferenceHash(Images &$imageData): string|null
+    {
+        // 1. Decode the Base64 input
+        $rawData = base64_decode($imageData->image, true);
+        if (!$rawData) return null;
+
+        // 2. Load the image into a GD resource
+        // Use @ to suppress warnings for unsupported formats, we handle it below
+        $img = @imagecreatefromstring($rawData);
+
+        // 3. Fallback to Imagick if GD fails (e.g. for AVIF or specific WebP versions)
+        if (!$img) {
+            try {
+                $imagick = new Imagick();
+                $imagick->readImageBlob($rawData);
+                // Convert to a format GD definitely understands for the processing loop
+                $imagick->setImageFormat('png');
+                $img = imagecreatefromstring($imagick->getImageBlob());
+                $imagick->clear();
+            } catch (Exception $e) {
+                return null; // Truly unsupported or corrupt
+            }
+        }
+
+        if (!$img) return null;
+
+        // 4. Pre-process: Resize to 9x8 and convert to Grayscale
+        // We use 9 wide so we can compare each pixel to its right-hand neighbor
+        $width = 9;
+        $height = 8;
+        $small = imagecreatetruecolor($width, $height);
+
+        // Disable alpha blending for better grayscale conversion
+        imagealphablending($small, false);
+        imagesavealpha($small, true);
+
+        imagecopyresampled($small, $img, 0, 0, 0, 0, $width, $height, imagesx($img), imagesy($img));
+        imagefilter($small, IMG_FILTER_GRAYSCALE);
+
+        // 5. Build the Hash
+        $hashStr = '';
+        for ($y = 0; $y < $height; $y++) {
+            for ($x = 0; $x < 8; $x++) {
+                // Get the luminance (brightness) of the current pixel and the one to its right
+                $rgbLeft = imagecolorat($small, $x, $y);
+                $rgbRight = imagecolorat($small, $x + 1, $y);
+
+                // Since it's grayscale, R=G=B. We just extract the Red channel (0xFF)
+                $left = ($rgbLeft >> 16) & 0xFF;
+                $right = ($rgbRight >> 16) & 0xFF;
+
+                // If left is brighter than right, set the bit to 1, else 0
+                $hashStr .= ($left > $right) ? '1' : '0';
+            }
+        }
+
+        // 6. Cleanup Memory
+        unset($img, $small, $rawData);
+
+        // 7. Convert 64-bit binary string to 16-character Hexadecimal
+        // We process in 4-bit chunks (nibbles) to avoid 32-bit integer overflow issues
+        $hex = '';
+        foreach (str_split($hashStr, 4) as $chunk) {
+            $hex .= dechex(bindec($chunk));
+        }
+
+        return str_pad($hex, 16, '0', STR_PAD_LEFT);
     }
 }

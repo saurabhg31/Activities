@@ -75,6 +75,12 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
+        'imageDifferenceHashingErrors' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/imageDifferenceHashingErrors/errors.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
