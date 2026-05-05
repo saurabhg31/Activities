@@ -73,7 +73,7 @@ class Operations extends Controller
                         return $this->sendResponse(
                             null,
                             $this->renderView($type, ['images' => Images::showDuplicates(), 'types' => Images::imageTypes()]),
-                            $this->generateMsgBag($type, 'Ready to search', 'Search Images')
+                            $this->generateMsgBag($type, 'Ready to delete duplicates', 'Duplicate Images')
                         );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
@@ -189,7 +189,8 @@ class Operations extends Controller
         } elseif ($request->isMethod('POST')) {
             if (Images::updateImageInfo(Arr::except($request->all(), ['_token']))) {
                 return $this->sendResponse(null, null, [
-                    'text' => 'Image information updated', 'heading' => 'Operation complete.'
+                    'text' => 'Image information updated',
+                    'heading' => 'Operation complete.'
                 ]);
             } else {
                 return $this->sendError('Unable to update', null, $this->serverErrorResponseCode);

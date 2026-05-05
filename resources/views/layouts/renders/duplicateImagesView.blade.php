@@ -1,36 +1,3 @@
-<form id="searchImagesForm" action="operation/searchImages" method="POST"
-    onsubmit="submitFormData($(this)); return false;">
-    @csrf
-    <div class="form-inline" style="margin-top: 2%;">
-        <div class="col-sm-3">
-            <select class="form-control" name="types" style="width: 100%;">
-                <option value="">Select image type</option>
-                @foreach ($data['types'] as $type)
-                    <option value="{{ $type->type }}" @if (isset($data['selectedType']) && $data['selectedType'] === $type->type) selected @endif>
-                        {{ $type->type }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-sm-4">
-            <input list="imageTagsList" name="tags" type="text" class="form-control" style="width: 100%;"
-                placeholder="Enter tags separated by ',' (#nature, #grumpycat etc.)"
-                value="{{ @$data['selectedTags'] }}" autocomplete="off" />
-            <datalist id="imageTagsList">
-                @foreach (\App\Models\ImageIndex::getCachedImageTags(Session::has('domain') ? Session::get('domain') : 'public', auth('web')->id()) as $tag)
-                    <option value="{{ $tag }}">
-                @endforeach
-            </datalist>
-        </div>
-        <div class="col-sm-2">
-            <button type="submit" class="btn btn-success" style="width: 120%;">Search</button>
-        </div>
-        <div class="col-sm-3">
-            <button class="btn btn-primary" id="goToPageButton" style="width: 30%;" type="button">To page: </button>
-            <input class="form-control" type="number" placeholder="Page Number" id="goToPageInput" autocomplete="off"
-                style="width: 45%;" min="1" />
-        </div>
-    </div>
-</form>
 @if (isset($data['images']))
     <legend style="margin-top: 0.4%;">
         Displaying <label id="imageCount">{{ count($data['images']) }}</label> of
