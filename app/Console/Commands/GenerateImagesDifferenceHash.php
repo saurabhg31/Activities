@@ -32,9 +32,9 @@ class GenerateImagesDifferenceHash extends Command
      */
     public function handle()
     {
-        $this->printHeading('Generating difference hash of images', '=', 20);
+        $this->printHeading('Generating difference hash of unanimated images', '=', 20);
         $this->printLine('Fetching image ids of images with no hash data ... ', 1);
-        $imageIds = DB::select('select images.id from images where not exists (select 1 from images_difference_hash where images_difference_hash.image_id=images.id);');
+        $imageIds = DB::select('select images.id from images where not exists (select 1 from images_difference_hash where images_difference_hash.image_id=images.id) and images.isAnimated=0;');
         $imageIds = array_map(function ($item) {
             return $item->id;
         }, $imageIds);

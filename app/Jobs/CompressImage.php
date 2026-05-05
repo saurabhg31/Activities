@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\ImageDifferenceHash;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -34,5 +35,6 @@ class CompressImage implements ShouldQueue
     public function handle()
     {
         compressImage($this->imageId);
+        ImageDifferenceHash::storeImageDifferenceHash($this->imageId);
     }
 }

@@ -386,7 +386,7 @@ if (!function_exists('compressAnimatedImage')) {
     }
 }
 
-if (!function_exists('generateImagePerceptualHash')) {
+if (!function_exists('generateImageDifferenceHash')) {
     /**
      * Generate image difference hash (used to identify duplicate images)
      * @source: https://gemini.google.com/app/b8ba636642e65796
