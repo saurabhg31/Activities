@@ -2,4 +2,4 @@
 2. add dHash & duplicate display calculation logic for animated images
 3. List out all functions/methods that need linux environment
 4. Remove obsolete MemoryRequirements model and it's related code & methods from all files
-5. Migrate the laravel application to latest laravel version, currently its 9.52.21, use laravel's modern forent-end, preferably react
+5. Migrate the laravel application to latest laravel version, currently its 9.52.21, use laravel's modern forent-end, preferably react, use PHP 8.5
