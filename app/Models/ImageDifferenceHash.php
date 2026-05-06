@@ -24,6 +24,7 @@ class ImageDifferenceHash extends Model
         if (is_int($imageData)) {
             $imageData = Images::select(['id', 'image', 'isAnimated'])->where('id', $imageData)->first();
             if ($imageData->isAnimated) {
+                // TODO: Add hashing algo for animated images & add relevant columns to tables
                 return false;
             }
         }
