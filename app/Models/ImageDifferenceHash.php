@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use function App\Helpers\generateImageDifferenceHash;
+use function App\Helpers\generateImageDifferenceHashOfAnimated;
 
 class ImageDifferenceHash extends Model
 {
@@ -23,10 +24,12 @@ class ImageDifferenceHash extends Model
     {
         if (is_int($imageData)) {
             $imageData = Images::select(['id', 'image', 'isAnimated'])->where('id', $imageData)->first();
-            if ($imageData->isAnimated) {
-                // TODO: Add hashing algo for animated images & add relevant columns to tables
-                return false;
-            }
+        }
+        if ($imageData->isAnimated) {
+            return self::create([
+                'image_id' => $imageData->id,
+                'd_hash' => generateImageDifferenceHashOfAnimated($imageData)
+            ]);
         }
         return self::create([
             'image_id' => $imageData->id,

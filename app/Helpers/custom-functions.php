@@ -390,13 +390,17 @@ if (!function_exists('generateImageDifferenceHash')) {
     /**
      * Generate image difference hash (used to identify duplicate images) || using 16 x 16 grid
      * @source: https://gemini.google.com/app/b8ba636642e65796
-     * @param \App\Models\Images $imageData
-     * @return string|null
+     * @param \App\Models\Images|string $imageData
+     * @return string|null - string on success, null if image is corrupt
      */
-    function generateImageDifferenceHash(Images &$imageData): string|null
+    function generateImageDifferenceHash(Images|string &$imageData): string|null
     {
         // 1. Decode the Base64 input
-        $rawData = base64_decode($imageData->image, true);
+        if (is_string($imageData)) {
+            $rawData = $imageData;
+        } else {
+            $rawData = base64_decode($imageData->image, true);
+        }
         if (!$rawData) return null;
 
         // 2. Load the image into a GD resource
@@ -460,5 +464,52 @@ if (!function_exists('generateImageDifferenceHash')) {
         }
 
         return str_pad($hex, 64, '0', STR_PAD_LEFT);
+    }
+}
+
+if (!function_exists('generateImageDifferenceHashOfAnimated')) {
+    /**
+     * Generate image difference hash of animated image, used to detect duplicate images using 16x16 grid
+     * @source: https://gemini.google.com/app/b8ba636642e65796
+     * @param \App\Models\Images $imageData
+     * @return string|null - string on success, null if image is corrupt
+     */
+    function generateImageDifferenceHashOfAnimated(Images &$imageData): string|null
+    {
+        $rawData = base64_decode($imageData->image, true);
+        if (!$rawData) return null;
+        try {
+            $imagick = new \Imagick();
+            $imagick->readImageBlob($rawData);
+
+            $frameCount = $imagick->getNumberImages();
+            $hashes = [];
+
+            // Identify which frames to sample (0%, 50%, 100%)
+            $samplePoints = [0];
+            if ($frameCount > 1) {
+                $samplePoints[] = floor($frameCount / 2);
+                $samplePoints[] = $frameCount - 1;
+            }
+
+            foreach ($samplePoints as $index) {
+                $imagick->setIteratorIndex($index);
+
+                // Extract the frame and convert to GD for our high-precision dHash
+                $frameBlob = $imagick->getImageBlob();
+                $hashes[] = generateImageDifferenceHash($frameBlob);
+            }
+
+            $imagick->clear();
+
+            // Join the hashes: [Frame1Hash]-[Frame2Hash]-[Frame3Hash]
+            // If static, it will only have one hash.
+            $compositeHash = implode('-', $hashes);
+
+            // Append Frame Count and File Size for 100% certainty - send md5 hash
+            return md5($compositeHash . "|F:" . $frameCount . "|S:" . strlen($rawData));
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
