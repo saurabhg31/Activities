@@ -388,7 +388,7 @@ if (!function_exists('compressAnimatedImage')) {
 
 if (!function_exists('generateImageDifferenceHash')) {
     /**
-     * Generate image difference hash (used to identify duplicate images)
+     * Generate image difference hash (used to identify duplicate images) || using 16 x 16 grid
      * @source: https://gemini.google.com/app/b8ba636642e65796
      * @param \App\Models\Images $imageData
      * @return string|null
@@ -421,8 +421,8 @@ if (!function_exists('generateImageDifferenceHash')) {
 
         // 4. Pre-process: Resize to 9x8 and convert to Grayscale
         // We use 9 wide so we can compare each pixel to its right-hand neighbor
-        $width = 9;
-        $height = 8;
+        $width = 17;
+        $height = 16;
         $small = imagecreatetruecolor($width, $height);
 
         // Disable alpha blending for better grayscale conversion
@@ -435,7 +435,7 @@ if (!function_exists('generateImageDifferenceHash')) {
         // 5. Build the Hash
         $hashStr = '';
         for ($y = 0; $y < $height; $y++) {
-            for ($x = 0; $x < 8; $x++) {
+            for ($x = 0; $x < 16; $x++) {
                 // Get the luminance (brightness) of the current pixel and the one to its right
                 $rgbLeft = imagecolorat($small, $x, $y);
                 $rgbRight = imagecolorat($small, $x + 1, $y);
@@ -459,6 +459,6 @@ if (!function_exists('generateImageDifferenceHash')) {
             $hex .= dechex(bindec($chunk));
         }
 
-        return str_pad($hex, 16, '0', STR_PAD_LEFT);
+        return str_pad($hex, 64, '0', STR_PAD_LEFT);
     }
 }
