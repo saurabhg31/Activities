@@ -9,6 +9,7 @@ use App\Models\MemoryRequirements;
 use App\Models\User;
 use Illuminate\Console\Command;
 use App\Traits\Miscellaneous;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 
 class UploadImagesViaCli extends Command
@@ -119,7 +120,9 @@ class UploadImagesViaCli extends Command
             $this->printLine('PROCESS ABORTED BY USER', 1);
         }
         $this->printHeading('OPERATION COMPLETED', '-', 15);
-        print(PHP_EOL);
+        // print(PHP_EOL);
+        Artisan::call('process:images');
+        Artisan::call('compress:images');
         return Command::SUCCESS;
     }
 
