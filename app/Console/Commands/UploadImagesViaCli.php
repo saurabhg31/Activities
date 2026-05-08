@@ -123,6 +123,7 @@ class UploadImagesViaCli extends Command
         // print(PHP_EOL);
         Artisan::call('process:images');
         Artisan::call('compress:images');
+        Artisan::call('generate:imagesHash');
         return Command::SUCCESS;
     }
 

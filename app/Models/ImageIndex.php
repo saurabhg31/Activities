@@ -17,6 +17,7 @@ class ImageIndex extends Model
         'tag',
         'image_id'
     ];
+    const UPDATED_AT = null;
 
     /**
      * Add image indices
