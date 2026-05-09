@@ -277,7 +277,7 @@ class Controller extends BaseController
                 'marketing' => [],
                 'imagesAdd' => [
                     'images' => 'nullable|array',
-                    'images.*' => 'required|image|max:10240', // image of maximum size 10 mb allowed
+                    'images.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,avif|max:10240', // image of maximum size 10 mb allowed
                     'tags' => 'nullable|string|min:3|max:10000',
                     'type' => 'required|string|min:3|max:255',
                     'domain' => 'required|string|in:' . implode(',', $this->imageDomains)
