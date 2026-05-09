@@ -85,9 +85,10 @@ if (!function_exists('isAnimatedImagick')) {
      * Detect if an image is an animation (consumes more RAM but generates negligible false positives)
      * @source: https://gemini.google.com/app/764957464c6b6a4c
      * @param string $base64String (image base64 string)
+     * @param string $imageExtension (gif, webp, avif etc.)
      * @return boolean
      */
-    function isAnimatedImagick(string &$base64String)
+    function isAnimatedImagick(string &$base64String, string $imageExtension)
     {
         try {
             // Clean the base64 string if it contains the data URI scheme
@@ -103,8 +104,27 @@ if (!function_exists('isAnimatedImagick')) {
 
             $img = new Imagick();
 
-            // readImageBlob is memory intensive for large files
-            $img->readImageBlob($data);
+            if ($imageExtension === 'avif') {
+                /**
+                 * ACCURACY FIX: 
+                 * We only search the first 4KB (the 'Header' or 'Meta' area).
+                 * In a valid AVIF, the 'moov' atom must appear before the 'mdat' (pixel data) atom.
+                 * @source: https://gemini.google.com/app/7624f79513d5bfbf
+                 */
+                $headerLimit = min(strlen($data), 4096);
+                $header = substr($data, 0, $headerLimit);
+
+                // 1. Check for 'avis' brand in the 'ftyp' box (Standard for Animated AVIF)
+                if (str_contains(substr($header, 0, 50), 'avis')) return true;
+
+                // 2. Check for 'moov' box (The container for tracks/animation)
+                // We ensure it's not random data by checking the structure later if needed,
+                // but 'moov' inside the first 4KB is 99.99% a movie header.
+                return str_contains($header, 'moov');
+            }
+
+            // readImageBlob is memory intensive for large files, so using pingImageBlob (lightweight)
+            $img->pingImageBlob($data);
 
             $frameCount = $img->getNumberImages();
 
@@ -126,11 +146,12 @@ if (!function_exists('isAnimatedComplete')) {
      * Detect if images are animations (consumes less RAM but may generate false positives) - forwarded to isAnimatedImagick
      * @source: https://gemini.google.com/app/6a1fb4ae7ac0e109
      * @param string $base64String
+     * @param string $imageExtension (gif, webp, avif etc.)
      * @return boolean
      */
-    function isAnimatedComplete(string $base64String)
+    function isAnimatedComplete(string $base64String, string $imageExtension)
     {
-        return isAnimatedImagick($base64String); // forwarded to Imagick library for accuracy
+        return isAnimatedImagick($base64String, $imageExtension); // forwarded to Imagick library for accuracy
         if ($commaPos = strpos($base64String, ',')) {
             $base64String = substr($base64String, $commaPos + 1);
         }
@@ -219,7 +240,7 @@ if (!function_exists('compressImage')) {
         if (!$oldFilesize) {
             throw new Exception('Image id: ' . $imageId . ' does not have length parameter in table. Please run process:images command first.');
         }
-        if (isAnimatedComplete(getBase64StringFromImageData($imageData))) {
+        if (isAnimatedComplete(getBase64StringFromImageData($imageData), $oldExtension)) {
             return compressAnimatedImage($imageData);
         } elseif ($imageData->isAnimated) {
             Images::where('id', $imageId)->update([
@@ -338,21 +359,24 @@ if (!function_exists('compressAnimatedImage')) {
                 'avif' => new AvifEncoder(quality: 100), // Lossless Animated AVIF
             ];
 
-            foreach ($encoders as $type => $encoder) {
-                if ($type === $oldExtension) continue;
+            if ($oldExtension !== 'avif') {
+                // skipping image compression if image is an animated avif (animated .avif files not supported - php dll issue)
+                foreach ($encoders as $type => $encoder) {
+                    if ($type === $oldExtension) continue;
 
-                // encode() processes all frames when using the Imagick driver
-                $encoded = $image->encode($encoder);
-                $currentBase64 = $encoded->toBase64();
+                    // encode() processes all frames when using the Imagick driver
+                    $encoded = $image->encode($encoder);
+                    $currentBase64 = $encoded->toBase64();
 
-                // Calculate length as it would be stored (Base64)
-                $currentLength = strlen($currentBase64);
+                    // Calculate length as it would be stored (Base64)
+                    $currentLength = strlen($currentBase64);
 
-                if ($currentLength < $bestLength) {
-                    $bestLength = $currentLength;
-                    $bestBase64 = $currentBase64;
-                    $bestType = $type;
-                    $wasCompressed = true;
+                    if ($currentLength < $bestLength) {
+                        $bestLength = $currentLength;
+                        $bestBase64 = $currentBase64;
+                        $bestType = $type;
+                        $wasCompressed = true;
+                    }
                 }
             }
             unset($image);

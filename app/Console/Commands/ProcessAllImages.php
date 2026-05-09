@@ -228,7 +228,7 @@ class ProcessAllImages extends Command
         foreach ($imageIdsToScan as $imageId) {
             $this->printLine('Analyzing image id: ' . $imageId . '. ' . $this->printProgressBar(($processed / $totalImagesCount) * 100), 2, true);
             $imageData = Images::find($imageId);
-            $imageData->isAnimated = isAnimatedComplete(getBase64StringFromImageData($imageData));
+            $imageData->isAnimated = isAnimatedComplete(getBase64StringFromImageData($imageData), $imageData->imageType);
             $imageData->save();
             if ($imageData->isAnimated) {
                 $animatedImagesCount++;
