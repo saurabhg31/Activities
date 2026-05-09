@@ -173,7 +173,7 @@ class ProcessAllImages extends Command
             }
             $this->printLine(number_format($processed) . ' images processed.', 1, true);
         }
-        $this->detectAnimatedImages();
+        // $this->detectAnimatedImages(); // deferred to compress images
         $this->printHeading('IMAGE PROCESSING OPERATION COMPLETED', '-', 20);
         print(PHP_EOL);
         return Command::SUCCESS;
