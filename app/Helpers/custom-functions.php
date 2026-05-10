@@ -356,7 +356,7 @@ if (!function_exists('compressAnimatedImage')) {
             // 2. Animation-Compatible Encoders
             $encoders = [
                 'webp' => new WebpEncoder(quality: 100), // Lossless Animated WebP
-                'avif' => new AvifEncoder(quality: 100), // Lossless Animated AVIF
+                // 'avif' => new AvifEncoder(quality: 100), // Lossless Animated AVIF - disabled due to lack of support in php imagick for animated .avif images
             ];
 
             if ($oldExtension !== 'avif') {
@@ -503,7 +503,7 @@ if (!function_exists('generateImageDifferenceHashOfAnimated')) {
         $rawData = base64_decode($imageData->image, true);
         if (!$rawData) return null;
         try {
-            $imagick = new \Imagick();
+            $imagick = new Imagick();
             $imagick->readImageBlob($rawData);
 
             $frameCount = $imagick->getNumberImages();
@@ -532,7 +532,7 @@ if (!function_exists('generateImageDifferenceHashOfAnimated')) {
 
             // Append Frame Count and File Size for 100% certainty - send md5 hash
             return md5($compositeHash . "|F:" . $frameCount . "|S:" . strlen($rawData));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }
