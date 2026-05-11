@@ -4,21 +4,29 @@ let display, imgEdit;
 
 $(document).ready(function () {
     toastr.options.escapeHtml = true;
-    toastr.info('Welcome to Activity Manager');
+    toastr.info("Welcome to Activity Manager");
     console.clear();
     display = {
-        output: $('.loader'),
-        heading: $('.loaderHeading'),
-        parent: $('.loader').parent()
+        output: $(".loader"),
+        heading: $(".loaderHeading"),
+        parent: $(".loader").parent(),
     };
     $.ajaxSetup({
         headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
+            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
+        },
     });
 });
 
-function transmitData(uri, requestType = 'GET', data = null, submitButton = null, callables = null, dataType = 'json', disableScroll = false) {
+function transmitData(
+    uri,
+    requestType = "GET",
+    data = null,
+    submitButton = null,
+    callables = null,
+    dataType = "json",
+    disableScroll = false,
+) {
     if (submitButton) {
         submitButtonHtml = submitButton.html();
     }
@@ -33,17 +41,22 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
             var jqXHR = null;
             if (window.ActiveXObject)
                 jqXHR = new window.ActiveXObject("Microsoft.XMLHTTP");
-            else
-                jqXHR = new window.XMLHttpRequest();
-            jqXHR.upload.addEventListener("progress", function (evt) {
-                if (evt.lengthComputable) {
-                    var percentComplete = Math.round((evt.loaded * 100) / evt.total);
-                    submitButton.html(percentComplete + ' % uploaded');
-                }
-                if (percentComplete === 100) {
-                    submitButton.html('Uploaded. Processing data...');
-                }
-            }, false);
+            else jqXHR = new window.XMLHttpRequest();
+            jqXHR.upload.addEventListener(
+                "progress",
+                function (evt) {
+                    if (evt.lengthComputable) {
+                        var percentComplete = Math.round(
+                            (evt.loaded * 100) / evt.total,
+                        );
+                        submitButton.html(percentComplete + " % uploaded");
+                    }
+                    if (percentComplete === 100) {
+                        submitButton.html("Uploaded. Processing data...");
+                    }
+                },
+                false,
+            );
             return jqXHR;
         },
         beforeSend: function () {
@@ -51,10 +64,10 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
                 callables.beforeSend();
             }
             if (submitButton) {
-                submitButton.attr('disabled', true);
-                submitButton.html('Processing...');
+                submitButton.attr("disabled", true);
+                submitButton.html("Processing...");
             }
-            display.heading.html('Loading...');
+            display.heading.html("Loading...");
         },
         success: function (response) {
             if (callables && callables.success) {
@@ -65,24 +78,35 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
                 display.output.html(response.html);
             }
             if (response.data) {
-                display.output.append('<legend>------------DATA----------------</legend>')
+                display.output.append(
+                    "<legend>------------DATA----------------</legend>",
+                );
                 display.output.append(response.data);
             }
             if (response.msg) {
                 let msg = response.msg;
-                if (typeof msg[0] === 'undefined') {
+                if (typeof msg[0] === "undefined") {
                     if (msg.heading) {
                         display.heading.html(msg.heading);
                     }
                     if (msg.text) {
                         toastr.success(msg.text);
                     }
-                }
-                else {
+                } else {
                     display.parent.html(null);
                     console.log(msg);
                     $.each(msg, function (index, message) {
-                        display.parent.append('<div class="card text-center" style="margin-top: 2%;"> <div class="card-header text-center loaderHeading">' + (message.heading ? message.heading : 'Display') + '</div> <div class="custom-block text-center loader" style="max-height: 308px; max-width: 728px; overflow:auto;">' + (message.html ? message.html : '<legend>Dynamic Interactive Screen</legend>') + '</div> </div>');
+                        display.parent.append(
+                            '<div class="card text-center" style="margin-top: 2%;"> <div class="card-header text-center loaderHeading">' +
+                                (message.heading
+                                    ? message.heading
+                                    : "Display") +
+                                '</div> <div class="custom-block text-center loader" style="max-height: 308px; max-width: 728px; overflow:auto;">' +
+                                (message.html
+                                    ? message.html
+                                    : "<legend>Dynamic Interactive Screen</legend>") +
+                                "</div> </div>",
+                        );
                         if (message.text) {
                             toastr.success(msg.text);
                         }
@@ -102,14 +126,19 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
                     if (error.responseJSON.data) {
                         $.each(error.responseJSON.data, function (field, msgs) {
                             $.each(msgs, function (index, msg) {
-                                toastr.error(msg, 'Validation error: ' + field + ' -> ' + (index + 1));
+                                toastr.error(
+                                    msg,
+                                    "Validation error: " +
+                                        field +
+                                        " -> " +
+                                        (index + 1),
+                                );
                             });
                         });
                     }
                 }
-            }
-            else {
-                toastr.error(status, 'Data transmission error');
+            } else {
+                toastr.error(status, "Data transmission error");
                 console.log(error, status);
             }
         },
@@ -119,59 +148,90 @@ function transmitData(uri, requestType = 'GET', data = null, submitButton = null
             }
             if (submitButton) {
                 submitButton.html(submitButtonHtml);
-                submitButton.attr('disabled', false);
+                submitButton.attr("disabled", false);
             }
-        }
+        },
     });
 }
 
 function submitFormData(form) {
-    transmitData(form.attr('action'), form.attr('method'), new FormData(form[0]), form.find('button[type="submit"]'));
+    transmitData(
+        form.attr("action"),
+        form.attr("method"),
+        new FormData(form[0]),
+        form.find('button[type="submit"]'),
+    );
     return false;
 }
 
-function toggleDomain(key = null, button = $('#switchDomainButt')) {
-    let domainField = $('#domain');
+function toggleDomain(key = null, button = $("#switchDomainButt")) {
+    let domainField = $("#domain");
     if (!key) {
-        domainField.attr('type', 'password').attr('disabled', false).attr('placeholder', 'Enter account password & press change domain ').css('width', '100%').val(null);
-        button.show('fast');
+        domainField
+            .attr("type", "password")
+            .attr("disabled", false)
+            .attr(
+                "placeholder",
+                "Enter account password & press change domain ",
+            )
+            .css("width", "100%")
+            .val(null);
+        button.show("fast");
     } else {
-        $.post(APP_URL + 'switchDomain', { password: key }, function (response) {
-            toastr.info('Switched domain. Entering private space...');
-            domainField.val('Domain: ' + response);
-            $('#imagesAdd').trigger('click');
-        }).fail(function () {
-            domainField.val('Domain: PUBLIC').attr('type', 'text').attr('disabled', true).attr('style', null);
-            button.hide('fast');
-        }).done(function () {
-            domainField.val('Domain: PUBLIC').attr('type', 'password').attr('disabled', true).attr('style', null);
-            button.hide('fast');
-        });
+        $.post(
+            APP_URL + "switchDomain",
+            { password: key },
+            function (response) {
+                toastr.info("Switched domain. Entering private space...");
+                domainField.val("Domain: " + response);
+                $("#imagesAdd").trigger("click");
+            },
+        )
+            .fail(function () {
+                domainField
+                    .val("Domain: PUBLIC")
+                    .attr("type", "text")
+                    .attr("disabled", true)
+                    .attr("style", null);
+                button.hide("fast");
+            })
+            .done(function () {
+                domainField
+                    .val("Domain: PUBLIC")
+                    .attr("type", "password")
+                    .attr("disabled", true)
+                    .attr("style", null);
+                button.hide("fast");
+            });
     }
 }
 
 function removeImage(imageId, imageParagraph) {
-    if (!confirm('Are you sure you want to delete this image from database?')) {
+    if (!confirm("Are you sure you want to delete this image from database?")) {
         return false;
     }
-    $.get(APP_URL + 'removeImage?imageId=' + imageId, function (response) {
+    $.get("removeImage?imageId=" + imageId, function (response) {
         if (response.data) {
             imageParagraph.remove();
-            imageCount = parseInt($('#imageCount').html());
-            $('#imageCount').html(imageCount - 1);
-            toastr.info('Image deleted');
-        }
-        else {
-            toastr.error('Unable to delete image!');
+            imageCount = parseInt($("#imageCount").html());
+            $("#imageCount").html(imageCount - 1);
+            toastr.info("Image deleted");
+        } else {
+            toastr.error("Unable to delete image!");
         }
     });
 }
 
 function openImageInModal(image) {
-    let imageHtml = '<img src="' + image.attr('src') + '" title="' + image.attr('title') + '" style="max-width: 1007px; max-height: 578px;"/>';
-    let modal = $('#myModal');
+    let imageHtml =
+        '<img src="' +
+        image.attr("src") +
+        '" title="' +
+        image.attr("title") +
+        '" style="max-width: 1007px; max-height: 578px;"/>';
+    let modal = $("#myModal");
     modal.find('div[class="modal-body"]').html(imageHtml);
-    modal.modal('show');
+    modal.modal("show");
 }
 
 /**
@@ -180,141 +240,191 @@ function openImageInModal(image) {
  * @param {Integer} decimals
  */
 function formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
 function listFileNames(input) {
-    let output = $('#fileListOutput');
-    let file, totalBytes = 0;
+    let output = $("#fileListOutput");
+    let file,
+        totalBytes = 0;
     output.html(null);
     for (var i = 0; i < input.get(0).files.length; ++i) {
         file = input.get(0).files[i];
-        output.html(output.html() + '<li>Name: ' + file.name + ',&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Size: ' + formatBytes(file.size) + '</li>');
-        totalBytes += file.size
+        output.html(
+            output.html() +
+                "<li>Name: " +
+                file.name +
+                ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Size: " +
+                formatBytes(file.size) +
+                "</li>",
+        );
+        totalBytes += file.size;
     }
-    output.append('<p style="margin-top: 2%;"><b>Total size: ' + formatBytes(totalBytes) + '</b></p>');
+    output.append(
+        '<p style="margin-top: 2%;"><b>Total size: ' +
+            formatBytes(totalBytes) +
+            "</b></p>",
+    );
 }
 
 function editImage(imageId, img) {
     imgEdit = img;
-    let imageHtml = '<img src="' + img.attr('src') + '" title="' + img.attr('title') + '" style="max-width: 100%; max-height: 300px;"/>';
-    $.get('getImageEditForm', { imageId: imageId }, function (response) {
-        let modal = $('#myModal');
+    let imageHtml =
+        '<img src="' +
+        img.attr("src") +
+        '" title="' +
+        img.attr("title") +
+        '" style="max-width: 100%; max-height: 300px;"/>';
+    $.get("getImageEditForm", { imageId: imageId }, function (response) {
+        let modal = $("#myModal");
         modal.find('div[class="modal-body"]').html(imageHtml + response);
-        modal.modal('show');
+        modal.modal("show");
     });
 }
 
 function postEditImageInfo(form) {
-    transmitData(form.attr('action'), form.attr('method'), new FormData(form[0]), form.find('button[type="submit"]'), {
-        success: function () {
-            $('#myModal').modal('hide');
-            imgEdit.attr('title', 'Type: ' + form.find('select[name="type"]').val() + ' || Tags: ' + form.find('input[name="tags"]').val());
-            imgEdit = null;
-        }
-    }, 'json', true);
+    transmitData(
+        form.attr("action"),
+        form.attr("method"),
+        new FormData(form[0]),
+        form.find('button[type="submit"]'),
+        {
+            success: function () {
+                $("#myModal").modal("hide");
+                imgEdit.attr(
+                    "title",
+                    "Type: " +
+                        form.find('select[name="type"]').val() +
+                        " || Tags: " +
+                        form.find('input[name="tags"]').val(),
+                );
+                imgEdit = null;
+            },
+        },
+        "json",
+        true,
+    );
     return false;
 }
 
-function setImageAsWallpaper(imageId, button){
-    transmitData('setWallpaper/'+imageId, 'GET', null, button, {
-        success: () => { history.go(0); }
+function setImageAsWallpaper(imageId, button) {
+    transmitData("setWallpaper/" + imageId, "GET", null, button, {
+        success: () => {
+            history.go(0);
+        },
     });
 }
 
-function goToNextPageOfImageDuplicates(action = 'next', button){
-    if (action == 'prev') {
-        if (page > 1){
+function goToNextPageOfImageDuplicates(action = "next", button) {
+    if (action == "prev") {
+        if (page > 1) {
             page--;
         }
-    } else if (page == 'next') {
+    } else if (page == "next") {
         page++;
     }
-    return transmitData('operation/viewDuplicates?page=' + page, 'GET', null, button); 
+    return transmitData(
+        "operation/viewDuplicates?page=" + page,
+        "GET",
+        null,
+        button,
+    );
 }
 
-$(document).on('click', '#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType,#updateTags,#viewDuplicates', function (e) {
-    buttonHtml = $(this).html();
-    if (this.id == 'addNewType') {
-        e.preventDefault();
-        let newType = prompt("Enter type:");
-        $("#typeSelect").append(new Option(newType, newType));
-        $("#typeSelect").val(newType);
-    }
-    else {
-        return transmitData('operation/' + this.id, 'GET', null, $(this));
-    }
-});
+$(document).on(
+    "click",
+    "#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType,#updateTags,#viewDuplicates",
+    function (e) {
+        buttonHtml = $(this).html();
+        if (this.id == "addNewType") {
+            e.preventDefault();
+            let newType = prompt("Enter type:");
+            $("#typeSelect").append(new Option(newType, newType));
+            $("#typeSelect").val(newType);
+        } else {
+            return transmitData("operation/" + this.id, "GET", null, $(this));
+        }
+    },
+);
 
 function renderUrl(inputUrl) {
-    if (inputUrl.startsWith('http://') && SECURE) {
-        inputUrl = inputUrl.replace('http://', 'https://');
-        return inputUrl.replace(APP_URL, '');
+    if (inputUrl.startsWith("http://") && SECURE) {
+        inputUrl = inputUrl.replace("http://", "https://");
+        return inputUrl.replace(APP_URL, "");
     }
     return inputUrl;
 }
 
-$(document).on('click', '.page-link', function (event) {
+$(document).on("click", ".page-link", function (event) {
     event.preventDefault();
-    toastr.info('Loading ...');
-    if ($(this).attr('href').includes('operation/searchImages')) {
-        let form = $('#searchImagesForm');
+    toastr.info("Loading ...");
+    if ($(this).attr("href").includes("operation/searchImages")) {
+        let form = $("#searchImagesForm");
         return transmitData(
-            renderUrl($(this).attr('href')),
-            form.attr('method'), new FormData(form[0]),
+            renderUrl($(this).attr("href")),
+            form.attr("method"),
+            new FormData(form[0]),
             form.find('button[type="submit"]'),
             {
                 success: function () {
                     display.output.scrollTop(45);
-                }
-            }
+                },
+            },
         );
-    }
-    else {
-        return transmitData(renderUrl($(this).attr('href')), 'GET', null, null, {
-            success: function () {
-                display.output.scrollTop(250);
-            }
-        });
+    } else {
+        return transmitData(
+            renderUrl($(this).attr("href")),
+            "GET",
+            null,
+            null,
+            {
+                success: function () {
+                    display.output.scrollTop(250);
+                },
+            },
+        );
     }
 });
 
-$(document).on('click', '#goToPageButton', function (event) {
-    let page = $('#goToPageInput').val();
+$(document).on("click", "#goToPageButton", function (event) {
+    let page = $("#goToPageInput").val();
     if (!page) {
-        toastr.error('Please specifiy page number to go to.');
+        toastr.error("Please specifiy page number to go to.");
         return false;
     }
-    let form = $('#searchImagesForm');
+    let form = $("#searchImagesForm");
     return transmitData(
-        renderUrl('operation/searchImages?page=' + page),
-        form.attr('method'), new FormData(form[0]),
+        renderUrl("operation/searchImages?page=" + page),
+        form.attr("method"),
+        new FormData(form[0]),
         form.find('button[type="submit"]'),
         {
             beforeSend: function () {
-                $(event.currentTarget).attr('disabled', true);
+                $(event.currentTarget).attr("disabled", true);
             },
             success: function () {
                 display.output.scrollTop(45);
             },
             complete: function () {
-                $(event.currentTarget).attr('disabled', false);
-            }
-        }
+                $(event.currentTarget).attr("disabled", false);
+            },
+        },
     );
 });
 
-$(document).on('change', '#addImagesInput', function () {
-    var imageUploadBtn = $('#uploadImagesBtn');
+$(document).on("change", "#addImagesInput", function () {
+    var imageUploadBtn = $("#uploadImagesBtn");
     if (parseInt($(this).get(0).files.length) > MAX_ALLOWED_UPLOAD_ITEMS) {
-        imageUploadBtn.attr('disabled', true);
-        alert(`You can upload a maximum of ${MAX_ALLOWED_UPLOAD_ITEMS} files at a time only.`);
+        imageUploadBtn.attr("disabled", true);
+        alert(
+            `You can upload a maximum of ${MAX_ALLOWED_UPLOAD_ITEMS} files at a time only.`,
+        );
     } else {
-        imageUploadBtn.attr('disabled', false);
+        imageUploadBtn.attr("disabled", false);
     }
 });
