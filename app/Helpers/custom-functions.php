@@ -493,7 +493,7 @@ if (!function_exists('generateImageDifferenceHash')) {
 
 if (!function_exists('generateImageDifferenceHashOfAnimated')) {
     /**
-     * Generate image difference hash of animated image, used to detect duplicate images using 16x16 grid
+     * Generate md5 image difference hash of animated image, used to detect duplicate images
      * @source: https://gemini.google.com/app/b8ba636642e65796
      * @param \App\Models\Images $imageData
      * @return string|null - string on success, null if image is corrupt
@@ -503,6 +503,10 @@ if (!function_exists('generateImageDifferenceHashOfAnimated')) {
         $rawData = base64_decode($imageData->image, true);
         if (!$rawData) return null;
         try {
+            if ($imageData->imageType === 'avif') {
+                // difference hash calculation logic for animated .avif files
+                return generateImageDifferenceHashOfAnimatedAvif($rawData);
+            }
             $imagick = new Imagick();
             $imagick->readImageBlob($rawData);
 
@@ -532,6 +536,62 @@ if (!function_exists('generateImageDifferenceHashOfAnimated')) {
 
             // Append Frame Count and File Size for 100% certainty - send md5 hash
             return md5($compositeHash . "|F:" . $frameCount . "|S:" . strlen($rawData));
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+}
+
+if (!function_exists('generateImageDifferenceHashOfAnimatedAvif')) {
+    /**
+     * Generate md5 image difference hash of animated .avif image, used to detect duplicate images using 16x16 grid
+     * @source: https://gemini.google.com/app/e2ccff3ce7eef071
+     * @param string $imageRawData
+     * @return string|null - string on success, null if image is corrupt
+     */
+    function generateImageDifferenceHashOfAnimatedAvif(string &$imageRawData): string|null
+    {
+        try {
+            $source = @imagecreatefromstring($imageRawData);
+            if (!$source) return null;
+
+            // 1. Set dimensions for a 16x16 hash
+            // We need 17 horizontal pixels to get 16 differences
+            $width = 17;
+            $height = 16;
+            $resized = imagecreatetruecolor($width, $height);
+
+            imagecopyresampled($resized, $source, 0, 0, 0, 0, $width, $height, imagesx($source), imagesy($source));
+
+            // 2. Calculate dHash (256-bit)
+            $bits = '';
+            for ($y = 0; $y < $height; $y++) {
+                // Get initial brightness of the first pixel in the row
+                $rgb = imagecolorat($resized, 0, $y);
+                $lastB = (($rgb >> 16) & 0xFF) * 0.299 + (($rgb >> 8) & 0xFF) * 0.587 + ($rgb & 0xFF) * 0.114;
+
+                for ($x = 1; $x < $width; $x++) {
+                    $rgb = imagecolorat($resized, $x, $y);
+                    $currB = (($rgb >> 16) & 0xFF) * 0.299 + (($rgb >> 8) & 0xFF) * 0.587 + ($rgb & 0xFF) * 0.114;
+
+                    // Compare adjacent pixels
+                    $bits .= ($lastB > $currB) ? '1' : '0';
+                    $lastB = $currB;
+                }
+            }
+
+            // 3. Convert 256 bits to a 64-character Hex string
+            $firstFrameHash = '';
+            foreach (str_split($bits, 4) as $chunk) {
+                $firstFrameHash .= dechex(bindec($chunk));
+            }
+
+            unset($source, $resized);
+
+            $compositeHash = $firstFrameHash . '-animated';
+
+            // 4. Final salt with file size and MD5 wrap
+            return md5($compositeHash . "|S:" . strlen($imageRawData));
         } catch (Exception $e) {
             return null;
         }

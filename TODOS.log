@@ -4,4 +4,4 @@
 5. Migrate the laravel application to latest laravel version, currently its 9.52.21, use laravel's modern forent-end, preferably react, use PHP 8.5
 
 
-PRIORITY: Find ways to get number of frames from animated .avif image for calculating difference hash
+PRIORITY: Find ways to get number of frames from animated .avif image for calculating difference hash -> done, see if image frame sample ponts can be used

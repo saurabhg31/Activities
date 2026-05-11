@@ -23,7 +23,7 @@ class ImageDifferenceHash extends Model
     public static function storeImageDifferenceHash(int|Images $imageData): self|false
     {
         if (is_int($imageData)) {
-            $imageData = Images::select(['id', 'image', 'isAnimated'])->where('id', $imageData)->first();
+            $imageData = Images::select(['id', 'image', 'isAnimated', 'imageType'])->where('id', $imageData)->first();
         }
         if ($imageData->isAnimated) {
             return self::create([
