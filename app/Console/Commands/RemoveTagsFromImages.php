@@ -115,7 +115,7 @@ class RemoveTagsFromImages extends Command
                             'user_id' => $userId
                         ])->first();
                         if ($imageData) {
-                            if (Str::wordCount($imageData->tags, '#') > 1 && !Str::contains($imageData->tags, ',')) {
+                            if (substr_count($imageData->tags, '#') > 1 && substr_count($imageData->tags, ',') === 0) {
                                 $unprocessableImageIds[] = $imageId;
                                 $this->removeLastLine();
                                 continue;
@@ -152,7 +152,7 @@ class RemoveTagsFromImages extends Command
                             'user_id' => $userId
                         ])->first();
                         if ($imageData) {
-                            if (Str::wordCount($imageData->tags, '#') > 1 && !Str::contains($imageData->tags, ',')) {
+                            if (substr_count($imageData->tags, '#') > 1 && substr_count($imageData->tags, ',') === 0) {
                                 $unprocessableImageIds[] = $imageId;
                                 $this->removeLastLine();
                                 continue;
@@ -184,7 +184,8 @@ class RemoveTagsFromImages extends Command
                 }
                 $this->printLine(number_format($updateCount) . ' images\' information updated.', 2, true);
                 if (!empty($unprocessableImageIds)) {
-                    $existingImageIds = Images::select('id')->whereIn('id', $unprocessableImageIds)->pluck('id')->toArray();
+                    $existingImageIds = Images::select('id')->whereIn('id', $unprocessableImageIds)
+                        ->where('user_id', $userId)->pluck('id')->toArray();
                     if (!empty($existingImageIds)) {
                         $this->printLine(number_format(count($existingImageIds)) . ' images\' update failed.', 2, true);
                         $this->printLine('Failed image ids: ' . implode(', ', $existingImageIds), 2);
