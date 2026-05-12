@@ -117,9 +117,14 @@ class RemoveTagsFromImages extends Command
                         if ($imageData) {
                             if (Str::wordCount($imageData->tags, '#') > 1 && !Str::contains($imageData->tags, ',')) {
                                 $unprocessableImageIds[] = $imageId;
+                                $this->removeLastLine();
                                 continue;
                             }
                             $presentTags = explode(',', str_replace(['#', ' '], '', $imageData->tags));
+                            if (empty(array_intersect($presentTags, $tagsToRemove))) {
+                                $this->removeLastLine();
+                                continue;
+                            }
                             $tagStr = implode(', ', array_map(function ($tag) {
                                 return '#' . $tag;
                             }, array_diff($presentTags, $tagsToRemove)));
@@ -149,9 +154,14 @@ class RemoveTagsFromImages extends Command
                         if ($imageData) {
                             if (Str::wordCount($imageData->tags, '#') > 1 && !Str::contains($imageData->tags, ',')) {
                                 $unprocessableImageIds[] = $imageId;
+                                $this->removeLastLine();
                                 continue;
                             }
                             $presentTags = explode(',', str_replace(['#', ' '], '', $imageData->tags));
+                            if (empty(array_intersect($presentTags, $tagsToRemove))) {
+                                $this->removeLastLine();
+                                continue;
+                            }
                             $tagStr = implode(', ', array_map(function ($tag) {
                                 return '#' . $tag;
                             }, array_diff($presentTags, $tagsToRemove)));
@@ -172,9 +182,13 @@ class RemoveTagsFromImages extends Command
                         }
                     }
                 }
-                $this->printLine(number_format($updateCount) . ' images\' information updated, ' . number_format(count($unprocessableImageIds)) . ' images\' update failed.', 2, true);
+                $this->printLine(number_format($updateCount) . ' images\' information updated.', 2, true);
                 if (!empty($unprocessableImageIds)) {
-                    $this->printLine('Failed image ids: ' . implode(', ', $unprocessableImageIds), 2);
+                    $existingImageIds = Images::select('id')->whereIn('id', $unprocessableImageIds)->pluck('id')->toArray();
+                    if (!empty($existingImageIds)) {
+                        $this->printLine(number_format(count($existingImageIds)) . ' images\' update failed.', 2, true);
+                        $this->printLine('Failed image ids: ' . implode(', ', $existingImageIds), 2);
+                    }
                 }
             }
         }
