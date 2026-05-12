@@ -35,7 +35,7 @@ class RemoveTagsFromImages extends Command
      */
     public function handle()
     {
-        $this->printHeading('Remove tags from images', '-', 30);
+        $this->printHeading('Remove tags from images (CAUTION: Doesn\'t consider image type)', '-', 20);
         $this->printLine('Enter tags separated by ",": ', 1);
         [$tagsToRemove] = $this->readInputFromCli(1);
         $tagsToRemove = explode(',', str_replace(['#', ' '], '', $tagsToRemove));
