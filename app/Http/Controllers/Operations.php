@@ -117,7 +117,6 @@ class Operations extends Controller
                             $this->generateMsgBag($type, $addedImagesCount . ' image(s) added', 'Current images')
                         );
                     case 'searchImages':
-                        set_time_limit(120); // 2 mins
                         $search = Images::search($requestData = $request->all());
                         LogSearchQueries::dispatch($requestData, Session::get('domain') ?? 'public');
                         return $this->sendResponse(

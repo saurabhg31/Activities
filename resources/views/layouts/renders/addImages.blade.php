@@ -40,12 +40,14 @@
         results. Page {{ $data['images']->currentPage() }} of {{ $data['images']->lastPage() }}
     </legend>
     @php($count = 1)
-    @foreach ($data['images'] as $image)
+    @php($imageIds = $data['images']->pluck('id'))
+    @php($images = \App\Models\Images::whereIn('id', $imageIds)->orderBy('id', 'desc')->get())
+    @foreach ($images as $image)
         @if ($count === 1 || $count === 5)
             <div class="form-inline">
         @endif
         <div class="col-sm-3">
-            <img src="{{\App\Helpers\getBase64StringFromImageData($image)}}"
+            <img src="{{ \App\Helpers\getBase64StringFromImageData($image) }}"
                 title="Type: {{ $image->type }} || Tags: {{ $image->tags }}"
                 style="max-width: 100%; max-height: 100%; cursor: pointer;" onclick="openImageInModal($(this))" /><br>
             <label>Uploaded on: {{ $image->created_at->format('d M, Y \a\t h:i:s a') }}</label>

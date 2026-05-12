@@ -38,12 +38,14 @@
         {{ $data['search']->lastPage() }}
     </legend>
     @php($count = 1)
-    @foreach ($data['search'] as $image)
+    @php($imageIds = $data['search']->pluck('id'))
+    @php($images = \App\Models\Images::whereIn('id', $imageIds)->orderBy('id', 'desc')->get())
+    @foreach ($images as $image)
         @if ($count === 1 || $count === 5)
             <div class="form-inline">
         @endif
         <div class="col-sm-3">
-            <img src="{{\App\Helpers\getBase64StringFromImageData($image)}}"
+            <img src="{{ \App\Helpers\getBase64StringFromImageData($image) }}"
                 title="Type: {{ $image->type }} || Tags: {{ $image->tags }}"
                 style="max-width: 100%; max-height: 100%; cursor: pointer;" onclick="openImageInModal($(this))" /><br>
             <label>Image Id: {{ $image->id }} : {{ $image->created_at->format('Y\/m\/d h:i a') }}</label>

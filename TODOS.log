@@ -7,3 +7,7 @@
 PRIORITY: Find ways to get number of frames from animated .avif image for calculating difference hash -> done, see if image frame sample ponts can be used
 
 PRIORITY: CacheImageSearchPrompts may use up a lot cache space & resources of there are a lot of users
+
+PRIORITY: Fix database connection timeout when viewing last page without any search parameter -> fixed
+
+PRIORITY: Check loading page slowdows when there are a lot of duplicate images
