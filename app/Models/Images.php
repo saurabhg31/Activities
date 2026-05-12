@@ -160,10 +160,13 @@ class Images extends Model
     /**
      * update image info
      */
-    public static function updateImageInfo(array $params)
+    public static function updateImageInfo(array $params, ?int $userId = null)
     {
+        if (is_null($userId)) {
+            $userId = Auth::id();
+        }
         $check = self::select('user_id')->where('id', $params['imageId'])->first();
-        if (is_null($check->user_id) || $check->user_id === Auth::id()) {
+        if (is_null($check->user_id) || $check->user_id === $userId) {
             self::where('id', $params['imageId'])->update([
                 'type' => $params['type'],
                 'tags' => $params['tags']
