@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 class Images extends Model
 {
     protected $table = 'images';
-    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'lastSearchCount', 'length', 'isAnimated'];
+    protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'length', 'isAnimated'];
 
     /**
      * get images
