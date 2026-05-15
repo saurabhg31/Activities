@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 
 class Images extends Model
 {
@@ -18,7 +19,7 @@ class Images extends Model
      */
     public static function list(?array $types = null)
     {
-        $query = self::select('id')->when($types, function ($typeQuery) use ($types) {
+        $query = self::select('id')->distinct('id')->when($types, function ($typeQuery) use ($types) {
             return $typeQuery->whereIn('type', $types);
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
@@ -34,12 +35,19 @@ class Images extends Model
      */
     public static function search(?array $params = null, bool $useIndexing = true)
     {
-        $tags = preg_split('/[\ \n\,]+/', $params['tags']);
-        $tags = array_map(function ($str) {
-            return trim($str);
-        }, $tags);
+        $tagsToExclude = [];
+        $idsToExclude = [];
+        if (str_contains($params['tags'], 'x:')) {
+            // checking for tags to be excluded
+            $tagsToExclude = array_filter(preg_split('/[\ \n\,]+/', Str::after($params['tags'], 'x:')));
+            $params['tags'] = Str::before($params['tags'], 'x:');
+            $idsToExclude = array_filter($tagsToExclude, function ($str) {
+                return (int)$str == $str;
+            });
+        }
+        $tags = array_filter(preg_split('/[\ \n\,]+/', $params['tags']));
         $ids = array_filter($tags, function ($str) {
-            return is_numeric($str);
+            return (int)$str == $str;
         });
         $tags = array_filter(array_diff($tags, $ids));
         $extensionTags = [];
@@ -66,7 +74,7 @@ class Images extends Model
             $compressedImagesOnly = true;
             $tags = array_filter(array_diff($tags, [config('constants.COMPRESSION_TAG')]));
         }
-        $search = self::select('images.id')->when(isset($params['types']), function ($query) use ($params) {
+        $search = self::select('images.id')->distinct('images.id')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
         })->when($animationsOnly, function ($animationsOnlyQuery) {
             return $animationsOnlyQuery->where('images.isAnimated', true);
@@ -94,10 +102,10 @@ class Images extends Model
             if ($useIndexing) {
                 $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
                     $join->on('image_search_indexing.image_id', '=', 'images.id');
-                    if (count($tags) == 1) {
-                        $join->where('tag', 'like', '%' . reset($tags) . '%');
+                    if (count($tags) === 1) {
+                        $join->where('image_search_indexing.tag', 'like', '%' . reset($tags) . '%');
                     } else {
-                        $join->whereIn('tag', $tags);
+                        $join->whereIn('image_search_indexing.tag', $tags);
                     }
                 });
             } else {
@@ -109,6 +117,27 @@ class Images extends Model
                 });
             }
             return $conditionalQuery;
+        })->when(!empty($tagsToExclude), function ($excludeTagsQuery) use ($tagsToExclude, $useIndexing) {
+            if ($useIndexing) {
+                // Use whereNotExists to ensure the image is removed if ANY excluded tag matches
+                // @source: https://gemini.google.com/app/724f83370c0c3c20
+                $excludeTagsQuery->whereNotExists(function ($subQuery) use ($tagsToExclude) {
+                    $subQuery->selectRaw(1)
+                        ->from('image_search_indexing')
+                        ->whereRaw('image_search_indexing.image_id = images.id')
+                        ->whereIn('tag', $tagsToExclude);
+                });
+            } else {
+                // For the flat string search, multiple 'not like' clauses work correctly
+                $excludeTagsQuery->where(function ($q) use ($tagsToExclude) {
+                    foreach ($tagsToExclude as $tag) {
+                        $q->where('images.tags', 'not like', '%' . $tag . '%');
+                    }
+                });
+            }
+            return $excludeTagsQuery;
+        })->when(!empty($idsToExclude), function ($excludeIdsQuery) use ($idsToExclude) {
+            return $excludeIdsQuery->whereNotIn('images.id', $idsToExclude);
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
             $search->where('images.user_id', auth('web')->id());
