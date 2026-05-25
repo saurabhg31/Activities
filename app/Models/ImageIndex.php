@@ -83,8 +83,8 @@ class ImageIndex extends Model
         }
         $query = self::selectRaw('distinct(tag)')->join('images', 'image_search_indexing.image_id', '=', 'images.id');
         if (
-            (Session::has('domain') && Session::get('domain') == 'private' || $userId) &&
-            ($domain && $domain == 'private')
+            (Session::has('domain') && Session::get('domain') === 'private' || $userId) &&
+            ($domain && $domain === 'private')
         ) {
             $query->where('images.user_id', $userId);
         } else {
