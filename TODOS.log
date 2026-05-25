@@ -14,5 +14,6 @@ PRIORITY: Check loading page slowdows when there are a lot of duplicate images
 
 PRIORITY: Add hamming distance for accurate duplicate image detection irrespective of compression: https://gemini.google.com/app/e2ccff3ce7eef071
 
-PRIORITY: Add app\Console\Commands\CacheImageSearchPrompts.php to a job instead of running it every minute
+PRIORITY: Add app\Console\Commands\CacheImageSearchPrompts.php to a job instead of running it every minute -> done.
+
 PRIORITY: Load search suggestions in search images dynamically instead of populating it in a php foreach loop

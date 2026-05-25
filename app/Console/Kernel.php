@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('cache:image_search_prompts')->everyMinute();
+        // $schedule->command('cache:image_search_prompts')->everyMinute(); -> deferred to queue on relevant action
     }
 
     /**

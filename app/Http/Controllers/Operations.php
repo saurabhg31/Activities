@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CacheImageTagsAndSearchPrompts;
 use App\Jobs\LogSearchQueries;
 use App\Models\ImageIndex;
 use App\Models\Images;
@@ -108,6 +109,7 @@ class Operations extends Controller
                             $tags = next($tags);
                         }
                         $addedImagesCount = $this->addImages($images, $tags, $request->type, $request->domain);
+                        CacheImageTagsAndSearchPrompts::dispatch(Auth::id(), $request->domain);
                         return $this->sendResponse(
                             $addedImagesCount ? null : 'Unable to add images',
                             $this->renderView($type, [
@@ -118,7 +120,11 @@ class Operations extends Controller
                         );
                     case 'searchImages':
                         $search = Images::search($requestData = $request->all());
-                        LogSearchQueries::dispatch($requestData, Session::get('domain') ?? 'public');
+                        $domain = Session::get('domain') ?? 'public';
+                        LogSearchQueries::dispatch($requestData, $domain);
+                        if (!is_null($requestData['tags'])) {
+                            CacheImageTagsAndSearchPrompts::dispatch(Auth::id(), $domain);
+                        }
                         return $this->sendResponse(
                             null,
                             $this->renderView($type, [
@@ -160,7 +166,9 @@ class Operations extends Controller
             return $this->sendError($this->validationFailedMsg, $validateData->messages, $this->validationErrorResponseCode);
         }
         try {
-            return $this->sendResponse(Images::deleteImages([$request->imageId]), null);
+            $deletedCount = Images::deleteImages([$request->imageId]);
+            CacheImageTagsAndSearchPrompts::dispatch(Auth::id(), Session::get('domain') ?? 'public');
+            return $this->sendResponse($deletedCount, null);
         } catch (QueryException $error) {
             return $this->sendError($error->getMessage());
         }
@@ -187,6 +195,7 @@ class Operations extends Controller
             return $this->renderView('imageEdit', $data);
         } elseif ($request->isMethod('POST')) {
             if (Images::updateImageInfo(Arr::except($request->all(), ['_token']))) {
+                CacheImageTagsAndSearchPrompts::dispatch(Auth::id(), Session::get('domain') ?? 'public');
                 return $this->sendResponse(null, null, [
                     'text' => 'Image information updated',
                     'heading' => 'Operation complete.'
