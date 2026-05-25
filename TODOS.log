@@ -11,3 +11,5 @@ PRIORITY: CacheImageSearchPrompts may use up a lot cache space & resources of th
 PRIORITY: Fix database connection timeout when viewing last page without any search parameter -> fixed
 
 PRIORITY: Check loading page slowdows when there are a lot of duplicate images
+
+PRIORITY: Add hamming distance for accurate duplicate image detection irrespective of compression: https://gemini.google.com/app/e2ccff3ce7eef071
