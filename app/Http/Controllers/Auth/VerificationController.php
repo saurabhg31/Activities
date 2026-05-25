@@ -3,15 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\ImageIndex;
 use Illuminate\Foundation\Auth\VerifiesEmails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
-
-use function App\Helpers\cacheImageSearchPrompts;
 
 class VerificationController extends Controller
 {
@@ -79,9 +75,6 @@ class VerificationController extends Controller
                 $errorBag[] = 'Incorrect password.';
                 return view('layouts.renders.domain', compact('errorBag'));
             }
-            Session::put('domain', 'public');
-            $successMsg[] = 'Set domain to <strong>PUBLIC</strong>';
-            return view('layouts.renders.domain', compact('successMsg'));
         } else {
             $errorBag[] = 'Invalid request type.';
             return view('layouts.renders.domain', compact('errorBag'));

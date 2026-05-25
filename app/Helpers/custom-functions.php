@@ -62,9 +62,10 @@ if (!function_exists('cacheImageSearchPrompts')) {
             $cacheName .= "_{$userId}";
         }
         $popularSearches = SearchQueryIndexing::getPopularSearchPrompts(3, $domain)->pluck('tag_query');
-        return Cache::put($cacheName, ImageIndex::getImageTags($userId, $domain)->merge($popularSearches)->sort(function ($prompt1, $prompt2) {
-            return $prompt1 > $prompt2 ? 1 : 0;
-        })->unique());
+        return Cache::put($cacheName, ImageIndex::getImageTags($userId, $domain)->merge($popularSearches)
+            ->sort(function ($prompt1, $prompt2) {
+                return $prompt1 > $prompt2 ? 1 : 0;
+            })->unique());
     }
 }
 
