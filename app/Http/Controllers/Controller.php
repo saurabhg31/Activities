@@ -330,7 +330,7 @@ class Controller extends BaseController
             $imageData = array(
                 'type' => strtoupper($type),
                 'image' => base64_encode($contents),
-                'imageType' => $extension ? $extension : 'png',
+                'imageType' => $extension ?? 'png',
                 'tags' => $tags,
                 'user_id' => $userId,
                 'created_at' => now()
