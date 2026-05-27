@@ -17,3 +17,5 @@ PRIORITY: Add hamming distance for accurate duplicate image detection irrespecti
 PRIORITY: Add app\Console\Commands\CacheImageSearchPrompts.php to a job instead of running it every minute -> done.
 
 PRIORITY: Load search suggestions in search images dynamically instead of populating it in a php foreach loop
+
+PRIORITY: Change image data getting stored in base64 to binary data
