@@ -37,42 +37,61 @@ class Images extends Model
     {
         $tagsToExclude = [];
         $idsToExclude = [];
-        if (str_contains($params['tags'], 'x:')) {
-            // checking for tags to be excluded
-            $tagsToExclude = array_filter(preg_split('/[\ \n\,]+/', Str::after($params['tags'], 'x:')));
-            $params['tags'] = Str::before($params['tags'], 'x:');
-            $idsToExclude = array_filter($tagsToExclude, function ($str) {
+        $onlyTags = [];
+        $anyTagFlag = false; // flag to match any of the given tags
+        if (str_contains($params['tags'], 'only:')) {
+            if (str_contains($params['tags'], 'x:') || str_contains($params['tags'], 'any:')) {
+                throw new Exception('Cannot combine only: with other search params.');
+            }
+            // searches for images which has exactly only tags and no more, tags before only: are ignored
+            $onlyTags = array_filter(preg_split('/[\ \n\,]+/', Str::after($params['tags'], 'only:')));
+            $params['tags'] = '';
+            $tags = [];
+            $ids = [];
+        } else {
+            if (str_contains($params['tags'], 'x:')) {
+                // checking for tags to be excluded
+                $tagsToExclude = array_filter(preg_split('/[\ \n\,]+/', Str::after($params['tags'], 'x:')));
+                $params['tags'] = Str::before($params['tags'], 'x:');
+                $idsToExclude = array_filter($tagsToExclude, function ($str) {
+                    return (int)$str == $str;
+                });
+                $tagsToExclude = array_diff($tagsToExclude, $idsToExclude);
+            }
+            if (str_contains($params['tags'], 'any:')) {
+                // tags before any: will be ignored
+                $anyTagFlag = true;
+                $params['tags'] = Str::after($params['tags'], 'any:');
+            }
+            $tags = array_filter(preg_split('/[\ \n\,]+/', $params['tags']));
+            $ids = array_filter($tags, function ($str) {
                 return (int)$str == $str;
             });
+            $tags = array_filter(array_diff($tags, $ids));
         }
-        $tags = array_filter(preg_split('/[\ \n\,]+/', $params['tags']));
-        $ids = array_filter($tags, function ($str) {
-            return (int)$str == $str;
-        });
-        $tags = array_filter(array_diff($tags, $ids));
         $extensionTags = [];
         $gifDataPresent = false;
         $animationsOnly = false;
         $nullTagsOnly = false; // if true, show images with null tags only
         $compressedImagesOnly = false;
         if (!empty($tags)) {
-            $availableExtensions = self::select('imageType')->distinct()->pluck('imageType')->toArray();
+            $availableExtensions = self::selectRaw('distinct imageType')->pluck('imageType')->toArray();
             $extensionTags = array_intersect($availableExtensions, $tags);
             $tags = array_filter(array_diff($tags, $extensionTags));
             $gifDataPresent = !empty(array_intersect(config('constants.ANIMATED_IMG_EXTENSIONS'), $extensionTags));
-        }
-        if (in_array(config('constants.ANIMATION_ONLY_TAG'), $tags)) {
-            $animationsOnly = true;
-            $tags = array_filter(array_diff($tags, [config('constants.ANIMATION_ONLY_TAG')]));
-            $gifDataPresent = true;
-        }
-        if (in_array(config('constants.NO_TAGS_SEARCH_TAG'), $tags)) {
-            $nullTagsOnly = true;
-            $tags = array_filter(array_diff($tags, [config('constants.NO_TAGS_SEARCH_TAG')]));
-        }
-        if (in_array(config('constants.COMPRESSION_TAG'), $tags)) {
-            $compressedImagesOnly = true;
-            $tags = array_filter(array_diff($tags, [config('constants.COMPRESSION_TAG')]));
+            if (in_array(config('constants.ANIMATION_ONLY_TAG'), $tags)) {
+                $animationsOnly = true;
+                $tags = array_filter(array_diff($tags, [config('constants.ANIMATION_ONLY_TAG')]));
+                $gifDataPresent = true;
+            }
+            if (in_array(config('constants.NO_TAGS_SEARCH_TAG'), $tags)) {
+                $nullTagsOnly = true;
+                $tags = array_filter(array_diff($tags, [config('constants.NO_TAGS_SEARCH_TAG')]));
+            }
+            if (in_array(config('constants.COMPRESSION_TAG'), $tags)) {
+                $compressedImagesOnly = true;
+                $tags = array_filter(array_diff($tags, [config('constants.COMPRESSION_TAG')]));
+            }
         }
         $search = self::select('images.id')->distinct('images.id')->when(isset($params['types']), function ($query) use ($params) {
             return $query->where('images.type', $params['types']);
@@ -138,14 +157,24 @@ class Images extends Model
             return $excludeTagsQuery;
         })->when(!empty($idsToExclude), function ($excludeIdsQuery) use ($idsToExclude) {
             return $excludeIdsQuery->whereNotIn('images.id', $idsToExclude);
+        })->when(!empty($onlyTags), function ($onlyTagsQuery) use ($useIndexing, $onlyTags) {
+            if (!$useIndexing) {
+                throw new Exception('Indexing is disabled, unable to use only: search param.');
+            }
+            $tagsCount = count($onlyTags);
+            return $onlyTagsQuery->join('image_search_indexing', 'image_search_indexing.image_id', '=', 'images.id')
+                ->groupBy('images.id')->havingRaw("COUNT(DISTINCT image_search_indexing.tag) = " . $tagsCount . " AND SUM(image_search_indexing.tag IN (" . implode(',', array_map(function ($str) {
+                    return '\'' . $str . '\'';
+                }, $onlyTags)) . ")) = " . $tagsCount);
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
             $search->where('images.user_id', auth('web')->id());
         } else {
             $search->whereNull('images.user_id');
         }
-        if ($useIndexing && count($tags) > 1) {
-            $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . count($tags));
+        $tagsCount = count($tags);
+        if (!$anyTagFlag && $useIndexing && $tagsCount > 1) {
+            $search->groupBy('images.id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . $tagsCount);
         }
         if (!empty($ids)) {
             $search->whereIn('images.id', $ids);

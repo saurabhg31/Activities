@@ -137,6 +137,13 @@ function transmitData(
                         });
                     }
                 }
+            } else if (error.status === 500) {
+                if (error.responseJSON && error.responseJSON.message) {
+                    toastr.error(error.responseJSON.message);
+                } else {
+                    toastr.error("Unhandled server error!");
+                    console.log(error, status);
+                }
             } else {
                 toastr.error(status, "Data transmission error");
                 console.log(error, status);
