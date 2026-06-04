@@ -120,12 +120,15 @@ class Images extends Model
         })->when(!empty($tags), function ($conditionalQuery) use ($useIndexing, $tags) {
             if ($useIndexing) {
                 $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
-                    $join->on('image_search_indexing.image_id', '=', 'images.id');
+                    $join->on('image_search_indexing.image_id', '=', 'images.id')
+                        ->whereIn('image_search_indexing.tag', $tags);
+                    /*
                     if (count($tags) === 1) {
                         $join->where('image_search_indexing.tag', 'like', '%' . reset($tags) . '%');
                     } else {
                         $join->whereIn('image_search_indexing.tag', $tags);
                     }
+                    */
                 });
             } else {
                 $conditionalQuery->where(function ($query) use ($tags) {
