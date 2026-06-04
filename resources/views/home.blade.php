@@ -50,7 +50,7 @@
                                 &nbsp;
                                 &nbsp;
                                 &nbsp;
-                                <button class="btn btn-primary" id="imagesAdd">Add/Display Wallpapers</button>&nbsp;
+                                <button class="btn btn-primary" id="imagesAdd">Add/Display Images</button>&nbsp;
                                 &nbsp;
                                 &nbsp;
                                 &nbsp;

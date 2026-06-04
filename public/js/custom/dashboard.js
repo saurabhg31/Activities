@@ -1,6 +1,7 @@
 const MAX_ALLOWED_UPLOAD_ITEMS = 1000;
 let page = 1;
 let display, imgEdit;
+let requestInProgress = false;
 
 $(document).ready(function () {
     toastr.options.escapeHtml = true;
@@ -27,6 +28,11 @@ function transmitData(
     dataType = "json",
     disableScroll = false,
 ) {
+    if (requestInProgress) {
+        toastr.info('A previous request is currently running, please wait for it to finish before sending a new one.');
+        return;
+    }
+    requestInProgress = true;
     if (submitButton) {
         submitButtonHtml = submitButton.html();
     }
@@ -157,6 +163,7 @@ function transmitData(
                 submitButton.html(submitButtonHtml);
                 submitButton.attr("disabled", false);
             }
+            requestInProgress = false;
         },
     });
 }
