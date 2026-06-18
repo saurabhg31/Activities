@@ -19,3 +19,5 @@ PRIORITY: Add app\Console\Commands\CacheImageSearchPrompts.php to a job instead 
 PRIORITY: Load search suggestions in search images dynamically instead of populating it in a php foreach loop
 
 PRIORITY: Change image data getting stored in base64 to binary data
+
+PRIORITY: Fix like query issue -> done

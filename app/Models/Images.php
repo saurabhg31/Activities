@@ -38,9 +38,10 @@ class Images extends Model
         $tagsToExclude = [];
         $idsToExclude = [];
         $onlyTags = [];
+        $likeTags = [];
         $anyTagFlag = false; // flag to match any of the given tags
         if (str_contains($params['tags'], 'only:')) {
-            if (str_contains($params['tags'], 'x:') || str_contains($params['tags'], 'any:')) {
+            if (str_contains($params['tags'], 'x:') || str_contains($params['tags'], 'any:') || str_contains($params['tags'], 'like:')) {
                 throw new Exception('Cannot combine only: with other search params.');
             }
             // searches for images which has exactly only tags and no more, tags before only: are ignored
@@ -58,6 +59,13 @@ class Images extends Model
                 });
                 $tagsToExclude = array_diff($tagsToExclude, $idsToExclude);
             }
+            if (str_contains($params['tags'], 'like:')) {
+                if (str_contains($params['tags'], 'any:')) {
+                    throw new Exception('Cannot combine like: search param with any:.');
+                }
+                $likeTags = array_filter(preg_split('/[\ \n\,]+/', Str::after($params['tags'], 'like:')));
+                $params['tags'] = Str::before($params['tags'], 'like:');
+            }
             if (str_contains($params['tags'], 'any:')) {
                 // tags before any: will be ignored
                 $anyTagFlag = true;
@@ -73,6 +81,7 @@ class Images extends Model
         $gifDataPresent = false;
         $animationsOnly = false;
         $nullTagsOnly = false; // if true, show images with null tags only
+        $indexingTableJoined = false;
         $compressedImagesOnly = false;
         if (!empty($tags)) {
             $availableExtensions = self::selectRaw('distinct imageType')->pluck('imageType')->toArray();
@@ -117,18 +126,12 @@ class Images extends Model
                 });
             }
             return $extensionsQuery;
-        })->when(!empty($tags), function ($conditionalQuery) use ($useIndexing, $tags) {
+        })->when(!empty($tags), function ($conditionalQuery) use ($useIndexing, $tags, &$indexingTableJoined) {
             if ($useIndexing) {
-                $conditionalQuery->join('image_search_indexing', function ($join) use ($tags) {
+                $conditionalQuery->join('image_search_indexing', function ($join) use ($tags, &$indexingTableJoined) {
                     $join->on('image_search_indexing.image_id', '=', 'images.id')
                         ->whereIn('image_search_indexing.tag', $tags);
-                    /*
-                    if (count($tags) === 1) {
-                        $join->where('image_search_indexing.tag', 'like', '%' . reset($tags) . '%');
-                    } else {
-                        $join->whereIn('image_search_indexing.tag', $tags);
-                    }
-                    */
+                    $indexingTableJoined = true;
                 });
             } else {
                 $conditionalQuery->where(function ($query) use ($tags) {
@@ -160,15 +163,45 @@ class Images extends Model
             return $excludeTagsQuery;
         })->when(!empty($idsToExclude), function ($excludeIdsQuery) use ($idsToExclude) {
             return $excludeIdsQuery->whereNotIn('images.id', $idsToExclude);
-        })->when(!empty($onlyTags), function ($onlyTagsQuery) use ($useIndexing, $onlyTags) {
+        })->when(!empty($onlyTags), function ($onlyTagsQuery) use ($useIndexing, $onlyTags, &$indexingTableJoined) {
             if (!$useIndexing) {
                 throw new Exception('Indexing is disabled, unable to use only: search param.');
             }
             $tagsCount = count($onlyTags);
-            return $onlyTagsQuery->join('image_search_indexing', 'image_search_indexing.image_id', '=', 'images.id')
-                ->groupBy('images.id')->havingRaw("COUNT(DISTINCT image_search_indexing.tag) = " . $tagsCount . " AND SUM(image_search_indexing.tag IN (" . implode(',', array_map(function ($str) {
-                    return '\'' . $str . '\'';
-                }, $onlyTags)) . ")) = " . $tagsCount);
+            if (!$indexingTableJoined) {
+                $onlyTagsQuery->join('image_search_indexing', 'image_search_indexing.image_id', '=', 'images.id');
+                $indexingTableJoined = true;
+            }
+            return $onlyTagsQuery->groupBy('images.id')->havingRaw("COUNT(DISTINCT image_search_indexing.tag) = " . $tagsCount . " AND SUM(image_search_indexing.tag IN (" . implode(',', array_map(function ($str) {
+                return '\'' . $str . '\'';
+            }, $onlyTags)) . ")) = " . $tagsCount);
+        })->when(!empty($likeTags), function ($likeQuery) use ($useIndexing, $likeTags) {
+            if (!$useIndexing) {
+                throw new Exception('Indexing is disabled, unable to use like: search param.');
+            }
+            /**
+             * like query matching
+             * @source: https://gemini.google.com/app/927731503e26c4a6
+             */
+            $likeQuery->whereExists(function ($subQuery) use ($likeTags) {
+                $subQuery->selectRaw(1)
+                    ->from('image_search_indexing')
+                    ->whereColumn('image_search_indexing.image_id', 'images.id')
+                    ->where(function ($q) use ($likeTags) {
+                        // Apply the OR condition to filter relevant rows
+                        foreach ($likeTags as $tag) {
+                            $q->orWhere('tag', 'like', $tag);
+                        }
+                    })
+                    ->groupBy('image_id')
+                    // Count how many unique criteria were satisfied
+                    ->havingRaw('COUNT(DISTINCT CASE ' .
+                        collect($likeTags)->map(function ($tag, $index) {
+                            return "WHEN tag LIKE ? THEN $index ";
+                        })->implode(' ') .
+                        'END) = ?', [...$likeTags, count($likeTags)]);
+            });
+            return $likeQuery;
         });
         if (Session::has('domain') && Session::get('domain') == 'private') {
             $search->where('images.user_id', auth('web')->id());
