@@ -45,15 +45,13 @@ class Images extends Model
                 throw new Exception('Cannot combine only: with other search params.');
             }
             // searches for images which has exactly only tags and no more, tags before only: are ignored
-            $onlyTags = array_filter(preg_split('/[\ \n\,]+/', Str::after($params['tags'], 'only:')));
-            $params['tags'] = '';
             $tags = [];
             $ids = [];
+            $onlyTags = self::getSearchTagsFromTagString('only:', $params['tags']);
         } else {
             if (str_contains($params['tags'], 'x:')) {
                 // checking for tags to be excluded
-                $tagsToExclude = array_filter(preg_split('/[\ \n\,]+/', Str::after($params['tags'], 'x:')));
-                $params['tags'] = Str::before($params['tags'], 'x:');
+                $tagsToExclude = self::getSearchTagsFromTagString('x:', $params['tags']);
                 $idsToExclude = array_filter($tagsToExclude, function ($str) {
                     return (int)$str == $str;
                 });
@@ -63,20 +61,31 @@ class Images extends Model
                 if (str_contains($params['tags'], 'any:')) {
                     throw new Exception('Cannot combine like: search param with any:.');
                 }
-                $likeTags = array_filter(preg_split('/[\ \n\,]+/', Str::after($params['tags'], 'like:')));
-                $params['tags'] = Str::before($params['tags'], 'like:');
+                $likeTags = self::getSearchTagsFromTagString('like:', $params['tags']);
             }
             if (str_contains($params['tags'], 'any:')) {
                 // tags before any: will be ignored
                 $anyTagFlag = true;
-                $params['tags'] = Str::after($params['tags'], 'any:');
+                $tags = self::getSearchTagsFromTagString('any:', $params['tags']);
             }
-            $tags = array_filter(preg_split('/[\ \n\,]+/', $params['tags']));
+            $tags = !empty($tags) ? $tags : array_filter(preg_split('/[\ \n\,]+/', $params['tags']));
             $ids = array_filter($tags, function ($str) {
                 return (int)$str == $str;
             });
             $tags = array_filter(array_diff($tags, $ids));
         }
+        // Debug code
+        /*
+        dd([
+            'tags' => $tags,
+            'ids' => $ids,
+            'onlyTags' => $onlyTags,
+            'tagsToExclude' => $tagsToExclude,
+            'idsToExclude' => $idsToExclude,
+            'likeTags' => $likeTags,
+            'anyTagFlag' => $anyTagFlag
+        ]);
+        */
         $extensionTags = [];
         $gifDataPresent = false;
         $animationsOnly = false;
@@ -220,6 +229,8 @@ class Images extends Model
                 throw new Exception('Pagination page number not numeric.');
             }
         }
+        // Debug code
+        // $search->orderBy('images.id', 'desc')->dd();
         $search = $search->orderBy('images.id', 'desc')->paginate($gifDataPresent ? 8 : env('PAGINATION', 20));
         $search->response = 'Search complete';
         return $search;
@@ -309,5 +320,20 @@ class Images extends Model
         return self::whereIn('id', $imageIds)
             ->orderByRaw("FIELD(id, " . implode(',', $imageIds) . ")")
             ->paginate(env('PAGINATION', 20));
+    }
+
+    /**
+     * get search tags from entire search tag string
+     * @param string $searchTag
+     * @param string &$completeSearchString
+     * @return array
+     */
+    private static function getSearchTagsFromTagString(string $searchTag, string &$completeSearchString): array
+    {
+        $searchTagString = Str::after($completeSearchString, $searchTag);
+        $semiColonFirstPos = strpos($searchTagString, ';');
+        $searchTagString = substr($searchTagString, 0, $semiColonFirstPos);
+        $completeSearchString = str_replace($searchTag . $searchTagString . ';', '', $completeSearchString);
+        return array_filter(preg_split('/[\ \n\,]+/', $searchTagString));
     }
 }
