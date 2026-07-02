@@ -7,5 +7,7 @@ return [
     'ANIMATED_IMG_EXTENSIONS' => ['gif', 'webp', 'avif', 'apng', 'svg', 'fli', 'flc', 'ico', 'heic'],
     'ANIMATION_ONLY_TAG' => '#animationsOnly',
     'NO_TAGS_SEARCH_TAG' => '#noTags',
-    'COMPRESSION_TAG' => '#compressedOnly'
+    'COMPRESSION_TAG' => '#compressedOnly',
+    'MAX_IMG_SIZE' => (int)(16 * 1024 * 1024), // 16 MB. Value is in bytes.
+    'TMP_STORED_PREFIX' => '<fileStoredInTempDir>',
 ];

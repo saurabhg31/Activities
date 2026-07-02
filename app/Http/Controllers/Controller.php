@@ -246,7 +246,7 @@ class Controller extends BaseController
      * @param string $requestType
      * @return array $validationRules
      */
-    protected function validationRules(String $type, String $requestType = 'POST')
+    protected function validationRules(string $type, string $requestType = 'POST')
     {
         if ($requestType === 'GET') {
             $validationRules = array(
@@ -277,7 +277,8 @@ class Controller extends BaseController
                 'marketing' => [],
                 'imagesAdd' => [
                     'images' => 'nullable|array',
-                    'images.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,avif|max:10240', // image of maximum size 10 mb allowed
+                    // 'images.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,avif|max:10240', // image of maximum size 10 mb allowed
+                    'images.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,avif',
                     'tags' => 'nullable|string|min:3|max:10000',
                     'type' => 'required|string|min:3|max:255',
                     'domain' => 'required|string|in:' . implode(',', $this->imageDomains)
@@ -306,7 +307,6 @@ class Controller extends BaseController
      * @param string $type
      * @param string $domain
      * @return integer $uploadedImagesCount
-     * TODO: resolve extension issue
      */
     protected function addImages(array $images, ?string $tags = null, string $type = 'WALLPAPER', string $domain = 'public')
     {

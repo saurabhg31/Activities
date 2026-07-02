@@ -7,12 +7,52 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Images extends Model
 {
     protected $table = 'images';
     protected $fillable = ['type', 'image', 'imageType', 'tags', 'user_id', 'length', 'isAnimated'];
+
+    /**
+     * Access image data accessor
+     * @param string $value
+     * @return string
+     */
+    protected function getImageAttribute(string $value): string
+    {
+        if (str_starts_with($value, config('constants.TMP_STORED_PREFIX'))) {
+            $filePath = trim(str_replace(config('constants.TMP_STORED_PREFIX'), '', $value));
+            return base64_encode(Storage::get($filePath));
+        }
+        return $value;
+    }
+
+    /**
+     * Set image data mutator
+     * @param string $value
+     * @return void
+     */
+    protected function setImageAttribute(string $value): void
+    {
+        if (strlen($value) > config('constants.MAX_IMG_SIZE')) {
+            $pathVal = $this->getRawOriginal('image');
+            if (is_null($pathVal)) {
+                // new image
+                $pathVal = 'images' . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . Str::random() . '_' . time();
+                Storage::put($pathVal, base64_decode($value, true));
+                $pathVal = config('constants.TMP_STORED_PREFIX') . ' ' . $pathVal;
+            } else {
+                // updating image
+                $filePath = trim(str_replace(config('constants.TMP_STORED_PREFIX'), '', $pathVal));
+                Storage::put($filePath, base64_decode($value));
+            }
+            $this->attributes['image'] = $pathVal;
+        } else {
+            $this->attributes['image'] = $value;
+        }
+    }
 
     /**
      * get images
@@ -250,9 +290,35 @@ class Images extends Model
      */
     public static function deleteImages(array $imageIds)
     {
-        return self::whereIn('id', $imageIds)->when(env('IMGDEL') === 'allow', function ($query) {
-            return $query->where('user_id', NULL)->orWhere('user_id', Auth::id());
-        })->delete();
+        // getting ids that can be deleted
+        $deletableImageIds = self::select('id')->whereIn('id', $imageIds);
+        if (env('IMGDEL', 'allow') === 'allow') {
+            $deletableImageIds->where(function ($query) {
+                return $query->where('user_id', NULL)->orWhere('user_id', Auth::id());
+            });
+        } else {
+            $deletableImageIds->where('user_id', Auth::id());
+        }
+        $deletableImageIds = $deletableImageIds->pluck('id')->toArray();
+
+        // segregating images with image data stored in temp folder
+        $tempStoredImages = self::select(['id', 'image'])->whereIn('id', $deletableImageIds)
+            ->where('image', 'like', config('constants.TMP_STORED_PREFIX') . '%')->get();
+        $tempStoredImageIds = $tempStoredImages->pluck('id')->toArray();
+        $tableStoredImageIds = array_diff($deletableImageIds, $tempStoredImageIds);
+
+        // deleting table stored images
+        $deletedImagesCount = self::whereIn('id', $tableStoredImageIds)->delete();
+        unset($deletableImageIds, $tableStoredImageIds);
+
+        // deleting temp folder stored images & related files
+        $filesToDelete = [];
+        foreach ($tempStoredImages as $imageData) {
+            $filesToDelete[] = trim(str_replace(config('constants.TMP_STORED_PREFIX'), '', $imageData->getRawOriginal('image')));
+        }
+        Storage::delete($filesToDelete);
+        $deletedImagesCount += self::whereIn('id', $tempStoredImageIds)->delete();
+        return $deletedImagesCount;
     }
 
     /**
@@ -294,7 +360,7 @@ class Images extends Model
      */
     public static function logImageLength(int $imageId)
     {
-        $imageLength = self::selectRaw('length(image) as length')->where('id', $imageId)->first()->length;
+        $imageLength = strlen(self::find($imageId)->image);
         self::where('id', $imageId)->update([
             'length' => $imageLength,
             'updated_at' => now()

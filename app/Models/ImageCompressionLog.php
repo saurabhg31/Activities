@@ -29,6 +29,9 @@ class ImageCompressionLog extends Model
         int $newFilesize,
         ?string $failureReason = null
     ): void {
+        if ($failureReason && strlen($failureReason) > 2000) {
+            $failureReason = substr($failureReason, 0, 1996) . ' ...';
+        }
         $fileUpdateAccepted = is_null($failureReason) && ($newFilesize < $oldFilesize);
         self::create([
             'image_id' => $imageId,

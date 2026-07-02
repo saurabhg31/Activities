@@ -30,13 +30,17 @@ class LogRequest
             'request_ipv4' => $request->ip(),
             'request_ipv6' => NULL,
             'method' => $request->method(),
-            'payload' => $path == 'operation/imagesAdd' ? Arr::except($request->all(), 'images') : $request->all(),
+            'payload' => $path === 'operation/imagesAdd' ? Arr::except($request->all(), 'images') : $request->all(),
             'headers' => $request->server(),
         ];
+        $responseBody = json_decode($response->getContent());
+        if (isset($responseBody->html)) {
+            $responseBody->html = 'Disabled due to size restrictions.';
+        }
         $responseData = [
             'successful' => (int)!($response->isServerError() || $response->isClientError()),
             'status_code' => $response->getStatusCode(),
-            'response_body' => $response->getContent(),
+            'response_body' => json_encode($responseBody),
         ];
         JobsLogRequest::dispatch(
             $startTime,
