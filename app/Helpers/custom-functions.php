@@ -448,8 +448,8 @@ if (!function_exists('generateImageDifferenceHash')) {
 
         if (!$img) return null;
 
-        // 4. Pre-process: Resize to 9x8 and convert to Grayscale
-        // We use 9 wide so we can compare each pixel to its right-hand neighbor
+        // 4. Pre-process: Resize to 17x16 and convert to Grayscale
+        // We use 17 wide so we can compare each pixel to its right-hand neighbor
         $width = 17;
         $height = 16;
         $small = imagecreatetruecolor($width, $height);
