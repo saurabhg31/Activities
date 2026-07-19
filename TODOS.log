@@ -23,3 +23,5 @@ PRIORITY: Change image data getting stored in base64 to binary data
 PRIORITY: Fix like query issue -> done
 
 PRIORITY: Find out why image compression logs are not getting generated for big images which are stored in tmp -> done
+
+PRIORITY: Fine tune constants.DUPLICATE_IMG_SEARCH_THRESHOLD
