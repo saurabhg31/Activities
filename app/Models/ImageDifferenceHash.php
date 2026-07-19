@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use function App\Helpers\generateImageDifferenceHash;
 use function App\Helpers\generateImageDifferenceHashOfAnimated;
+use function App\Helpers\splitBinaryStringToFourInts;
 
 class ImageDifferenceHash extends Model
 {
     use HasFactory;
     protected $table = 'images_difference_hash';
-    protected $fillable = ['image_id', 'd_hash'];
+    protected $fillable = ['image_id', 'hash_1', 'hash_2', 'hash_3', 'hash_4'];
     const UPDATED_AT = null;
 
     /**
@@ -26,14 +28,19 @@ class ImageDifferenceHash extends Model
             $imageData = Images::select(['id', 'image', 'isAnimated', 'imageType'])->where('id', $imageData)->first();
         }
         if ($imageData->isAnimated) {
-            return self::create([
-                'image_id' => $imageData->id,
-                'd_hash' => generateImageDifferenceHashOfAnimated($imageData)
-            ]);
+            $hash = generateImageDifferenceHashOfAnimated($imageData);
+            if (is_string($hash)) {
+                $hashes = splitBinaryStringToFourInts($hash);
+                unset($hash);
+            } elseif (is_array($hash)) {
+                $hashes = $hash;
+            } else {
+                throw new Exception('Invalid hash data type returned for animated image with ID: ' . $imageData->id);
+            }
+        } else {
+            $hashes = splitBinaryStringToFourInts(generateImageDifferenceHash($imageData));
         }
-        return self::create([
-            'image_id' => $imageData->id,
-            'd_hash' => generateImageDifferenceHash($imageData)
-        ]);
+        $data = array_merge(['image_id' => $imageData->id], $hashes);
+        return self::create($data);
     }
 }

@@ -369,22 +369,83 @@ class Images extends Model
     }
 
     /**
-     * show duplicates
-     * TODO: find an efficient way to order the images in the order the database provides, refer: https://gemini.google.com/app/affdc22adabc199e
+     * show duplicates, code based on 4 d hashes
+     * show duplicates using 256-bit Hamming Distance
+     * @source: https://gemini.google.com/app/a5e238154af2be90
      */
     public static function showDuplicates()
     {
-        $userIdSubstr = 'user_id is null';
+        // 1. Determine user scope cleanly
+        $userCondition = 'ia.user_id IS NULL AND ib.user_id IS NULL';
+
         if (Session::has('domain') && Session::get('domain') === 'private') {
-            $userIdSubstr = 'user_id=' . Auth::id();
+            $userId = Auth::id();
+            $userCondition = "ia.user_id = {$userId} AND ib.user_id = {$userId}";
         }
-        $duplicateImageIdsData = DB::select('select d_hash,GROUP_CONCAT(image_id, ",") as imageIds from images_difference_hash join images on images.id=images_difference_hash.image_id where ' . $userIdSubstr . ' group by d_hash having count(image_id)>1;');
+
+        // Set your precision tolerance
+        $threshold = config('constants.DUPLICATE_IMG_SEARCH_THRESHOLD');
+
+        // 2. The Cleaned Self-Join Query
+        // Note: We use a.image_id to return the actual core image IDs, not the hash table row IDs.
+        $sql = "
+        SELECT a.image_id AS id1, b.image_id AS id2
+        FROM images_difference_hash a
+        JOIN images_difference_hash b ON a.image_id < b.image_id
+        JOIN images ia ON ia.id = a.image_id
+        JOIN images ib ON ib.id = b.image_id
+        WHERE a.hash_1 IS NOT NULL AND b.hash_1 IS NOT NULL
+          AND {$userCondition}
+          AND (
+              BIT_COUNT(a.hash_1 ^ b.hash_1) + 
+              BIT_COUNT(a.hash_2 ^ b.hash_2) + 
+              BIT_COUNT(a.hash_3 ^ b.hash_3) + 
+              BIT_COUNT(a.hash_4 ^ b.hash_4)
+          ) <= ?
+    ";
+
+        $pairs = DB::select($sql, [$threshold]);
+
+        // Fast return if no matching duplicates are found
+        if (empty($pairs)) {
+            return self::where('id', -1)->paginate(env('PAGINATION', 20));
+        }
+
+        // 3. Build Adjacency list for Graph Grouping (BFS)
+        $adj = [];
+        foreach ($pairs as $pair) {
+            $adj[$pair->id1][] = $pair->id2;
+            $adj[$pair->id2][] = $pair->id1;
+        }
+
+        $visited = [];
         $imageIds = [];
-        foreach ($duplicateImageIdsData as $data) {
-            $imageIds = array_merge($imageIds, array_filter(explode(',', $data->imageIds)));
+
+        foreach ($adj as $node => $neighbors) {
+            if (!isset($visited[$node])) {
+                $queue = [$node];
+                $visited[$node] = true;
+                $cluster = [];
+
+                while (count($queue) > 0) {
+                    $curr = array_shift($queue);
+                    $cluster[] = $curr;
+
+                    foreach ($adj[$curr] as $neighbor) {
+                        if (!isset($visited[$neighbor])) {
+                            $visited[$neighbor] = true;
+                            $queue[] = $neighbor;
+                        }
+                    }
+                }
+                $imageIds = array_merge($imageIds, $cluster);
+            }
         }
+
+        // 4. Return the paginated model, matching the side-by-side grouped order
+        $idString = implode(',', $imageIds);
         return self::whereIn('id', $imageIds)
-            ->orderByRaw("FIELD(id, " . implode(',', $imageIds) . ")")
+            ->orderByRaw("FIELD(id, $idString)")
             ->paginate(env('PAGINATION', 20));
     }
 

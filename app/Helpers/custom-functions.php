@@ -480,7 +480,9 @@ if (!function_exists('generateImageDifferenceHash')) {
 
         // 6. Cleanup Memory
         unset($img, $small, $rawData);
+        return $hashStr;
 
+        /*
         // 7. Convert 64-bit binary string to 16-character Hexadecimal
         // We process in 4-bit chunks (nibbles) to avoid 32-bit integer overflow issues
         $hex = '';
@@ -489,6 +491,7 @@ if (!function_exists('generateImageDifferenceHash')) {
         }
 
         return str_pad($hex, 64, '0', STR_PAD_LEFT);
+        */
     }
 }
 
@@ -497,9 +500,9 @@ if (!function_exists('generateImageDifferenceHashOfAnimated')) {
      * Generate md5 image difference hash of animated image, used to detect duplicate images
      * @source: https://gemini.google.com/app/b8ba636642e65796
      * @param \App\Models\Images $imageData
-     * @return string|null - string on success, null if image is corrupt
+     * @return array|string|null - string on success, null if image is corrupt
      */
-    function generateImageDifferenceHashOfAnimated(Images &$imageData): string|null
+    function generateImageDifferenceHashOfAnimated(Images &$imageData): array|string|null
     {
         $rawData = base64_decode($imageData->image, true);
         if (!$rawData) return null;
@@ -531,12 +534,66 @@ if (!function_exists('generateImageDifferenceHashOfAnimated')) {
 
             $imagick->clear();
 
+            // --- START OF XOR PROCESSING LOGIC ---
+
+            // 1. Initialize master chunks to hold our blended 256-bit hash
+            $masterChunks = [0, 0, 0, 0];
+            $isFirst = true;
+
+            foreach ($hashes as $hexHash) {
+                if (!$hexHash) continue;
+
+                // 2. Split this specific frame's 64-character hex hash into 4 chunks of 16 hex characters
+                $chunks = str_split($hexHash, 16);
+
+                // 3. Convert those 16-character hex chunks into base-10 strings (which safely handle 64-bit bounds)
+                // FORCE TYPE CASTING: Convert the base_convert string output to an actual float/int 
+                // so PHP performs mathematical XOR instead of text character XOR.
+                $frameChunks = [
+                    (float) base_convert($chunks[0], 16, 10),
+                    (float) base_convert($chunks[1], 16, 10),
+                    (float) base_convert($chunks[2], 16, 10),
+                    (float) base_convert($chunks[3], 16, 10),
+                ];
+
+                // 4. Blend the frames using Bitwise XOR
+                if ($isFirst) {
+                    $masterChunks = $frameChunks;
+                    $isFirst = false;
+                } else {
+                    $masterChunks[0] = (float)$masterChunks[0] ^ (float)$frameChunks[0];
+                    $masterChunks[1] = (float)$masterChunks[1] ^ (float)$frameChunks[1];
+                    $masterChunks[2] = (float)$masterChunks[2] ^ (float)$frameChunks[2];
+                    $masterChunks[3] = (float)$masterChunks[3] ^ (float)$frameChunks[3];
+                }
+            }
+
+            $maxUnsigned64 = config('constants.SQL_MAX_BIGINT_VAL');
+
+            $h1 = sprintf('%.0f', $masterChunks[0]);
+            $h2 = sprintf('%.0f', $masterChunks[1]);
+            $h3 = sprintf('%.0f', $masterChunks[2]);
+            $h4 = sprintf('%.0f', $masterChunks[3]);
+
+            // 5. Return an array of the 4 individual stringified integers ready for your database columns
+            // Return clean, pure-numeric string formats for MySQL BIGINT UNSIGNED columns
+            // bccomp returns 1 if the first parameter is greater than the second parameter
+            return [
+                'hash_1' => (bccomp($h1, $maxUnsigned64) === 1) ? $maxUnsigned64 : $h1,
+                'hash_2' => (bccomp($h2, $maxUnsigned64) === 1) ? $maxUnsigned64 : $h2,
+                'hash_3' => (bccomp($h3, $maxUnsigned64) === 1) ? $maxUnsigned64 : $h3,
+                'hash_4' => (bccomp($h4, $maxUnsigned64) === 1) ? $maxUnsigned64 : $h4,
+            ];
+            // --- END OF XOR PROCESSING LOGIC ---
+
+            /*
             // Join the hashes: [Frame1Hash]-[Frame2Hash]-[Frame3Hash]
             // If static, it will only have one hash.
             $compositeHash = implode('-', $hashes);
 
             // Append Frame Count and File Size for 100% certainty - send md5 hash
             return md5($compositeHash . "|F:" . $frameCount . "|S:" . strlen($rawData));
+            */
         } catch (Exception $e) {
             return null;
         }
@@ -581,6 +638,9 @@ if (!function_exists('generateImageDifferenceHashOfAnimatedAvif')) {
                 }
             }
 
+            return $bits; // Return the 256-bit binary string for further processing
+
+            /*
             // 3. Convert 256 bits to a 64-character Hex string
             $firstFrameHash = '';
             foreach (str_split($bits, 4) as $chunk) {
@@ -593,8 +653,50 @@ if (!function_exists('generateImageDifferenceHashOfAnimatedAvif')) {
 
             // 4. Final salt with file size and MD5 wrap
             return md5($compositeHash . "|S:" . strlen($imageRawData));
+            */
         } catch (Exception $e) {
             return null;
+        }
+    }
+
+    if (!function_exists('splitBinaryStringToFourInts')) {
+        /**
+         * Converts a 256-character binary string into 4 database-ready integer strings.
+         *
+         * @param string $binaryString (e.g., "000100010111...")
+         * @return array|null
+         */
+        function splitBinaryStringToFourInts(string $binaryString): ?array
+        {
+            // Clean up any stray whitespaces or newlines
+            $binaryString = trim($binaryString);
+
+            // Safety check: Ensure it is exactly 256 characters long
+            if (strlen($binaryString) !== 256) {
+                return null;
+            }
+
+            // 1. Split the 256-character string into four chunks of 64 characters
+            $chunks = str_split($binaryString, 64);
+            $results = [];
+
+            // The maximum legal value for MySQL BIGINT UNSIGNED
+            $maxUnsigned64 = config('constants.SQL_MAX_BIGINT_VAL');
+
+            foreach ($chunks as $index => $chunk) {
+                // Convert to a clean numeric string formatting
+                $decString = sprintf('%.0f', bindec($chunk));
+
+                // BCCONMP returns 1 if the generated string is greater than the max limit
+                // (If bccomp isn't installed, a simple string length + numeric comparison works too)
+                if (bccomp($decString, $maxUnsigned64) === 1) {
+                    $decString = $maxUnsigned64;
+                }
+
+                $results['hash_' . ($index + 1)] = $decString;
+            }
+
+            return $results;
         }
     }
 }

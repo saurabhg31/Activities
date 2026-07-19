@@ -10,4 +10,6 @@ return [
     'COMPRESSION_TAG' => '#compressedOnly',
     'MAX_IMG_SIZE' => 16 * 1024 * 1024, // 16 MB. Value is in bytes.
     'TMP_STORED_PREFIX' => '<fileStoredInTempDir>',
+    'SQL_MAX_BIGINT_VAL' => '18446744073709551615',
+    'DUPLICATE_IMG_SEARCH_THRESHOLD' => 9
 ];
