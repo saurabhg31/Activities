@@ -444,7 +444,7 @@ class Images extends Model
 
         // 4. Return the paginated model, matching the side-by-side grouped order
         $idString = implode(',', $imageIds);
-        return self::whereIn('id', $imageIds)
+        return self::select('id')->whereIn('id', $imageIds)
             ->orderByRaw("FIELD(id, $idString)")
             ->paginate(env('PAGINATION', 20));
     }

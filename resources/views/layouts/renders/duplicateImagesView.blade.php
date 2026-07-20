@@ -5,7 +5,8 @@
         {{ $data['images']->lastPage() }}
     </legend>
     @php($count = 1)
-    @foreach ($data['images'] as $image)
+    @php($images = \App\Models\Images::whereIn('id', $data['images']->pluck('id'))->get())
+    @foreach ($images as $image)
         @if (!isset($image->imageType))
             @continue
         @endif
