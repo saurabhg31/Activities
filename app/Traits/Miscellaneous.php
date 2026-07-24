@@ -421,7 +421,7 @@ trait Miscellaneous
     }
 
     /**
-     * Clear terminal screen (linux only)
+     * Clear terminal screen
      * @return void
      */
     private function clearScreen()
