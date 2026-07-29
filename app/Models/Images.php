@@ -388,8 +388,7 @@ class Images extends Model
 
         // 2. The Cleaned Self-Join Query
         // Note: We use a.image_id to return the actual core image IDs, not the hash table row IDs.
-        $sql = "
-        SELECT a.image_id AS id1, b.image_id AS id2
+        $sql = "SELECT a.image_id AS id1, b.image_id AS id2
         FROM images_difference_hash a
         JOIN images_difference_hash b ON a.image_id < b.image_id
         JOIN images ia ON ia.id = a.image_id
@@ -401,8 +400,7 @@ class Images extends Model
               BIT_COUNT(a.hash_2 ^ b.hash_2) + 
               BIT_COUNT(a.hash_3 ^ b.hash_3) + 
               BIT_COUNT(a.hash_4 ^ b.hash_4)
-          ) <= ?
-    ";
+          ) <= ?";
 
         $pairs = DB::select($sql, [$threshold]);
 
