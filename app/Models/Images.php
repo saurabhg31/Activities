@@ -371,7 +371,6 @@ class Images extends Model
     /**
      * show duplicates, code based on 4 d hashes
      * show duplicates using 256-bit Hamming Distance
-     * @source: https://gemini.google.com/app/a5e238154af2be90
      */
     public static function showDuplicates()
     {
@@ -388,6 +387,7 @@ class Images extends Model
 
         // 2. The Cleaned Self-Join Query
         // Note: We use a.image_id to return the actual core image IDs, not the hash table row IDs.
+        // @source: https://gemini.google.com/app/a5e238154af2be90
         $sql = "SELECT a.image_id AS id1, b.image_id AS id2
         FROM images_difference_hash a
         JOIN images_difference_hash b ON a.image_id < b.image_id
@@ -409,41 +409,26 @@ class Images extends Model
             return self::where('id', -1)->paginate(env('PAGINATION', 20));
         }
 
-        // 3. Build Adjacency list for Graph Grouping (BFS)
-        $adj = [];
+        // ordering duplicates based on first image id and then second image id
+        $idsOrderString = '';
+        $duplicateIds = [];
         foreach ($pairs as $pair) {
-            $adj[$pair->id1][] = $pair->id2;
-            $adj[$pair->id2][] = $pair->id1;
-        }
-
-        $visited = [];
-        $imageIds = [];
-
-        foreach ($adj as $node => $neighbors) {
-            if (!isset($visited[$node])) {
-                $queue = [$node];
-                $visited[$node] = true;
-                $cluster = [];
-
-                while (count($queue) > 0) {
-                    $curr = array_shift($queue);
-                    $cluster[] = $curr;
-
-                    foreach ($adj[$curr] as $neighbor) {
-                        if (!isset($visited[$neighbor])) {
-                            $visited[$neighbor] = true;
-                            $queue[] = $neighbor;
-                        }
-                    }
+            if (!in_array($pair->id1, $duplicateIds)) {
+                $duplicateIds[] = $pair->id1;
+            }
+            if (!in_array($pair->id2, $duplicateIds)) {
+                $index = array_search($pair->id1, $duplicateIds);
+                if ($index !== false) {
+                    array_splice($duplicateIds, $index + 1, 0, [$pair->id2]);
                 }
-                $imageIds = array_merge($imageIds, $cluster);
             }
         }
+        unset($pairs);
+        $idsOrderString = implode(',', $duplicateIds);
+        unset($duplicateIds);
 
-        // 4. Return the paginated model, matching the side-by-side grouped order
-        $idString = implode(',', $imageIds);
-        return self::select('id')->whereIn('id', $imageIds)
-            ->orderByRaw("FIELD(id, $idString)")
+        return self::whereRaw("id in ({$idsOrderString})")
+            ->orderByRaw("FIELD(id, $idsOrderString)")
             ->paginate(env('PAGINATION', 20));
     }
 

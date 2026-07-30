@@ -26,5 +26,6 @@ PRIORITY: Find out why image compression logs are not getting generated for big 
 
 PRIORITY: Fine tune constants.DUPLICATE_IMG_SEARCH_THRESHOLD -> done
 
-PRIORITY: Find way to keep duplicate images in order in listing.
+PRIORITY: Find way to keep duplicate images in order in listing. -> done
+
 PRIORITY: Find ways to speed up duplicate images listing without breaking order.
