@@ -52,6 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::any('/switchDomain', [VerificationController::class, 'switchDomain'])->name('switchDomain');
     Route::any('/getImageEditForm', [Operations::class, 'getImageEditForm']);
     Route::get('/setWallpaper/{imageId}', [Operations::class, 'useImageAsWallpaper']);
+    Route::get('/downloadImage/{imageId}', [Operations::class, 'downloadImage'])->name('downloadImage');
     /**
      * Routes for getting data processing hardware & software requirements (in progress)
      */

@@ -145,7 +145,7 @@ class Controller extends BaseController
 
     /**
      * Standard error response
-     * @return json
+     * @return \Illuminate\Http\JsonResponse
      */
     protected function sendError(String $message, $data = null, int $status = 500)
     {

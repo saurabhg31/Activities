@@ -46,7 +46,7 @@ class Images extends Model
             } else {
                 // updating image
                 $filePath = trim(str_replace(config('constants.TMP_STORED_PREFIX'), '', $pathVal));
-                Storage::put($filePath, base64_decode($value));
+                Storage::put($filePath, base64_decode($value, true));
             }
             $this->attributes['image'] = $pathVal;
         } else {

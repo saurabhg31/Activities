@@ -56,6 +56,7 @@
                     Wallpaper</button>
             @endif
             <button class="btn btn-danger" onclick="removeImage({{ $image->id }}, $(this).parent())">Delete</button>
+            <a href="{{ route('downloadImage', ['imageId' => $image->id]) }}" class="btn btn-info">Download</a>
         </div>
         @php($count++)
         @if ($count === 5)

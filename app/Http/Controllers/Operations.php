@@ -16,13 +16,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Operations extends Controller
 {
     /**
      * Process basic activities
      * @param string $type as requestType
-     * @param Illuminate\Http\Request $request
+     * @param \Illuminate\Http\Request $request
      * @return json response
      */
     protected function processActivity(string $type, Request $request)
@@ -368,5 +369,23 @@ class Operations extends Controller
             Log::error($error->getMessage(), $error->getTrace());
             return $this->sendError('Unable to set wallpaper, all changes rolled back!');
         }
+    }
+
+    /**
+     * Download image by id
+     * @param integer $imageId
+     * @return StreamedResponse|\Illuminate\Http\JsonResponse
+     */
+    public function downloadImage(int $imageId): StreamedResponse|\Illuminate\Http\JsonResponse
+    {
+        $imageData = Images::findOrFail($imageId);
+        if ($imageData->user_id) {
+            if ($imageData->user_id !== Auth::id() || !Session::has('domain') || strtolower(Session::get('domain')) !== 'private') {
+                return $this->sendError('404: Image not found!', null, $this->accessDeniedResponseCode);
+            }
+        }
+        return response()->streamDownload(function () use (&$imageData) {
+            echo base64_decode($imageData->image, true);
+        }, $imageData->id . '.' . $imageData->imageType);
     }
 }
