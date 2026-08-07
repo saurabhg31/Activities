@@ -60,8 +60,10 @@ class SmokingCounter extends Model
     {
         $yesterday = now()->subDay();
         return self::where('user_id', $userId)
-            ->whereBetween('created_at', [$yesterday->startOfDay(), $yesterday->endOfDay()])
-            ->count();
+            ->whereBetween('created_at', [
+                $yesterday->copy()->startOfDay(),
+                $yesterday->copy()->endOfDay()
+            ])->count();
     }
 
     /**
