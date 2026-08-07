@@ -84,7 +84,8 @@ class Operations extends Controller
                             $this->renderView($type, [
                                 'currentCount' => SmokingCounter::getCurrentCount(Auth::id()),
                                 'list' => SmokingCounter::getList(Auth::id()),
-                                'totalCount' => SmokingCounter::getTotalCount(Auth::id())
+                                'totalCount' => SmokingCounter::getTotalCount(Auth::id()),
+                                'frequency' => SmokingCounter::getFrequency(Auth::id())
                             ]),
                             $this->generateMsgBag($type, 'Ready to update smoking counter', 'Smoking Counter')
                         );
@@ -169,7 +170,8 @@ class Operations extends Controller
                                 $this->renderView($type, [
                                     'currentCount' => SmokingCounter::getCurrentCount(Auth::id()),
                                     'list' => SmokingCounter::getList(Auth::id()),
-                                    'totalCount' => SmokingCounter::getTotalCount(Auth::id())
+                                    'totalCount' => SmokingCounter::getTotalCount(Auth::id()),
+                                    'frequency' => SmokingCounter::getFrequency(Auth::id())
                                 ]),
                                 $this->generateMsgBag($type, 'Smoking event added', 'Smoking Counter')
                             );

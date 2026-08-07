@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Miscellaneous;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SmokingCounter extends Model
 {
-    use HasFactory;
+    use HasFactory, Miscellaneous;
     protected $fillable = ['user_id', 'cigarette_name', 'created_at'];
     const UPDATED_AT = null; // Disable the updated_at timestamp
 
@@ -38,5 +39,14 @@ class SmokingCounter extends Model
     public static function getTotalCount(int $userId)
     {
         return self::where('user_id', $userId)->count();
+    }
+
+    /**
+     * Get the frequency of smoking events for the authenticated user.
+     */
+    public static function getFrequency(int $userId)
+    {
+        $frequencyData = self::selectRaw('TIMESTAMPDIFF(SECOND, MIN(created_at), MAX(created_at)) / (COUNT(*) - 1) AS avg_seconds_between')->where('user_id', $userId)->havingRaw('COUNT(*) > 1;')->get()->first();
+        return (new self)->getHumanReadableTimeDiffFromSeconds($frequencyData->avg_seconds_between);
     }
 }

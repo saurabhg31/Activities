@@ -19,7 +19,7 @@
     </form>
 </div>
 <div class="form-group">
-    <legend>Smoking Counter History (Each entry represents a smoking event, total: {{ number_format($data['totalCount']) }})</legend>
+    <legend>Smoking History (Total: {{ number_format($data['totalCount']) }} : Frequency: 1 per {{ $data['frequency'] }})</legend>
     <table class="table table-bordered table-striped" id="smokingCounterTable">
         <thead>
             <tr>
@@ -29,10 +29,10 @@
         </thead>
         <tbody>
             @foreach ($data['list'] as $entry)
-                <tr>
-                    <td>{{ $entry->created_at->format('d-M-Y H:i:s') }}</td>
-                    <td>{{ $entry->cigarette_name }}</td>
-                </tr>
+            <tr>
+                <td>{{ $entry->created_at->format('d-M-Y H:i:s') }}</td>
+                <td>{{ $entry->cigarette_name }}</td>
+            </tr>
             @endforeach
         </tbody>
     </table>
