@@ -52,4 +52,15 @@ class SmokingCounter extends Model
         }
         return (new self)->getHumanReadableTimeDiffFromSeconds($frequencyData->avg_seconds_between);
     }
+
+    /**
+     * Get previous day smoking count for the authenticated user.
+     */
+    public static function getPreviousDayCount(int $userId)
+    {
+        $yesterday = now()->subDay();
+        return self::where('user_id', $userId)
+            ->whereBetween('created_at', [$yesterday->startOfDay(), $yesterday->endOfDay()])
+            ->count();
+    }
 }
