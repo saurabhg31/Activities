@@ -29,7 +29,7 @@ class SmokingCounter extends Model
     {
         return self::where('user_id', $userId)
             ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
     }
 
@@ -62,5 +62,21 @@ class SmokingCounter extends Model
         return self::where('user_id', $userId)
             ->whereBetween('created_at', [$yesterday->startOfDay(), $yesterday->endOfDay()])
             ->count();
+    }
+
+    /**
+     * Get the duration between the last two cigarettes for the authenticated user.
+     */
+    public static function durationBetweenLastTwoCigarettes(int $userId)
+    {
+        $lastTwoRowData = self::where('user_id', $userId)
+            ->orderBy('id', 'desc')
+            ->take(2)
+            ->get();
+        if ($lastTwoRowData->count() < 2) {
+            return 'N/A';
+        }
+        $timeDiff = $lastTwoRowData[0]->created_at->diffInSeconds($lastTwoRowData[1]->created_at);
+        return (new self)->getHumanReadableTimeDiffFromSeconds($timeDiff);
     }
 }

@@ -86,7 +86,8 @@ class Operations extends Controller
                                 'list' => SmokingCounter::getList(Auth::id()),
                                 'totalCount' => SmokingCounter::getTotalCount(Auth::id()),
                                 'frequency' => SmokingCounter::getFrequency(Auth::id()),
-                                'previousDatCount' => SmokingCounter::getPreviousDayCount(Auth::id())
+                                'previousDatCount' => SmokingCounter::getPreviousDayCount(Auth::id()),
+                                'dbl2c' => SmokingCounter::durationBetweenLastTwoCigarettes(Auth::id())
                             ]),
                             $this->generateMsgBag($type, 'Ready to update smoking counter', 'Smoking Counter')
                         );
@@ -173,7 +174,8 @@ class Operations extends Controller
                                     'list' => SmokingCounter::getList(Auth::id()),
                                     'totalCount' => SmokingCounter::getTotalCount(Auth::id()),
                                     'frequency' => SmokingCounter::getFrequency(Auth::id()),
-                                    'previousDatCount' => SmokingCounter::getPreviousDayCount(Auth::id())
+                                    'previousDatCount' => SmokingCounter::getPreviousDayCount(Auth::id()),
+                                    'dbl2c' => SmokingCounter::durationBetweenLastTwoCigarettes(Auth::id())
                                 ]),
                                 $this->generateMsgBag($type, 'Smoking event added', 'Smoking Counter')
                             );
