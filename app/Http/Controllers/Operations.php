@@ -7,6 +7,7 @@ use App\Jobs\LogSearchQueries;
 use App\Models\ImageIndex;
 use App\Models\Images;
 use App\Models\User;
+use App\Models\SmokingCounter;
 use App\system_files_in_use;
 use Exception;
 use Illuminate\Database\QueryException;
@@ -76,6 +77,16 @@ class Operations extends Controller
                             null,
                             $this->renderView($type, ['images' => Images::showDuplicates(), 'types' => Images::imageTypes()]),
                             $this->generateMsgBag($type, 'Ready to delete duplicates', 'Duplicate Images')
+                        );
+                    case 'smokeCounter':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'currentCount' => SmokingCounter::getCurrentCount(Auth::id()),
+                                'list' => SmokingCounter::getList(Auth::id()),
+                                'totalCount' => SmokingCounter::getTotalCount(Auth::id())
+                            ]),
+                            $this->generateMsgBag($type, 'Ready to update smoking counter', 'Smoking Counter')
                         );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
@@ -147,6 +158,24 @@ class Operations extends Controller
                                 'heading' => 'Expenses'
                             ]
                         );
+                    case 'smokeCounter':
+                        if ($request->increment) {
+                            SmokingCounter::create([
+                                'user_id' => Auth::id(),
+                                'cigarette_name' => $request->cigarette_name ?? 'Generic Cigarette'
+                            ]);
+                            return $this->sendResponse(
+                                null,
+                                $this->renderView($type, [
+                                    'currentCount' => SmokingCounter::getCurrentCount(Auth::id()),
+                                    'list' => SmokingCounter::getList(Auth::id()),
+                                    'totalCount' => SmokingCounter::getTotalCount(Auth::id())
+                                ]),
+                                $this->generateMsgBag($type, 'Smoking event added', 'Smoking Counter')
+                            );
+                        } else {
+                            throw new Exception('Invalid request: increment must be true to add a smoking event.');
+                        }
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }

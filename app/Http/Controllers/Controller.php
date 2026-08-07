@@ -175,6 +175,7 @@ class Controller extends BaseController
             'imageEdit' => 'layouts.renders.imageEditForm',
             'updateTags' => 'layouts.renders.batchUpdateTagsForm',
             'viewDuplicates' => 'layouts.renders.duplicateImagesView',
+            'smokeCounter' => 'layouts.renders.smokeCounter'
         );
         return view($viewData[$type], compact('data'))->render();
     }
@@ -266,7 +267,8 @@ class Controller extends BaseController
                 ],
                 'imageTags' => [],
                 'updateTags' => [],
-                'viewDuplicates' => []
+                'viewDuplicates' => [],
+                'smokeCounter' => []
             );
         } else {
             $validationRules = array(
@@ -295,6 +297,9 @@ class Controller extends BaseController
                     'imageId' => 'required|integer|min:1|exists:images,id',
                     'type' => 'required|string',
                     'tags' => 'nullable|string|max:256'
+                ],
+                'smokeCounter' => [
+                    'increment' => 'required|boolean'
                 ]
             );
         }
