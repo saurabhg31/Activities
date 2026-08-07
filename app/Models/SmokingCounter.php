@@ -46,7 +46,7 @@ class SmokingCounter extends Model
      */
     public static function getFrequency(int $userId)
     {
-        $frequencyData = self::selectRaw('TIMESTAMPDIFF(SECOND, MIN(created_at), MAX(created_at)) / (COUNT(*) - 1) AS avg_seconds_between')->where('user_id', $userId)->havingRaw('COUNT(*) > 1;')->get()->first();
+        $frequencyData = self::selectRaw('TIMESTAMPDIFF(SECOND, MIN(created_at), MAX(created_at)) / (COUNT(*) - 1) AS avg_seconds_between')->where('user_id', $userId)->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])->havingRaw('COUNT(*) > 1;')->get()->first();
         return (new self)->getHumanReadableTimeDiffFromSeconds($frequencyData->avg_seconds_between);
     }
 }

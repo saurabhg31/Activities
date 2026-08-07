@@ -1,5 +1,5 @@
 <div class="form-group">
-    <legend>Smoking Counter</legend>
+    <br>
     <form method="POST" action="operation/smokeCounter" onsubmit="submitFormData($(this)); return false;">
         @csrf
         <div class="row col-sm-12">
@@ -13,13 +13,13 @@
             </div>
             <div class="col-sm-4">
                 <input type="hidden" name="increment" value="1" />
-                <button class="btn btn-primary" style="margin-top:8%;" type="submit">Add Smoking Event</button>
+                <button class="btn btn-warning" style="margin-top:8%;" type="submit">Add Smoking Event</button>
             </div>
         </div>
     </form>
 </div>
 <div class="form-group">
-    <legend>Smoking History (Total: {{ number_format($data['totalCount']) }} : Frequency: 1 per {{ $data['frequency'] }})</legend>
+    <legend>History / Day (Total: {{ number_format($data['totalCount']) }}, Frequency / Day: 1 / {{ $data['frequency'] }})</legend>
     <table class="table table-bordered table-striped" id="smokingCounterTable">
         <thead>
             <tr>
