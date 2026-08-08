@@ -321,13 +321,15 @@ trait Miscellaneous
      * Securely authenticate user via terminal
      * @param string|\Illuminate\Database\Eloquent\Model $table (must be the table name if string)
      * @param array $options (key value pairs that should match)
-     * @return boolean
+     * @param boolean $returnUserId
+     * @return boolean|int
      */
-    private function authenticateUserViaTerminal(string|Model &$table = new User(), array &$options = ['is_admin' => 1])
+    private function authenticateUserViaTerminal(string|Model &$table = new User(), array &$options = ['is_admin' => 1], bool $returnUserId = true)
     {
         $authCheckStatus = false;
         $email = $this->readInputFromCli(1, ['        . Enter admin account email: ']);
         $email = reset($email);
+        $userId = null;
         if ($table instanceof Model) {
             $hashedPasswordString = $table->where(array_merge(['email' => $email], $options))->first();
             if (is_null($hashedPasswordString)) {
@@ -342,6 +344,9 @@ trait Miscellaneous
             return $this->authenticateUserViaTerminal($table, $options);
         }
         print('        . Authenticated for user with email: "' . $email . '"' . PHP_EOL);
+        if ($returnUserId) {
+            $authCheckStatus = User::where('email', $email)->first()->id;
+        }
         // flushing credentials from memory
         $hashedPasswordString = $table = $options = $email = null;
         unset($hashedPasswordString, $table, $options, $email);
@@ -368,6 +373,7 @@ trait Miscellaneous
         } else {
             throw new Exception('Unsupported OS detected!');
         }
+        print($prompt);
         $password = trim(shell_exec($command));
         print(PHP_EOL);
         unset($command);

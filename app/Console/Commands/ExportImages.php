@@ -35,9 +35,10 @@ class ExportImages extends Command
      */
     public function handle()
     {
+        $userId = null;
         if (!env('ALLOW_IMAGE_EXPORT_WITHOUT_AUTHENTICATION', false)) {
             // display username & password prompts in terminal
-            $this->authenticateUserViaTerminal();
+            $userId = $this->authenticateUserViaTerminal();
         }
         print('------------------ Export image process started on ' . now()->format('d M, Y \a\t H:i:s T (p)') . ' ------------------' . PHP_EOL);
 
@@ -50,7 +51,7 @@ class ExportImages extends Command
         $usePrivateDomainOnly = $this->argument('usePrivateDomainOnly');
 
         // processing received input variable values from terminal
-        if ($dimension) {
+        if (!empty($dimension)) {
             // validating & processing image(s) dimension
             if (!preg_match('/\b\d{1,5}x\d{1,5}\b/', $dimension, $matches)) {
                 throw new Error('Invalid dimension.');
@@ -72,7 +73,9 @@ class ExportImages extends Command
 
         // displaying current set configuration values
         print('    . Config set: ' . PHP_EOL);
-        print('        . Dimension: ' . (!is_null($dimension) ? implode(' x ', array_slice($dimension, 0, 2)) : 'N/A') . PHP_EOL);
+        if (!empty($dimension)) {
+            print('        . Dimension: ' . (!is_null($dimension) ? implode(' x ', array_slice($dimension, 0, 2)) : 'N/A') . PHP_EOL);
+        }
         print('        . Tags: ' . $tags . PHP_EOL);
         print('        . Orientation: ' . (!is_null($orientation) ? strtoupper($orientation) : 'N/A') . PHP_EOL);
         print('        . Allow higher dimensions: ' . ($allowHigherDimensions ? 'YES' : 'NO') . PHP_EOL);
@@ -80,14 +83,21 @@ class ExportImages extends Command
         print('        . Use private domain only: ' . ($usePrivateDomainOnly ? 'YES' : 'NO') . PHP_EOL);
 
         // generating query
-        $imageIds = ImageDimensions::selectRaw('image_dimensions.image_id, image_dimensions.x_axis, image_dimensions.y_axis')
-            ->join('images', function ($joinQuery) use ($usePrivateDomainOnly) {
+        $imageIds = ImageDimensions::selectRaw('DISTINCT(images.id) as id, image_dimensions.image_id, image_dimensions.x_axis, image_dimensions.y_axis')
+            ->join('images', function ($joinQuery) use ($usePrivateDomainOnly, $userId) {
                 $joinQuery->on('images.id', '=', 'image_dimensions.image_id');
-                $usePrivateDomainOnly ? $joinQuery->whereNotNull('images.user_id') : $joinQuery->whereNull('images.user_id');
+                $usePrivateDomainOnly ? $joinQuery->where('images.user_id', $userId) : $joinQuery->whereNull('images.user_id');
             });
         if (!empty($tags)) {
             // processing tags
             $this->addTagsFilter($imageIds, $tags);
+            $tags = array_map(function ($str) {
+                return str_replace(['#', '@'], '', trim($str));
+            }, explode(',', $tags));
+            $tagsCount = count($tags);
+            if ($tagsCount > 1) {
+                $imageIds->groupBy('id')->havingRaw('COUNT(DISTINCT image_search_indexing.tag) = ' . $tagsCount);
+            }
         }
         /* TODO: Add custom search code
         if ($this->getConfirmation('    . Use custom search ?')) {
@@ -136,7 +146,7 @@ class ExportImages extends Command
         }
 
         // fetching relevant image ids only matching filter criteria
-        $imageIds = $imagesData->pluck('image_id');
+        $imageIds = $imagesData->pluck('id');
         // clearing obsolete images data
         $imagesData = null;
         unset($imagesData);
@@ -151,7 +161,7 @@ class ExportImages extends Command
 
         // declaring variables
         $imgData = $file = $dir = null;
-        $dir = $this->readInputFromCli(1, ['    . Enter storage directory: ']);
+        $dir = $this->readInputFromCli(1, ['    . Enter storage directory (default: ' . env('IMAGE_EXPORT_DIRECTORY', '/mnt/c/Users/saura/OneDrive/Pictures/pw') . '): ']);
         $dir = reset($dir);
         if (empty($dir)) {
             $dir = env('IMAGE_EXPORT_DIRECTORY', '/mnt/c/Users/saura/OneDrive/Pictures/pw');
@@ -242,14 +252,14 @@ class ExportImages extends Command
     private function addTagsFilter(Builder &$builderQuery, string $tags)
     {
         $builderQuery = $builderQuery->join('image_search_indexing', function ($query) use ($tags) {
-            $query->on('image_dimensions.image_id', '=', 'image_search_indexing.image_id');
+            $query->on('images.id', '=', 'image_search_indexing.image_id');
             $this->processAndAddTagsToQuery($query, $tags);
         });
     }
 
     /**
      * Process tags and add relevant query conditions
-     * @param \Illuminate\Database\Eloquent\Builder $builderQuery
+     * @param \Illuminate\Database\Eloquent\Builder $query
      * @param string $tags
      * @return void
      */
@@ -259,10 +269,14 @@ class ExportImages extends Command
             return str_replace(['#', '@'], '', trim($str));
         }, explode(',', $tags));
         $query->where(function ($tagsSubQuery) use ($tags) {
+            /*
             $tagsSubQuery->where('image_search_indexing.tag', 'like', '%' . array_shift($tags) . '%');
             foreach ($tags as $tag) {
                 $tagsSubQuery->orWhere('image_search_indexing.tag', 'like', '%' . $tag . '%');
             }
+            */
+            // using exact search
+            $tagsSubQuery->whereIn('image_search_indexing.tag', $tags);
         });
     }
 
