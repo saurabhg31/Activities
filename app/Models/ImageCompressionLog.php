@@ -33,10 +33,7 @@ class ImageCompressionLog extends Model
             $failureReason = substr($failureReason, 0, 1996) . ' ...';
         }
         $fileUpdateAccepted = is_null($failureReason) && ($newFilesize < $oldFilesize);
-        $reduction = 0.00;
-        if ($newFilesize < $oldFilesize) {
-            $reduction = (($oldFilesize - $newFilesize) / $oldFilesize) * 100;
-        }
+        $reduction = $fileUpdateAccepted ? (($oldFilesize - $newFilesize) / $oldFilesize) * 100 : 0.00;
         self::create([
             'image_id' => $imageId,
             'old_extension' => $oldExtension,

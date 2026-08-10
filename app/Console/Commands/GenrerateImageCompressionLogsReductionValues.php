@@ -37,8 +37,15 @@ class GenrerateImageCompressionLogsReductionValues extends Command
         $logData = ImageCompressionLog::orderBy('image_id', 'asc')->skip($processed)->take(1)->first();
         while (!is_null($logData)) {
             $this->printLine('Calculating value for image id: ' . $logData->image_id . '. (' . number_format($processed) . ' / ' . number_format($total) . ')', 1);
-            $logData->reduction = (($logData->old_filesize - $logData->new_filesize) / $logData->old_filesize) * 100;
-            $logData->save();
+            $reduction = 0.00;
+            if ($logData->new_filesize < $logData->old_filesize) {
+                $reduction = (($logData->old_filesize - $logData->new_filesize) / $logData->old_filesize) * 100;
+            }
+            $reduction = number_format($reduction, decimals: 2);
+            if ($reduction !== $logData->reduction) {
+                $logData->reduction = $reduction;
+                $logData->save();
+            }
             $processed++;
             $progress = ($processed / $total) * 100;
             print($this->printProgressBar($progress, maxProgressChars: 20));
