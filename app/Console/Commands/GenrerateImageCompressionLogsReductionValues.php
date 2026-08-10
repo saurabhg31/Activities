@@ -44,9 +44,7 @@ class GenrerateImageCompressionLogsReductionValues extends Command
             print($this->printProgressBar($progress, maxProgressChars: 20));
             print(PHP_EOL);
             $logData = ImageCompressionLog::orderBy('image_id', 'asc')->skip($processed)->take(1)->first();
-            if ($processed) {
-                $this->removeLastLine();
-            }
+            $this->removeLastLine();
         }
         $this->printHeading('OPERATION COMPLETED SUCCESSFULLY (' . number_format($processed) . ' / ' . number_format($total) . ') entries processed.');
         return Command::SUCCESS;
