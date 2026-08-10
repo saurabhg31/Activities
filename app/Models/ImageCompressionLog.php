@@ -9,7 +9,7 @@ class ImageCompressionLog extends Model
 {
     use HasFactory;
     const UPDATED_AT = null;
-    protected $fillable = ['image_id', 'old_extension', 'new_extension', 'old_filesize', 'new_filesize', 'filesize_diff', 'file_update_accepted', 'encountered_error', 'failure_reason'];
+    protected $fillable = ['image_id', 'old_extension', 'new_extension', 'old_filesize', 'new_filesize', 'filesize_diff', 'reduction', 'file_update_accepted', 'encountered_error', 'failure_reason'];
 
     /**
      * Add success log
@@ -33,6 +33,10 @@ class ImageCompressionLog extends Model
             $failureReason = substr($failureReason, 0, 1996) . ' ...';
         }
         $fileUpdateAccepted = is_null($failureReason) && ($newFilesize < $oldFilesize);
+        $reduction = 0.00;
+        if ($newFilesize < $oldFilesize) {
+            $reduction = (($oldFilesize - $newFilesize) / $oldFilesize) * 100;
+        }
         self::create([
             'image_id' => $imageId,
             'old_extension' => $oldExtension,
@@ -40,6 +44,7 @@ class ImageCompressionLog extends Model
             'old_filesize' => $oldFilesize,
             'new_filesize' => $newFilesize,
             'filesize_diff' => $oldFilesize - $newFilesize,
+            'reduction' => $reduction,
             'file_update_accepted' => $fileUpdateAccepted,
             'encountered_error' => !is_null($failureReason),
             'failure_reason' => $failureReason
