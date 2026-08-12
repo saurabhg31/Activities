@@ -479,7 +479,7 @@ class Operations extends Controller
         $denominator = ($n * $sumX2) - ($sumX ** 2);
 
         if ($denominator == 0) {
-            // slope is undefined
+            // slope is undefined (theoretical)
             $trendResponse['color'] = 'red';
             return $trendResponse;
         }
