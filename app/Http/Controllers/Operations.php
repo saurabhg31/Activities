@@ -433,8 +433,12 @@ class Operations extends Controller
      * @return array
      * @source: qwen3.6-27b-mtp (Local LLM)
      */
-    private function getSmokingTrend(Collection $smokingTrendData): array
+    private function getSmokingTrend(Collection $smokingTrendData, ?float $targetGoal = null, ?int $daysToReach = null): array
     {
+        // initialising variables if not passed
+        $targetGoal = is_null($targetGoal) ? config('constants.MAX_DAILY_CIGARETTE_GOAL') : $targetGoal;
+        $daysToReach = is_null($daysToReach) ? config('constants.CIGARETTE_GOAL_TIMELINE_DAYS') : $daysToReach;
+
         $collection = $smokingTrendData;
         unset($smokingTrendData);
         $count = $collection->count();
@@ -475,41 +479,64 @@ class Operations extends Controller
         $denominator = ($n * $sumX2) - ($sumX ** 2);
 
         if ($denominator == 0) {
-            // Theoretical edge case: all x values identical (won't happen with sequential indices)
-            return array_merge($trendResponse, ['status' => 'FLAT', 'color' => 'black']);
+            return ['status' => 'FLAT', 'color' => 'black'];
         }
 
         $slope = (($n * $sumXY) - ($sumX * $sumY)) / $denominator;
 
         // 1. Check GOAL first (recent average ≤ threshold)
-        $recentAverage = $collection->take(ceil($count / 2))->avg('total_cigarettes');
-        $goalThreshold = config('constants.MAX_DAILY_CIGARETTE_GOAL');
+        $half = ceil($count / 2);
+        $recentAverage = $collection->take($half)->avg('total_cigarettes');
 
-        if ($recentAverage <= $goalThreshold) {
+        if ($recentAverage <= $targetGoal) {
             return [
                 'color' => 'green',
                 'status' => 'GOAL',
             ];
         }
 
-        // 2. Determine trend based on slope with a tolerance to ignore minor fluctuations
-        $flatTolerance = config('constants.CIGARETTE_REGRESSION_TOLERANCE');
+        // 2. Calculate dynamic tolerance based on your goal & timeline
+        $currentAvg = $collection->avg('total_cigarettes');
+        $flatTolerance = $this->calculateSmokingTolerance($currentAvg, $targetGoal, $daysToReach);
 
+        // 3. Determine trend based on slope vs dynamic tolerance
         if ($slope < -$flatTolerance) {
             return [
-                'color' => 'green',
-                'status' => 'UP', // Negative slope = decreasing over time
+                'color' => 'blue',
+                'status' => 'UP',
             ];
         } elseif ($slope > $flatTolerance) {
             return [
                 'color' => 'red',
-                'status' => 'DOWN', // Positive slope = increasing over time
+                'status' => 'DOWN',
             ];
         } else {
             return [
                 'color' => 'purple',
-                'status' => 'FLAT', // Slope within tolerance range
+                'status' => 'FLAT',
             ];
         }
+    }
+
+    /**
+     * Calculates optimal tolerance for linear regression trend detection.
+     * 
+     * @param float $currentAvg  Current average daily cigarettes
+     * @param float $targetGoal  Desired daily cigarette count (e.g., 5)
+     * @param int   $daysToReach Number of days to reach the goal
+     * @return float             Dynamic tolerance value
+     * @source: qwen3.6-27b-mtp (Local LLM)
+     */
+    private function calculateSmokingTolerance(float $currentAvg, float $targetGoal, int $daysToReach): float
+    {
+        // Required daily reduction rate to hit goal on time
+        $requiredDailyChange = ($currentAvg - $targetGoal) / max(1, $daysToReach);
+
+        // Tolerance = 40% of required change rate. 
+        // This filters out daily noise while remaining sensitive enough to detect real trends.
+        $tolerance = abs($requiredDailyChange) * 0.4;
+
+        // Clamp between 0.1 and 0.5 to prevent extreme sensitivity or blindness
+        return max(0.1, min(0.5, round($tolerance, 2)));
     }
 }

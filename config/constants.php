@@ -14,7 +14,5 @@ return [
     // image hamming distance threshold for duplicate image detection
     'DUPLICATE_IMG_SEARCH_THRESHOLD' => 7,
     'MAX_DAILY_CIGARETTE_GOAL' => 5,
-    // Adjust this value based on your sensitivity preference (0.1 = ~1 cigarette per week)
-    'CIGARETTE_REGRESSION_TOLERANCE' => 0.1,
-    'CIGARETTE_DAYS_TO_REACH_GOAL' => 19,
+    'CIGARETTE_GOAL_TIMELINE_DAYS' => 30,
 ];
