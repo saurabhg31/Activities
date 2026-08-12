@@ -429,29 +429,41 @@ class Operations extends Controller
     /**
      * logic to generate smoking trend data status
      * @param array $smokingTrendData
-     * @return boolean|string
+     * @return array
      * @source: https://gemini.google.com/app/c446eb8577bb0331
      */
-    private function getSmokingTrend(array $smokingTrendData): bool|string
+    private function getSmokingTrend(array $smokingTrendData): array
     {
         $collection = collect($smokingTrendData);
-        $half = floor($collection->count() / 2);
+        $count = $collection->count();
+        $trendResponse = [
+            'color' => 'black',
+            'status' => 'N/A',
+        ];
 
-        // Average of the most recent days (Aug 12, Aug 11, Aug 10)
-        $recentAverage = $collection->take($half)->avg('total_cigarettes');
+        // checking for edge case
+        if ($count < 2) {
+            return $trendResponse;
+        } else {
+            // calculations
+            $half = floor($count / 2);
+            // Average of the most recent days (Aug 12, Aug 11, Aug 10)
+            $recentAverage = $collection->take($half)->avg('total_cigarettes');
+            // Average of the older days (Aug 9, Aug 8, Aug 7)
+            $olderAverage = $collection->slice($half)->avg('total_cigarettes');
 
-        // Average of the older days (Aug 9, Aug 8, Aug 7)
-        $olderAverage = $collection->slice($half)->avg('total_cigarettes');
-
-        if ($recentAverage <= config('constants.MAX_DAILY_CIGARETTE_GOAL')) {
-            return 'GOAL';
+            // checks
+            if ($recentAverage <= config('constants.MAX_DAILY_CIGARETTE_GOAL')) {
+                $trendResponse['color'] = 'blue';
+                $trendResponse['status'] = 'GOAL';
+            } elseif ($recentAverage < $olderAverage) {
+                $trendResponse['color'] = 'green';
+                $trendResponse['status'] = 'UP';
+            } else {
+                $trendResponse['color'] = 'red';
+                $trendResponse['status'] = 'DOWN';
+            }
         }
-
-        return $recentAverage < $olderAverage;
-
-        // For your data:
-        // Recent Avg (10, 26, 24) = 20
-        // Older Avg (24, 29, 26) = 26.33
-        // Result: true! You are trending down.
+        return $trendResponse;
     }
 }
