@@ -299,6 +299,7 @@ class Controller extends BaseController
                     'tags' => 'nullable|string|max:256'
                 ],
                 'smokeCounter' => [
+                    'cigarette_name' => 'required|string|max:100',
                     'increment' => 'required|boolean'
                 ]
             );

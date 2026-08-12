@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\Miscellaneous;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -85,11 +86,10 @@ class SmokingCounter extends Model
     /**
      * Get trend
      * @param integer $userId
-     * @return array
+     * @return Collection
      */
-    public static function getTrend(int $userId): array
+    public static function getTrend(int $userId): Collection
     {
-        $daysSmokingCountsData = self::selectRaw('DATE(created_at) AS smoke_date, COUNT(*) AS total_cigarettes')->where('user_id', $userId)->groupBy('smoke_date')->orderBy('smoke_date', 'desc')->get();
-        return $daysSmokingCountsData->toArray();
+        return self::selectRaw('DATE(created_at) AS smoke_date, COUNT(*) AS total_cigarettes')->where('user_id', $userId)->groupBy('smoke_date')->orderBy('smoke_date', 'desc')->get();
     }
 }

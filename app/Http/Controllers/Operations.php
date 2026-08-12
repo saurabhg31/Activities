@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\SmokingCounter;
 use App\system_files_in_use;
 use Exception;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -428,42 +429,54 @@ class Operations extends Controller
 
     /**
      * logic to generate smoking trend data status
-     * @param array $smokingTrendData
+     * @param Collection $smokingTrendData
      * @return array
-     * @source: https://gemini.google.com/app/c446eb8577bb0331
+     * @source: qwen3.6-27b-mtp (Local LLM)
      */
-    private function getSmokingTrend(array $smokingTrendData): array
+    private function getSmokingTrend(Collection $smokingTrendData): array
     {
         $collection = collect($smokingTrendData);
         $count = $collection->count();
+
         $trendResponse = [
             'color' => 'black',
             'status' => 'N/A',
         ];
 
-        // checking for edge case
+        // Need at least 2 days to calculate a trend
         if ($count < 2) {
             return $trendResponse;
-        } else {
-            // calculations
-            $half = floor($count / 2);
-            // Average of the most recent days (Aug 12, Aug 11, Aug 10)
-            $recentAverage = $collection->take($half)->avg('total_cigarettes');
-            // Average of the older days (Aug 9, Aug 8, Aug 7)
-            $olderAverage = $collection->slice($half)->avg('total_cigarettes');
-
-            // checks
-            if ($recentAverage <= config('constants.MAX_DAILY_CIGARETTE_GOAL')) {
-                $trendResponse['color'] = 'blue';
-                $trendResponse['status'] = 'GOAL';
-            } elseif ($recentAverage < $olderAverage) {
-                $trendResponse['color'] = 'green';
-                $trendResponse['status'] = 'UP';
-            } else {
-                $trendResponse['color'] = 'red';
-                $trendResponse['status'] = 'DOWN';
-            }
         }
+
+        // Split data into recent half and older half
+        $half = floor($count / 2);
+        $recentDays = $collection->take($half);
+        $olderDays = $collection->slice($half);
+
+        $recentAverage = $recentDays->avg('total_cigarettes');
+        $olderAverage = $olderDays->avg('total_cigarettes');
+
+        // 1. Check Goal first (≤ 5 cigarettes/day)
+        if ($recentAverage <= config('constants.MAX_DAILY_CIGARETTE_GOAL', 5)) {
+            $trendResponse['color'] = 'green';
+            $trendResponse['status'] = 'GOAL';
+
+            // 2. Improving: Recent average is LOWER than older average (decreasing consumption)
+        } elseif ($recentAverage < $olderAverage) {
+            $trendResponse['color'] = 'blue';
+            $trendResponse['status'] = 'UP';
+
+            // 3. Deteriorating: Recent average is HIGHER than older average (increasing consumption)
+        } elseif ($recentAverage > $olderAverage) {
+            $trendResponse['color'] = 'red';
+            $trendResponse['status'] = 'DOWN';
+
+            // 4. Flat trend: Averages are equal
+        } else {
+            $trendResponse['color'] = 'yellow';
+            $trendResponse['status'] = 'FLAT';
+        }
+
         return $trendResponse;
     }
 }
