@@ -87,7 +87,8 @@ class Operations extends Controller
                                 'totalCount' => SmokingCounter::getTotalCount(Auth::id()),
                                 'frequency' => SmokingCounter::getFrequency(Auth::id()),
                                 'previousDatCount' => SmokingCounter::getPreviousDayCount(Auth::id()),
-                                'dbl2c' => SmokingCounter::durationBetweenLastTwoCigarettes(Auth::id())
+                                'dbl2c' => SmokingCounter::durationBetweenLastTwoCigarettes(Auth::id()),
+                                'trend' => $this->getSmokingTrend(SmokingCounter::getTrend(Auth::id())),
                             ]),
                             $this->generateMsgBag($type, 'Ready to update smoking counter', 'Smoking Counter')
                         );
@@ -175,7 +176,8 @@ class Operations extends Controller
                                     'totalCount' => SmokingCounter::getTotalCount(Auth::id()),
                                     'frequency' => SmokingCounter::getFrequency(Auth::id()),
                                     'previousDatCount' => SmokingCounter::getPreviousDayCount(Auth::id()),
-                                    'dbl2c' => SmokingCounter::durationBetweenLastTwoCigarettes(Auth::id())
+                                    'dbl2c' => SmokingCounter::durationBetweenLastTwoCigarettes(Auth::id()),
+                                    'trend' => $this->getSmokingTrend(SmokingCounter::getTrend(Auth::id())),
                                 ]),
                                 $this->generateMsgBag($type, 'Smoking event added', 'Smoking Counter')
                             );
@@ -422,5 +424,34 @@ class Operations extends Controller
         return response()->streamDownload(function () use (&$imageData) {
             echo base64_decode($imageData->image, true);
         }, $imageData->id . '.' . $imageData->imageType);
+    }
+
+    /**
+     * logic to generate smoking trend data status
+     * @param array $smokingTrendData
+     * @return boolean|string
+     * @source: https://gemini.google.com/app/c446eb8577bb0331
+     */
+    private function getSmokingTrend(array $smokingTrendData): bool|string
+    {
+        $collection = collect($smokingTrendData);
+        $half = floor($collection->count() / 2);
+
+        // Average of the most recent days (Aug 12, Aug 11, Aug 10)
+        $recentAverage = $collection->take($half)->avg('total_cigarettes');
+
+        // Average of the older days (Aug 9, Aug 8, Aug 7)
+        $olderAverage = $collection->slice($half)->avg('total_cigarettes');
+
+        if ($recentAverage <= config('constants.MAX_DAILY_CIGARETTE_GOAL')) {
+            return 'GOAL';
+        }
+
+        return $recentAverage < $olderAverage;
+
+        // For your data:
+        // Recent Avg (10, 26, 24) = 20
+        // Older Avg (24, 29, 26) = 26.33
+        // Result: true! You are trending down.
     }
 }

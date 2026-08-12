@@ -81,4 +81,15 @@ class SmokingCounter extends Model
         $timeDiff = $lastTwoRowData[0]->created_at->diffInSeconds($lastTwoRowData[1]->created_at);
         return (new self)->getHumanReadableTimeDiffFromSeconds($timeDiff);
     }
+
+    /**
+     * Get trend
+     * @param integer $userId
+     * @return array
+     */
+    public static function getTrend(int $userId): array
+    {
+        $daysSmokingCountsData = self::selectRaw('DATE(created_at) AS smoke_date, COUNT(*) AS total_cigarettes')->where('user_id', $userId)->groupBy('smoke_date')->orderBy('smoke_date', 'desc')->get();
+        return $daysSmokingCountsData->toArray();
+    }
 }
