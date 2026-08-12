@@ -435,48 +435,81 @@ class Operations extends Controller
      */
     private function getSmokingTrend(Collection $smokingTrendData): array
     {
-        $collection = collect($smokingTrendData);
+        $collection = $smokingTrendData;
+        unset($smokingTrendData);
         $count = $collection->count();
 
+        // Default response for insufficient data
         $trendResponse = [
             'color' => 'black',
             'status' => 'N/A',
         ];
 
-        // Need at least 2 days to calculate a trend
         if ($count < 2) {
             return $trendResponse;
         }
 
-        // Split data into recent half and older half
-        $half = floor($count / 2);
-        $recentDays = $collection->take($half);
-        $olderDays = $collection->slice($half);
+        // Reverse to chronological order (oldest → newest) for intuitive slope calculation
+        $chronological = $collection->reverse();
 
-        $recentAverage = $recentDays->avg('total_cigarettes');
-        $olderAverage = $olderDays->avg('total_cigarettes');
-
-        // 1. Check Goal first (≤ 5 cigarettes/day)
-        if ($recentAverage <= config('constants.MAX_DAILY_CIGARETTE_GOAL', 5)) {
-            $trendResponse['color'] = 'green';
-            $trendResponse['status'] = 'GOAL';
-
-            // 2. Improving: Recent average is LOWER than older average (decreasing consumption)
-        } elseif ($recentAverage < $olderAverage) {
-            $trendResponse['color'] = 'blue';
-            $trendResponse['status'] = 'UP';
-
-            // 3. Deteriorating: Recent average is HIGHER than older average (increasing consumption)
-        } elseif ($recentAverage > $olderAverage) {
-            $trendResponse['color'] = 'red';
-            $trendResponse['status'] = 'DOWN';
-
-            // 4. Flat trend: Averages are equal
-        } else {
-            $trendResponse['color'] = 'yellow';
-            $trendResponse['status'] = 'FLAT';
+        // Prepare data points: x = day index, y = cigarette count
+        $dataPoints = [];
+        foreach ($chronological as $index => $day) {
+            $x = $index + 1;
+            $y = (float) ($day['total_cigarettes'] ?? 0);
+            $dataPoints[] = ['x' => $x, 'y' => $y];
         }
 
-        return $trendResponse;
+        // Calculate sums required for linear regression slope formula
+        $n = count($dataPoints);
+        $sumX = $sumY = $sumXY = $sumX2 = 0;
+
+        foreach ($dataPoints as $point) {
+            $sumX += $point['x'];
+            $sumY += $point['y'];
+            $sumXY += $point['x'] * $point['y'];
+            $sumX2 += $point['x'] ** 2;
+        }
+
+        // Slope formula: m = (n*Σxy - Σx*Σy) / (n*Σx² - (Σx)²)
+        $denominator = ($n * $sumX2) - ($sumX ** 2);
+
+        if ($denominator == 0) {
+            // Theoretical edge case: all x values identical (won't happen with sequential indices)
+            return array_merge($trendResponse, ['status' => 'FLAT', 'color' => 'black']);
+        }
+
+        $slope = (($n * $sumXY) - ($sumX * $sumY)) / $denominator;
+
+        // 1. Check GOAL first (recent average ≤ threshold)
+        $recentAverage = $collection->take(ceil($count / 2))->avg('total_cigarettes');
+        $goalThreshold = config('constants.MAX_DAILY_CIGARETTE_GOAL');
+
+        if ($recentAverage <= $goalThreshold) {
+            return [
+                'color' => 'green',
+                'status' => 'GOAL',
+            ];
+        }
+
+        // 2. Determine trend based on slope with a tolerance to ignore minor fluctuations
+        $flatTolerance = config('constants.CIGARETTE_REGRESSION_TOLERANCE');
+
+        if ($slope < -$flatTolerance) {
+            return [
+                'color' => 'green',
+                'status' => 'UP', // Negative slope = decreasing over time
+            ];
+        } elseif ($slope > $flatTolerance) {
+            return [
+                'color' => 'red',
+                'status' => 'DOWN', // Positive slope = increasing over time
+            ];
+        } else {
+            return [
+                'color' => 'purple',
+                'status' => 'FLAT', // Slope within tolerance range
+            ];
+        }
     }
 }
