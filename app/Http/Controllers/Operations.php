@@ -459,6 +459,23 @@ class Operations extends Controller
         unset($smokingTrendData);
         $count = $collection->count();
 
+        // Calculate wait time using EXACT timestamps (maximum accuracy)
+        $waitSeconds = $this->calculateWaitTime(
+            $collection,
+            $targetGoal,
+            $daysToReach,
+            SmokingCounter::getLastSmokedCigaretteTime(Auth::id())
+        );
+
+        // 🔑 OPTIMIZATION: Check binge first. If true, skip expensive regression math entirely.
+        if ($this->detectBingeSmoking(Auth::id())) {
+            return [
+                'color' => 'darkred',
+                'status' => 'BINGE',
+                'waitTime' => $this->getHumanReadableTimeDiffFromSeconds($waitSeconds),
+            ];
+        }
+
         // Default values
         $color = 'black';
         $status = 'N/A';
@@ -517,15 +534,7 @@ class Operations extends Controller
             }
         }
 
-        // 3. Calculate wait time using EXACT timestamps (maximum accuracy)
-        $waitSeconds = $this->calculateWaitTime(
-            $collection,
-            $targetGoal,
-            $daysToReach,
-            SmokingCounter::getLastSmokedCigaretteTime(Auth::id())
-        );
-
-        // 4. Return consistent array
+        // Return consistent array
         return [
             'color' => $color,
             'status' => $status,
@@ -594,5 +603,52 @@ class Operations extends Controller
             // Evenly pace remaining cigarettes across remaining time in the day
             return max(0, (int) floor($secondsLeftInDay / $remainingAllowed));
         }
+    }
+
+    /**
+     * Detects binge smoking using exact timestamps & sliding window analysis.
+     * Returns true if ≥3 cigarettes occur within 60 mins OR ≥4 within 90 mins.
+     * @source: qwen3.6-27b-mtp (Local LLM)
+     */
+    private function detectBingeSmoking(int $userId): bool
+    {
+        // 🔑 FIX: Only analyze cigarettes smoked in the last 12 hours to prevent stale binge flags after sleep
+        $recentRecords = SmokingCounter::where('user_id', $userId)
+            ->where('created_at', '>=', now()->subHours(config('constants.CIGARETTE_BINGE_RESET_HOURS')))
+            ->orderByDesc('created_at')
+            ->limit(50) // Safety cap. 12 hours of smoking rarely exceeds this even for heavy users.
+            ->get()
+            ->sortBy('created_at');
+
+        if ($recentRecords->count() < 3) {
+            return false; // Not enough recent data to detect a binge pattern
+        }
+
+        $timestamps = $recentRecords->pluck('created_at')
+            ->map(fn($t) => $t->timestamp);
+
+        $n = $timestamps->count();
+
+        // Primary check: ≥3 cigarettes within 60 minutes (3600 seconds)
+        $bingeWindowSeconds = 3600;
+        $minCigarettesForBinge = 3;
+
+        for ($i = 0; $i <= $n - $minCigarettesForBinge; $i++) {
+            if (($timestamps[$i + $minCigarettesForBinge - 1] - $timestamps[$i]) <= $bingeWindowSeconds) {
+                return true; // Binge detected
+            }
+        }
+
+        // Secondary check: ≥4 cigarettes within 90 minutes (5400 seconds)
+        $strictWindow = 5400;
+        $minStrict    = 4;
+
+        for ($i = 0; $i <= $n - $minStrict; $i++) {
+            if (($timestamps[$i + $minStrict - 1] - $timestamps[$i]) <= $strictWindow) {
+                return true; // Strict binge detected
+            }
+        }
+
+        return false;
     }
 }

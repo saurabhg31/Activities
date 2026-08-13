@@ -15,4 +15,5 @@ return [
     'DUPLICATE_IMG_SEARCH_THRESHOLD' => 7,
     'MAX_DAILY_CIGARETTE_GOAL' => 2,
     'CIGARETTE_TARGET_GOAL_DATE' => '2026-09-30', // target date in Y-m-d
+    'CIGARETTE_BINGE_RESET_HOURS' => 6,
 ];
