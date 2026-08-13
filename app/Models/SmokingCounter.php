@@ -100,7 +100,7 @@ class SmokingCounter extends Model
     {
         $record = self::select('created_at')->where('user_id', $userId)->orderBy('id', 'desc')->first();
         if ($record) {
-            $record->created_at;
+            return $record->created_at;
         }
         return null;
     }

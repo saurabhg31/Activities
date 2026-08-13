@@ -563,7 +563,7 @@ class Operations extends Controller
      */
     private function calculateWaitTime(SupportCollection $collection, float $targetGoal, int $daysToReach, ?Carbon $lastCigaretteTimestamp): int
     {
-        // No timestamp provided → default to 0 seconds wait
+        // No timestamp → can't pace. Default to 0.
         if (!$lastCigaretteTimestamp) {
             return 0;
         }
@@ -579,11 +579,19 @@ class Operations extends Controller
             $cigarettesToday++;
         }
 
-        if ($cigarettesToday >= $targetGoal) {
+        // 🔑 FACTOR IN $daysToReach: Calculate dynamic daily allowance based on reduction trajectory
+        $daysTracked = max(1, $collection->count());
+        $totalTimeline = max(1, $daysTracked + $daysToReach);
+        $currentAvg = $collection->avg('total_cigarettes') ?? 0;
+
+        // Linear progression: Allowed count decreases steadily toward target goal
+        $allowedToday = max(0, (int) round($currentAvg - (($currentAvg - $targetGoal) / $totalTimeline) * $daysTracked));
+
+        if ($cigarettesToday >= $allowedToday) {
             // Daily limit reached. Wait until tomorrow's 00:00:00 reset
             return (int) $now->diffInSeconds(Carbon::tomorrow());
         } else {
-            $remainingAllowed = max(1, (int) ($targetGoal - $cigarettesToday));
+            $remainingAllowed = max(1, $allowedToday - $cigarettesToday);
             $secondsLeftInDay = (int) $now->diffInSeconds($now->copy()->endOfDay());
 
             // Evenly pace remaining cigarettes across remaining time in the day
