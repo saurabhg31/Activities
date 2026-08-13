@@ -503,13 +503,13 @@ class Operations extends Controller
 
                     if ($slope < -$flatTolerance) {
                         $color = 'blue';
-                        $status = 'UP';
+                        $status = 'UP'; // Negative slope = decreasing consumption
                     } elseif ($slope > $flatTolerance) {
                         $color = 'red';
-                        $status = 'DOWN';
+                        $status = 'DOWN'; // Positive slope = increasing consumption
                     } else {
                         $color = 'purple';
-                        $status = 'FLAT';
+                        $status = 'FLAT'; // Slope within tolerance range (noise/stable)
                     }
                 }
             }
