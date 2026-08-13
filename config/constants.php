@@ -13,6 +13,6 @@ return [
     'SQL_MAX_BIGINT_VAL' => '18446744073709551615',
     // image hamming distance threshold for duplicate image detection
     'DUPLICATE_IMG_SEARCH_THRESHOLD' => 7,
-    'MAX_DAILY_CIGARETTE_GOAL' => 5,
-    'CIGARETTE_TARGET_GOAL_DATE' => '2026-08-31', // target date in Y-m-d
+    'MAX_DAILY_CIGARETTE_GOAL' => 2,
+    'CIGARETTE_TARGET_GOAL_DATE' => '2026-09-30', // target date in Y-m-d
 ];
