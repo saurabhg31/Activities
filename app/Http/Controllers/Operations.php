@@ -442,6 +442,7 @@ class Operations extends Controller
     private function getSmokingTrend(Collection $smokingTrendData, ?float $targetGoal = null, ?int $daysToReach = null): array
     {
         $targetGoal = is_null($targetGoal) ? config('constants.MAX_DAILY_CIGARETTE_GOAL') : $targetGoal;
+
         if (is_null($daysToReach)) {
             $targetDate = config('constants.CIGARETTE_TARGET_GOAL_DATE');
             if (is_null($targetDate)) {
@@ -453,6 +454,7 @@ class Operations extends Controller
             }
             $daysToReach = now()->diffInDays($targetDate);
         }
+
         $collection = collect($smokingTrendData);
         unset($smokingTrendData);
         $count = $collection->count();
@@ -462,20 +464,20 @@ class Operations extends Controller
         $status = 'N/A';
 
         if ($count >= 2) {
-            // Reverse to chronological order (oldest → newest)
-            $chronological = $collection->reverse();
+            // 🔑 FIX: Reindex keys after reverse to ensure sequential x-values (1,2,3...)
+            $chronological = $collection->reverse()->values();
 
             // Prepare data points: x = day index, y = cigarette count
             $dataPoints = [];
-            foreach ($chronological as $index => $day) {
-                $x = $index + 1;
+            foreach ($chronological as $idx => $day) {
+                $x = $idx + 1;
                 $y = (float) ($day['total_cigarettes'] ?? 0);
                 $dataPoints[] = ['x' => $x, 'y' => $y];
             }
 
-            // Linear regression sums
+            // Linear regression sums (high precision)
             $n = count($dataPoints);
-            $sumX = $sumY = $sumXY = $sumX2 = 0;
+            $sumX = $sumY = $sumXY = $sumX2 = 0.0;
 
             foreach ($dataPoints as $point) {
                 $sumX += $point['x'];
@@ -486,10 +488,10 @@ class Operations extends Controller
 
             $denominator = ($n * $sumX2) - ($sumX ** 2);
 
-            if ($denominator != 0) {
+            if ($denominator > 0.0001) { // Prevent division by near-zero
                 $slope = (($n * $sumXY) - ($sumX * $sumY)) / $denominator;
 
-                // 1. Check GOAL first
+                // 1. Check GOAL first (recent half average ≤ threshold)
                 $half = ceil($count / 2);
                 $recentAverage = $collection->take($half)->avg('total_cigarettes');
 
@@ -497,7 +499,7 @@ class Operations extends Controller
                     $color = 'blue';
                     $status = 'GOAL';
                 } else {
-                    // 2. Dynamic tolerance
+                    // 2. Dynamic tolerance (4 decimal precision for accuracy)
                     $currentAvg = $collection->avg('total_cigarettes');
                     $flatTolerance = $this->calculateSmokingTolerance($currentAvg, $targetGoal, $daysToReach);
 
@@ -509,13 +511,13 @@ class Operations extends Controller
                         $status = 'DOWN'; // Positive slope = increasing consumption
                     } else {
                         $color = 'purple';
-                        $status = 'FLAT'; // Slope within tolerance range (noise/stable)
+                        $status = 'FLAT'; // Within tolerance → normal variance
                     }
                 }
             }
         }
 
-        // 3. Calculate wait time ONCE (applies to all return paths)
+        // 3. Calculate wait time using EXACT timestamps (maximum accuracy)
         $waitSeconds = $this->calculateWaitTime(
             $collection,
             $targetGoal,
@@ -523,7 +525,7 @@ class Operations extends Controller
             SmokingCounter::getLastSmokedCigaretteTime(Auth::id())
         );
 
-        // 4. Return consistent array with direct keys
+        // 4. Return consistent array
         return [
             'color' => $color,
             'status' => $status,
@@ -543,15 +545,11 @@ class Operations extends Controller
      */
     private function calculateSmokingTolerance(float $currentAvg, float $targetGoal, int $daysToReach): float
     {
-        // Required daily reduction rate to hit goal on time
         $requiredDailyChange = ($currentAvg - $targetGoal) / max(1, $daysToReach);
-
-        // Tolerance = 40% of required change rate. 
-        // This filters out daily noise while remaining sensitive enough to detect real trends.
         $tolerance = abs($requiredDailyChange) * 0.4;
 
-        // Clamp between 0.1 and 0.5 to prevent extreme sensitivity or blindness
-        return max(0.1, min(0.5, round($tolerance, 2)));
+        // Clamp with 4-decimal precision for mathematical accuracy
+        return max(0.1, min(0.5, round($tolerance, 4)));
     }
 
     /**
@@ -563,7 +561,6 @@ class Operations extends Controller
      */
     private function calculateWaitTime(SupportCollection $collection, float $targetGoal, int $daysToReach, ?Carbon $lastCigaretteTimestamp): int
     {
-        // No timestamp → can't pace. Default to 0.
         if (!$lastCigaretteTimestamp) {
             return 0;
         }
@@ -579,13 +576,13 @@ class Operations extends Controller
             $cigarettesToday++;
         }
 
-        // 🔑 FACTOR IN $daysToReach: Calculate dynamic daily allowance based on reduction trajectory
-        $daysTracked = max(1, $collection->count());
-        $totalTimeline = max(1, $daysTracked + $daysToReach);
+        // 🔑 FORWARD-LOOKING PACING: Projects allowance from TODAY toward goal
         $currentAvg = $collection->avg('total_cigarettes') ?? 0;
+        $requiredDailyReduction = ($currentAvg - $targetGoal) / max(1, $daysToReach);
 
-        // Linear progression: Allowed count decreases steadily toward target goal
-        $allowedToday = max(0, (int) round($currentAvg - (($currentAvg - $targetGoal) / $totalTimeline) * $daysTracked));
+        // Today's allowance: Current average minus one step of required reduction
+        // Ensures active progress toward target each day
+        $allowedToday = max($targetGoal, (int) round($currentAvg - $requiredDailyReduction));
 
         if ($cigarettesToday >= $allowedToday) {
             // Daily limit reached. Wait until tomorrow's 00:00:00 reset
