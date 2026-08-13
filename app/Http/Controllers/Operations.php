@@ -9,19 +9,25 @@ use App\Models\Images;
 use App\Models\User;
 use App\Models\SmokingCounter;
 use App\system_files_in_use;
+use App\Traits\Miscellaneous;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Operations extends Controller
 {
+    use Miscellaneous;
+
     /**
      * Process basic activities
      * @param string $type as requestType
@@ -435,90 +441,93 @@ class Operations extends Controller
      */
     private function getSmokingTrend(Collection $smokingTrendData, ?float $targetGoal = null, ?int $daysToReach = null): array
     {
-        // initialising variables if not passed
         $targetGoal = is_null($targetGoal) ? config('constants.MAX_DAILY_CIGARETTE_GOAL') : $targetGoal;
-        $daysToReach = is_null($daysToReach) ? config('constants.CIGARETTE_GOAL_TIMELINE_DAYS') : $daysToReach;
-
-        $collection = $smokingTrendData;
+        if (is_null($daysToReach)) {
+            $targetDate = config('constants.CIGARETTE_TARGET_GOAL_DATE');
+            if (is_null($targetDate)) {
+                throw new RuntimeException('Target date to reach smoking goal not set! Please set CIGARETTE_TARGET_GOAL_DATE in constants.');
+            }
+            $targetDate = Carbon::parse($targetDate)->endOfDay();
+            $daysToReach = now()->diffInDays($targetDate);
+        }
+        $collection = collect($smokingTrendData);
         unset($smokingTrendData);
         $count = $collection->count();
 
-        // Default response for insufficient data
-        $trendResponse = [
-            'color' => 'black',
-            'status' => 'N/A',
+        // Default values
+        $color = 'black';
+        $status = 'N/A';
+
+        if ($count >= 2) {
+            // Reverse to chronological order (oldest → newest)
+            $chronological = $collection->reverse();
+
+            // Prepare data points: x = day index, y = cigarette count
+            $dataPoints = [];
+            foreach ($chronological as $index => $day) {
+                $x = $index + 1;
+                $y = (float) ($day['total_cigarettes'] ?? 0);
+                $dataPoints[] = ['x' => $x, 'y' => $y];
+            }
+
+            // Linear regression sums
+            $n = count($dataPoints);
+            $sumX = $sumY = $sumXY = $sumX2 = 0;
+
+            foreach ($dataPoints as $point) {
+                $sumX += $point['x'];
+                $sumY += $point['y'];
+                $sumXY += $point['x'] * $point['y'];
+                $sumX2 += $point['x'] ** 2;
+            }
+
+            $denominator = ($n * $sumX2) - ($sumX ** 2);
+
+            if ($denominator != 0) {
+                $slope = (($n * $sumXY) - ($sumX * $sumY)) / $denominator;
+
+                // 1. Check GOAL first
+                $half = ceil($count / 2);
+                $recentAverage = $collection->take($half)->avg('total_cigarettes');
+
+                if ($recentAverage <= $targetGoal) {
+                    $color = 'blue';
+                    $status = 'GOAL';
+                } else {
+                    // 2. Dynamic tolerance
+                    $currentAvg = $collection->avg('total_cigarettes');
+                    $flatTolerance = $this->calculateSmokingTolerance($currentAvg, $targetGoal, $daysToReach);
+
+                    if ($slope < -$flatTolerance) {
+                        $color = 'blue';
+                        $status = 'UP';
+                    } elseif ($slope > $flatTolerance) {
+                        $color = 'red';
+                        $status = 'DOWN';
+                    } else {
+                        $color = 'purple';
+                        $status = 'FLAT';
+                    }
+                }
+            }
+        }
+
+        // 3. Calculate wait time ONCE (applies to all return paths)
+        $waitSeconds = $this->calculateWaitTime(
+            $collection,
+            $targetGoal,
+            $daysToReach,
+            SmokingCounter::getLastSmokedCigaretteTime(Auth::id())
+        );
+
+        // 4. Return consistent array with direct keys
+        return [
+            'color' => $color,
+            'status' => $status,
+            'waitTime' => $this->getHumanReadableTimeDiffFromSeconds($waitSeconds),
         ];
-
-        if ($count < 2) {
-            return $trendResponse;
-        }
-
-        // Reverse to chronological order (oldest → newest) for intuitive slope calculation
-        $chronological = $collection->reverse();
-
-        // Prepare data points: x = day index, y = cigarette count
-        $dataPoints = [];
-        foreach ($chronological as $index => $day) {
-            $x = $index + 1;
-            $y = (float) ($day['total_cigarettes'] ?? 0);
-            $dataPoints[] = ['x' => $x, 'y' => $y];
-        }
-
-        // Calculate sums required for linear regression slope formula
-        $n = count($dataPoints);
-        $sumX = $sumY = $sumXY = $sumX2 = 0;
-
-        foreach ($dataPoints as $point) {
-            $sumX += $point['x'];
-            $sumY += $point['y'];
-            $sumXY += $point['x'] * $point['y'];
-            $sumX2 += $point['x'] ** 2;
-        }
-
-        // Slope formula: m = (n*Σxy - Σx*Σy) / (n*Σx² - (Σx)²)
-        $denominator = ($n * $sumX2) - ($sumX ** 2);
-
-        if ($denominator == 0) {
-            // slope is undefined (theoretical)
-            $trendResponse['color'] = 'red';
-            return $trendResponse;
-        }
-
-        $slope = (($n * $sumXY) - ($sumX * $sumY)) / $denominator;
-
-        // 1. Check GOAL first (recent average ≤ threshold)
-        $half = ceil($count / 2);
-        $recentAverage = $collection->take($half)->avg('total_cigarettes');
-
-        if ($recentAverage <= $targetGoal) {
-            return [
-                'color' => 'green',
-                'status' => 'GOAL',
-            ];
-        }
-
-        // 2. Calculate dynamic tolerance based on your goal & timeline
-        $currentAvg = $collection->avg('total_cigarettes');
-        $flatTolerance = $this->calculateSmokingTolerance($currentAvg, $targetGoal, $daysToReach);
-
-        // 3. Determine trend based on slope vs dynamic tolerance
-        if ($slope < -$flatTolerance) {
-            return [
-                'color' => 'blue',
-                'status' => 'UP',
-            ];
-        } elseif ($slope > $flatTolerance) {
-            return [
-                'color' => 'red',
-                'status' => 'DOWN',
-            ];
-        } else {
-            return [
-                'color' => 'purple',
-                'status' => 'FLAT',
-            ];
-        }
     }
+
 
     /**
      * Calculates optimal tolerance for linear regression trend detection.
@@ -540,5 +549,42 @@ class Operations extends Controller
 
         // Clamp between 0.1 and 0.5 to prevent extreme sensitivity or blindness
         return max(0.1, min(0.5, round($tolerance, 2)));
+    }
+
+    /**
+     * Calculates seconds to wait before next cigarette based on daily pacing.
+     * @param Collection $collection
+     * @param float $targetGoal
+     * @param Carbon $lastCigaretteTimestamp
+     * @source: qwen3.6-27b-mtp (Local LLM)
+     */
+    private function calculateWaitTime(SupportCollection $collection, float $targetGoal, int $daysToReach, ?Carbon $lastCigaretteTimestamp): int
+    {
+        // No timestamp provided → default to 0 seconds wait
+        if (!$lastCigaretteTimestamp) {
+            return 0;
+        }
+
+        $now = now();
+        $todayDate = $now->format('Y-m-d');
+
+        // Count cigarettes already logged for today in aggregated data
+        $cigarettesToday = (int) $collection->filter(fn($day) => $day['smoke_date'] === $todayDate)->sum('total_cigarettes');
+
+        // Add +1 if the last smoked cigarette belongs to today but isn't yet in aggregated data
+        if ($lastCigaretteTimestamp->format('Y-m-d') === $todayDate) {
+            $cigarettesToday++;
+        }
+
+        if ($cigarettesToday >= $targetGoal) {
+            // Daily limit reached. Wait until tomorrow's 00:00:00 reset
+            return (int) $now->diffInSeconds(Carbon::tomorrow());
+        } else {
+            $remainingAllowed = max(1, (int) ($targetGoal - $cigarettesToday));
+            $secondsLeftInDay = (int) $now->diffInSeconds($now->copy()->endOfDay());
+
+            // Evenly pace remaining cigarettes across remaining time in the day
+            return max(0, (int) floor($secondsLeftInDay / $remainingAllowed));
+        }
     }
 }

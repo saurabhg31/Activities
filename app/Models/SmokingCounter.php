@@ -92,4 +92,16 @@ class SmokingCounter extends Model
     {
         return self::selectRaw('DATE(created_at) AS smoke_date, COUNT(*) AS total_cigarettes')->where('user_id', $userId)->groupBy('smoke_date')->orderBy('smoke_date', 'desc')->get();
     }
+
+    /**
+     * Get last smoked cigarette timestamp
+     */
+    public static function getLastSmokedCigaretteTime(int $userId)
+    {
+        $record = self::select('created_at')->where('user_id', $userId)->orderBy('id', 'desc')->first();
+        if ($record) {
+            $record->created_at;
+        }
+        return null;
+    }
 }

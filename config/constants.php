@@ -14,5 +14,5 @@ return [
     // image hamming distance threshold for duplicate image detection
     'DUPLICATE_IMG_SEARCH_THRESHOLD' => 7,
     'MAX_DAILY_CIGARETTE_GOAL' => 5,
-    'CIGARETTE_GOAL_TIMELINE_DAYS' => 30,
+    'CIGARETTE_TARGET_GOAL_DATE' => '2026-08-31', // target date in Y-m-d
 ];
