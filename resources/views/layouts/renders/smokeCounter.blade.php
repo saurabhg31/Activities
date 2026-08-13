@@ -19,7 +19,7 @@
     </form>
 </div>
 <div class="form-group">
-    <legend>History / Day (T: {{ number_format($data['totalCount']) }}, F/D: @if(is_null($data['frequency'])) N/A @else 1 / {{ $data['frequency'] }} @endif, PDC: {{ number_format($data['previousDatCount']) }}, DBL2C: {{ $data['dbl2c'] }}, TR: <span style="color: {{$data['trend']['color']}};">{{$data['trend']['status']}}</span>, WT: {{$data['trend']['waitTime']}})
+    <legend>History / Day (T: {{ number_format($data['totalCount']) }}, F/D: @if(is_null($data['frequency'])) N/A @else 1 / {{ $data['frequency'] }} @endif, PDC: {{ number_format($data['previousDatCount']) }}, DBL2C: {{ $data['dbl2c'] }}, TR: <span style="color: {{$data['trend']['color']}};">{{$data['trend']['status']}}</span>, @if(isset($data['trend']['bingeResetTime'])) BRT: {{$data['trend']['bingeResetTime']}} @else WT: {{$data['trend']['waitTime']}} @endif)
     </legend>
     <table class="table table-bordered table-striped" id="smokingCounterTable">
         <thead>
