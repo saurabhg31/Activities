@@ -448,6 +448,9 @@ class Operations extends Controller
                 throw new RuntimeException('Target date to reach smoking goal not set! Please set CIGARETTE_TARGET_GOAL_DATE in constants.');
             }
             $targetDate = Carbon::parse($targetDate)->endOfDay();
+            if ($targetDate->isPast()) {
+                throw new RuntimeException('Target goal date is in the past! Please update CIGARETTE_TARGET_GOAL_DATE in constants.');
+            }
             $daysToReach = now()->diffInDays($targetDate);
         }
         $collection = collect($smokingTrendData);
