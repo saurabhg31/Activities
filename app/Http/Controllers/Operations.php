@@ -469,6 +469,7 @@ class Operations extends Controller
                 'color' => 'darkred',
                 'status' => 'BINGE',
                 'waitTime' => $this->getHumanReadableTimeDiffFromSeconds($waitSeconds),
+                'bingeResetTime' => SmokingCounter::getLastSmokedCigaretteTime(Auth::id())->addHours(config('constants.CIGARETTE_BINGE_RESET_HOURS'))->format('d-M H:i')
             ];
         }
 
