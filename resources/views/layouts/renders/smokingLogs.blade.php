@@ -6,7 +6,7 @@
                 <th>Week No.</th>
                 <th>Start Date</th>
                 <th>End Date</th>
-                {{-- <th title="Including start & end date">Days Count</th> --}}
+                <th title="Difference between current & start date (including both)">Days Count</th>
                 <th>Count</th>
                 <th>Rate Per Day</th>
             </tr>
@@ -14,14 +14,16 @@
         <tbody>
             @php($weekNo = count($data['logs']))
             @foreach ($data['logs'] as $log)
-            <tr>
-                <td>{{$weekNo}}</td>
-                <td>{{ $log['week_start_date'] }}</td>
-                <td>{{ $log['week_end_date'] }}</td>
-                <td>{{ number_format($log['total_cigarettes']) }}</td>
-                <td>{{ number_format(($log['total_cigarettes'] / 7), decimals: 3) }}</td>
-            </tr>
-            @php($weekNo--)
+                @php($currentDayCount = now()->diffInDays(\Illuminate\Support\Carbon::parse($log['week_start_date'])) + 1)
+                <tr>
+                    <td>{{$weekNo}}</td>
+                    <td>{{ $log['week_start_date'] }}</td>
+                    <td>{{ $log['week_end_date'] }}</td>
+                    <td>{{ $currentDayCount }}</td>
+                    <td>{{ number_format($log['total_cigarettes']) }}</td>
+                    <td>{{ number_format(($log['total_cigarettes'] / $currentDayCount), decimals: 2) }}</td>
+                </tr>
+                @php($weekNo--)
             @endforeach
         </tbody>
     </table>
