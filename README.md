@@ -28,4 +28,4 @@ A Laravel 9 application configured for heavy image processing, compression, and 
     php artisan queue:listen --timeout=300 --memory=512
 13. **Enjoy**
 
-### NOTE: The app's timezone is set to "Asia/Kolkata", to update add APP_TIMEZONE to .env file
+### NOTE: The app's timezone is set to "Asia/Kolkata", to update add APP_TIMEZONE & it's respective value to .env file
