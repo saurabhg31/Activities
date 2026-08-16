@@ -1,6 +1,6 @@
 # Laravel Application Setup
 
-A Laravel 9 application configured for heavy image processing, compression, and duplicate image detection.
+A Laravel 9 application configured for heavy image processing, compression, duplicate image detection, image tagging, searching images based on tags, smoking habit tracker using linear regression to reach a target goal by a certain target date (values set in config/constants.php)
 
 ---
 
