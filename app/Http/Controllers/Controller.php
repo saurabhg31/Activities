@@ -175,7 +175,8 @@ class Controller extends BaseController
             'imageEdit' => 'layouts.renders.imageEditForm',
             'updateTags' => 'layouts.renders.batchUpdateTagsForm',
             'viewDuplicates' => 'layouts.renders.duplicateImagesView',
-            'smokeCounter' => 'layouts.renders.smokeCounter'
+            'smokeCounter' => 'layouts.renders.smokeCounter',
+            'smokeLog' => 'layouts.renders.smokingLogs'
         );
         return view($viewData[$type], compact('data'))->render();
     }
@@ -268,7 +269,8 @@ class Controller extends BaseController
                 'imageTags' => [],
                 'updateTags' => [],
                 'viewDuplicates' => [],
-                'smokeCounter' => []
+                'smokeCounter' => [],
+                'smokeLog' => [],
             );
         } else {
             $validationRules = array(

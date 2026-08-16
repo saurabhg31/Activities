@@ -104,4 +104,14 @@ class SmokingCounter extends Model
         }
         return null;
     }
+
+    /**
+     * Get Smoking weekly logs
+     * @param integer $userId
+     * @return Collection
+     */
+    public static function getSmokingWeeklyLogs(int $userId): Collection
+    {
+        return self::selectRaw('DATE_SUB(DATE(created_at), INTERVAL WEEKDAY(created_at) DAY) AS week_start_date, DATE_ADD(DATE_SUB(DATE(created_at), INTERVAL WEEKDAY(created_at) DAY), INTERVAL 6 DAY) AS week_end_date, COUNT(*) AS total_cigarettes')->where('user_id', $userId)->whereRaw("created_at >= DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01') AND created_at < DATE_FORMAT(CURRENT_DATE() + INTERVAL 1 MONTH, '%Y-%m-01')")->groupBy(['week_start_date', 'week_end_date'])->orderByDesc('week_start_date')->get();
+    }
 }

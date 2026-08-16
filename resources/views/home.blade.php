@@ -38,18 +38,19 @@
                     <div class="alert alert-success" role="alert">{{ session('status') }} </div>
                     @endif
                     <div class="custom-block text-center">
-                        <div class="d-none">
+                        {{-- TODO: Add functionality <div class="d-none">
                             <button class="btn btn-primary" id="expenses">Expenses</button>
                             <button class="btn btn-success" id="reminders">Reminders</button>
                             <button class="btn btn-light" id="aps">Arithmetic Problem Solver</button>
                             <button class="btn btn-dark" id="travelLogs">Travel Logs</button>
                             <button class="btn btn-secondary" id="marketing">Marketing</button>
-                        </div>
+                        </div>--}}
                         <div class="d-flex flex-wrap justify-content-center gap-2 mt-2">
                             <button class="btn btn-success" id="searchImages">Search Images</button>
                             <button class="btn btn-primary" id="imagesAdd">Add/Display Images</button>
                             <button class="btn btn-warning" id="viewDuplicates">View Duplicates</button>
                             <button class="btn btn-primary" id="smokeCounter">Smoking Counter</button>
+                            <button class="btn btn-success" id="smokeLog">Smoking Log</button>
                         </div>
                     </div>
                 </div>

@@ -99,6 +99,14 @@ class Operations extends Controller
                             ]),
                             $this->generateMsgBag($type, 'Ready to update smoking counter', 'Smoking Counter')
                         );
+                    case 'smokeLog':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'logs' => SmokingCounter::getSmokingWeeklyLogs(Auth::id())->toArray()
+                            ]),
+                            $this->generateMsgBag($type, 'Ready to view smoking weekly logs', 'Smoking Weekly Logs')
+                        );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }
