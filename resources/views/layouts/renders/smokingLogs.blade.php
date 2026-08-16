@@ -14,7 +14,11 @@
         <tbody>
             @php($weekNo = count($data['logs']))
             @foreach ($data['logs'] as $log)
-                @php($currentDayCount = now()->diffInDays(\Illuminate\Support\Carbon::parse($log['week_start_date'])) + 1)
+                @if(\Illuminate\Support\Carbon::parse($log['week_end_date'])->isFuture())
+                    @php($currentDayCount = now()->diffInDays(\Illuminate\Support\Carbon::parse($log['week_start_date'])) + 1)
+                @else
+                    @php($currentDayCount = 7)
+                @endif
                 <tr>
                     <td>{{$weekNo}}</td>
                     <td>{{ $log['week_start_date'] }}</td>
