@@ -481,8 +481,8 @@ class Operations extends Controller
             ];
         }
 
-        // 🔑 ACCURACY FIX: Use real-time rate projection instead of daily aggregation.
-        // Solves "day just started" edge case & factors in actual smoking pace.
+        // 🔑 ACCURACY FIX: Use interval-based momentum instead of daily projection.
+        // Correctly factors in dry spells & recent pacing behavior.
         return array_merge(
             $this->calculateRealTimeTrend(Auth::id(), $targetGoal),
             ['waitTime' => $this->getHumanReadableTimeDiffFromSeconds($waitSeconds)]
@@ -532,12 +532,15 @@ class Operations extends Controller
             $cigarettesToday++;
         }
 
-        // 🔑 FORWARD-LOOKING PACING: Projects allowance from TODAY toward goal
+        // 🔑 DRY SPELL OVERRIDE: If >4 hours since last smoke, pacing is already optimal. No wait needed.
+        $hoursSinceLastSmoke = ($now->timestamp - $lastCigaretteTimestamp->timestamp) / 3600;
+        if ($hoursSinceLastSmoke >= config('constants.CIGARETTE_DRY_SPELL_LIMIT')) {
+            return 0; // You're pacing well. No artificial restriction needed.
+        }
+
+        // Forward-looking daily allowance based on reduction trajectory
         $currentAvg = $collection->avg('total_cigarettes') ?? 0;
         $requiredDailyReduction = ($currentAvg - $targetGoal) / max(1, $daysToReach);
-
-        // Today's allowance: Current average minus one step of required reduction
-        // Ensures active progress toward target each day
         $allowedToday = max($targetGoal, (int) round($currentAvg - $requiredDailyReduction));
 
         if ($cigarettesToday >= $allowedToday) {
@@ -559,13 +562,8 @@ class Operations extends Controller
      */
     private function detectBingeSmoking(int $userId): bool
     {
-        // Fetch raw records from last 12 hours for acute binge detection
-        $recentRecords = SmokingCounter::where('user_id', $userId)
-            ->where('created_at', '>=', now()->subHours(config('constants.CIGARETTE_BINGE_RESET_HOURS')))
-            ->orderByDesc('id')
-            ->limit(50)
-            ->get()
-            ->sortBy('created_at');
+        // Fetch raw records from last 6 hours for acute binge detection
+        $recentRecords = SmokingCounter::getBingeSmokingData(Auth::id());
 
         if ($recentRecords->count() < 3) {
             return false;
@@ -595,37 +593,56 @@ class Operations extends Controller
     }
 
     /**
+     * Calculate Real Time Smoking Trend using linear regression
+     * @param integer $userId
+     * @param float $targetGoal
+     * @return array
      * @source: qwen3.6-27b-mtp (Local LLM)
      */
     private function calculateRealTimeTrend(int $userId, float $targetGoal): array
     {
-        // Fetch raw records for last 7 days (covers multiple cycles, handles early-day edge case)
-        $rawRecords = SmokingCounter::where('user_id', $userId)
-            ->where('created_at', '>=', now()->subDays(7))
-            ->orderByDesc('id')
-            ->get()
-            ->sortBy('created_at');
+        // Fetch last 24 hours of raw data for momentum analysis
+        $recentRecords = SmokingCounter::getLast24HourData($userId);
 
-        if ($rawRecords->count() < 2) {
+        if ($recentRecords->count() < 2) {
+            // Incalculable
             return ['color' => 'black', 'status' => 'N/A'];
         }
 
-        // Prepare data: x = hours since first record, y = cumulative count
-        $dataPoints = [];
-        $baseTime = $rawRecords->first()->created_at->timestamp;
+        // 🔑 GOAL CHECK: If today's count ≤ target, immediately return GOAL
+        $now = now();
+        $todayDate = $now->format('Y-m-d');
+        $cigarettesToday = $recentRecords->filter(fn($r) => $r->created_at->format('Y-m-d') === $todayDate)->count();
 
-        foreach ($rawRecords as $idx => $record) {
-            $x = ($record->created_at->timestamp - $baseTime) / 3600; // hours
+        if ($cigarettesToday <= $targetGoal) {
+            return ['color' => 'green', 'status' => 'GOAL']; // ✅ Restored GOAL status
+        }
+
+        // 🔑 DRY SPELL DETECTION: If last cigarette was >4 hours ago, momentum is improving
+        $lastSmoke = $recentRecords->last()->created_at;
+        $hoursSinceLastSmoke = ($now->timestamp - $lastSmoke->timestamp) / 3600;
+
+        if ($hoursSinceLastSmoke >= config('constants.CIGARETTE_DRY_SPELL_LIMIT')) {
+            return ['color' => 'blue', 'status' => 'UP']; // Long dry spell = improving trajectory
+        }
+
+        // 🔑 RESTORE WEIGHTED LINEAR REGRESSION on raw timestamps (Accuracy-First)
+        $baseTime = $recentRecords->first()->created_at->timestamp;
+        $dataPoints = [];
+
+        foreach ($recentRecords as $idx => $record) {
+            $x = ($record->created_at->timestamp - $baseTime) / 3600; // hours elapsed
             $y = $idx + 1; // cumulative count
             $dataPoints[] = ['x' => $x, 'y' => $y];
         }
 
-        // Weighted Linear Regression (recent points weighted higher to dampen historical noise)
+        // Exponential decay weighting (recent points weighted higher to dampen historical noise)
         $decayRate = 0.25;
         $sumW = $sumWX = $sumWY = $sumWXY = $sumWX2 = 0.0;
 
-        foreach ($dataPoints as $point) {
-            $weight = exp(-$decayRate * (count($dataPoints) - array_search($point, $dataPoints)));
+        foreach ($dataPoints as $pointIdx => $point) {
+            // Weight decays with age: newer points (higher index) get higher weight
+            $weight = exp(-$decayRate * (count($dataPoints) - 1 - $pointIdx));
             $sumW += $weight;
             $sumWX += $weight * $point['x'];
             $sumWY += $weight * $point['y'];
@@ -633,20 +650,19 @@ class Operations extends Controller
             $sumWX2 += $weight * ($point['x'] ** 2);
         }
 
+        // Weighted Slope Formula: m = (Σw·Σwx²y - Σwx·Σwxy) / (Σw·Σwx² - (Σwx)²)
         $denominator = ($sumW * $sumWX2) - ($sumWX ** 2);
-        if ($denominator <= 0.0001) {
+
+        if ($denominator <= 0.0001) { // Prevent division by near-zero/degenerate cases
             return ['color' => 'black', 'status' => 'N/A'];
         }
 
-        // Slope = cigarettes per hour (current smoking pace)
         $slopeCigsPerHour = (($sumW * $sumWXY) - ($sumWX * $sumWY)) / $denominator;
 
         // Project end-of-day count based on current pace + remaining time
-        $now = now();
         $hoursElapsedToday = $now->hour + ($now->minute / 60);
         $remainingHoursToday = max(0, 24 - $hoursElapsedToday);
 
-        $cigarettesToday = $rawRecords->filter(fn($r) => $r->created_at->format('Y-m-d') === $now->format('Y-m-d'))->count();
         $projectedEndOfDay = $cigarettesToday + ($slopeCigsPerHour * $remainingHoursToday);
 
         // Compare projection to goal with clinical tolerance buffer (±20% of goal, min 1)

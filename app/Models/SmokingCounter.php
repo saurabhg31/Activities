@@ -114,4 +114,32 @@ class SmokingCounter extends Model
     {
         return self::selectRaw('DATE_SUB(DATE(created_at), INTERVAL WEEKDAY(created_at) DAY) AS week_start_date, DATE_ADD(DATE_SUB(DATE(created_at), INTERVAL WEEKDAY(created_at) DAY), INTERVAL 6 DAY) AS week_end_date, COUNT(*) AS total_cigarettes')->where('user_id', $userId)->whereRaw("created_at >= DATE_FORMAT(CURRENT_DATE(), '%Y-%m-01') AND created_at < DATE_FORMAT(CURRENT_DATE() + INTERVAL 1 MONTH, '%Y-%m-01')")->groupBy(['week_start_date', 'week_end_date'])->orderByDesc('week_start_date')->get();
     }
+
+    /**
+     * Get smoking data of last 24 hours sorted by created_at
+     * @param integer $userId
+     * @return Collection
+     */
+    public static function getLast24HourData(int $userId): Collection
+    {
+        return self::where('user_id', $userId)
+            ->where('created_at', '>=', now()->subHours(24))
+            ->orderByDesc('id')
+            ->get()
+            ->sortBy('created_at');
+    }
+
+    /**
+     * Get BINGE smoking data
+     * @param integer $userId
+     * @return Collection
+     */
+    public static function getBingeSmokingData(int $userId): Collection
+    {
+        return self::where('user_id', $userId)
+            ->where('created_at', '>=', now()->subHours(config('constants.CIGARETTE_BINGE_RESET_HOURS')))
+            ->orderByDesc('id')
+            ->get()
+            ->sortBy('created_at');
+    }
 }
