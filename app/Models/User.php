@@ -80,6 +80,9 @@ class User extends Authenticatable implements MustVerifyEmail
                 ->where('images.isAnimated', true)
                 ->whereRaw('CAST(image_dimensions.x_axis as FLOAT) / image_dimensions.y_axis BETWEEN ? AND ?', config('constants.LANDSCAPE_ASPECT_RATIO_FLOAT_RANGE'))
                 ->inRandomOrder()->first();
+            if (is_null($imageDataId)) {
+                return $imageDataId;
+            }
             $imageData = Images::find($imageDataId->id);
         } else {
             if (is_null($user->defaultWallpaperId)) {
