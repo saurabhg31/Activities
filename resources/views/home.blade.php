@@ -51,6 +51,7 @@
                             <button class="btn btn-warning" id="viewDuplicates">View Duplicates</button>
                             <button class="btn btn-primary" id="smokeCounter">Smoking Counter</button>
                             <button class="btn btn-success" id="smokeLog">Smoking Log</button>
+                            <button class="btn btn-primary" id="setSmokeGoal">Set Smoking Goal</button>
                         </div>
                     </div>
                 </div>
@@ -77,6 +78,6 @@
     </div>
 </div>
 @endsection @section('scripts')
-<script type="text/javascript" src="{{ asset('js/custom/dashboard.min.js') }}"></script>
-{{--<script type="text/javascript" src="{{ asset('js/custom/dashboard.js') }}"></script>--}}
+{{--<script type="text/javascript" src="{{ asset('js/custom/dashboard.min.js') }}"></script>--}}
+<script type="text/javascript" src="{{ asset('js/custom/dashboard.js') }}"></script>
 @endsection

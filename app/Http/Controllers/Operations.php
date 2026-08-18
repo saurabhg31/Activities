@@ -8,6 +8,7 @@ use App\Models\ImageIndex;
 use App\Models\Images;
 use App\Models\User;
 use App\Models\SmokingCounter;
+use App\Models\SmokingGoal;
 use App\system_files_in_use;
 use App\Traits\Miscellaneous;
 use Exception;
@@ -107,6 +108,14 @@ class Operations extends Controller
                             ]),
                             $this->generateMsgBag($type, 'Ready to view smoking weekly logs', 'Smoking Weekly Logs')
                         );
+                    case 'setSmokeGoal':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'currentData' => SmokingGoal::getCurrentGoalData(Auth::id())
+                            ]),
+                            $this->generateMsgBag($type, 'Ready to add/update smoking goal', 'Set Smoking Goal')
+                        );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }
@@ -199,6 +208,15 @@ class Operations extends Controller
                         } else {
                             throw new Exception('Invalid request: increment must be true to add a smoking event.');
                         }
+                    case 'setSmokeGoal':
+                        SmokingGoal::saveNewGoal(Auth::id(), $request->all());
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'currentData' => SmokingGoal::getCurrentGoalData(Auth::id())
+                            ]),
+                            $this->generateMsgBag($type, 'Added/Updated smoking goal', 'Set Smoking Goal')
+                        );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }
@@ -456,17 +474,20 @@ class Operations extends Controller
     private function getSmokingTrend(Collection $smokingTrendData, ?float $targetGoal = null, ?int $daysToReach = null): array
     {
         $targetGoal = is_null($targetGoal) ? config('constants.MAX_DAILY_CIGARETTE_GOAL') : $targetGoal;
-
-        if (is_null($daysToReach)) {
-            $targetDate = config('constants.CIGARETTE_TARGET_GOAL_DATE');
-            if (is_null($targetDate)) {
-                throw new RuntimeException('Target date to reach smoking goal not set! Please set CIGARETTE_TARGET_GOAL_DATE in constants.');
+        if (is_null($targetGoal) || is_null($daysToReach)) {
+            $goalData = SmokingGoal::getCurrentGoalData(Auth::id());
+            if (is_null($goalData)) {
+                throw new RuntimeException('Please first set your smoking goal.');
             }
-            $targetDate = Carbon::parse($targetDate)->endOfDay();
-            if ($targetDate->isPast()) {
-                throw new RuntimeException('Target goal date is in the past! Please update CIGARETTE_TARGET_GOAL_DATE in constants.');
+            $targetGoal = is_null($targetGoal) ? (float)$goalData->goal_count : $targetGoal;
+            if (is_null($daysToReach)) {
+                $targetDate = $goalData->goal_reach_date;
+                $targetDate = Carbon::parse($targetDate)->endOfDay();
+                if ($targetDate->isPast()) {
+                    throw new RuntimeException('Target goal date is in the past! Please update your smoking goal.');
+                }
+                $daysToReach = now()->diffInDays($targetDate);
             }
-            $daysToReach = now()->diffInDays($targetDate);
         }
 
         // 🔑 OPTIMIZATION: Calculate wait time ONCE upfront. Applies to all execution paths.

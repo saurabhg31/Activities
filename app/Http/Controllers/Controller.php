@@ -176,7 +176,8 @@ class Controller extends BaseController
             'updateTags' => 'layouts.renders.batchUpdateTagsForm',
             'viewDuplicates' => 'layouts.renders.duplicateImagesView',
             'smokeCounter' => 'layouts.renders.smokeCounter',
-            'smokeLog' => 'layouts.renders.smokingLogs'
+            'smokeLog' => 'layouts.renders.smokingLogs',
+            'setSmokeGoal' => 'layouts.renders.smokingGoal'
         );
         return view($viewData[$type], compact('data'))->render();
     }
@@ -271,6 +272,7 @@ class Controller extends BaseController
                 'viewDuplicates' => [],
                 'smokeCounter' => [],
                 'smokeLog' => [],
+                'setSmokeGoal' => [],
             );
         } else {
             $validationRules = array(
@@ -303,6 +305,10 @@ class Controller extends BaseController
                 'smokeCounter' => [
                     'cigarette_name' => 'required|string|max:100',
                     'increment' => 'required|boolean'
+                ],
+                'setSmokeGoal' => [
+                    'goal_count' => 'required|integer|min:0',
+                    'goal_reach_date' => 'required|date_format:Y-m-d'
                 ]
             );
         }

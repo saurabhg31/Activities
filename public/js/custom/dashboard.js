@@ -352,7 +352,7 @@ function goToNextPageOfImageDuplicates(action = "next", button) {
 
 $(document).on(
     "click",
-    "#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType,#updateTags,#viewDuplicates,#smokeCounter,#smokeLog",
+    "#expenses,#reminders,#aps,#travelLogs,#marketing,#imagesAdd,#truncateWallpapers,#searchImages,#addNewType,#updateTags,#viewDuplicates,#smokeCounter,#smokeLog,#setSmokeGoal",
     function (e) {
         buttonHtml = $(this).html();
         if (this.id == "addNewType") {
