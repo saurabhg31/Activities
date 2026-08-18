@@ -436,9 +436,15 @@ class Operations extends Controller
                 return $this->sendError('404: Image not found!', null, $this->accessDeniedResponseCode);
             }
         }
+        /**
+         * Determine the correct MIME type based on your imageType extension.
+         * Required for downloads on mobile chrome browser
+         * @source: https://gemini.google.com/app/ce07c68d6464d3c1
+         */
+        $mimeType = 'image/' . ($imageData->imageType === 'jpg' ? 'jpeg' : $imageData->imageType);
         return response()->streamDownload(function () use (&$imageData) {
             echo base64_decode($imageData->image, true);
-        }, $imageData->id . '.' . $imageData->imageType);
+        }, $imageData->id . '.' . $imageData->imageType, ['Content-Type' => $mimeType]);
     }
 
     /**
