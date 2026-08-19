@@ -6,6 +6,7 @@ use App\Traits\Miscellaneous;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class SmokingCounter extends Model
 {
@@ -141,5 +142,20 @@ class SmokingCounter extends Model
             ->orderByDesc('id')
             ->get()
             ->sortBy('created_at');
+    }
+
+    /**
+     * Get smoking logs for a specific day
+     * @param int $userId
+     * @param Carbon|string $date
+     * @return Collection
+     */
+    public static function getDayData(int $userId, Carbon|string $date): Collection
+    {
+        if ($date instanceof Carbon) {
+            $date = $date->format('Y-m-d');
+        }
+        return self::where('user_id', $userId)->whereDate('created_at', $date)
+            ->orderBy('id', 'asc')->get();
     }
 }

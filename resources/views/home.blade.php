@@ -52,6 +52,7 @@
                             <button class="btn btn-primary" id="smokeCounter">Smoking Counter</button>
                             <button class="btn btn-success" id="smokeLog">Smoking Log</button>
                             <button class="btn btn-primary" id="setSmokeGoal">Set Smoking Goal</button>
+                            <button class="btn btn-success" id="specificDaySmoke">Get Smoking Logs for Day</button>
                         </div>
                     </div>
                 </div>

@@ -116,6 +116,15 @@ class Operations extends Controller
                             ]),
                             $this->generateMsgBag($type, 'Ready to add/update smoking goal', 'Set Smoking Goal')
                         );
+                    case 'specificDaySmoke':
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'smokeLogData' => SmokingCounter::getDayData(Auth::id(), now()),
+                                'forDate' => now()
+                            ]),
+                            $this->generateMsgBag($type, 'Ready to search smoking count by day', 'Smoking Logs for Specific Day')
+                        );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
                 }
@@ -216,6 +225,16 @@ class Operations extends Controller
                                 'currentData' => SmokingGoal::getCurrentGoalData(Auth::id())
                             ]),
                             $this->generateMsgBag($type, 'Added/Updated smoking goal', 'Set Smoking Goal')
+                        );
+                    case 'specificDaySmoke':
+                        $dateCarbonInstance = Carbon::parse($request->get('date'));
+                        return $this->sendResponse(
+                            null,
+                            $this->renderView($type, [
+                                'smokeLogData' => SmokingCounter::getDayData(Auth::id(), $request->get('date')),
+                                'forDate' => $dateCarbonInstance
+                            ]),
+                            $this->generateMsgBag($type, 'Fetched smoking logs for ' . $dateCarbonInstance->format('d M, Y'), 'Smoking Logs for Specific Day')
                         );
                     default:
                         return $this->sendError('Invalid type', ['type' => $type, 'method' => $request->method()], $this->accessDeniedResponseCode);
