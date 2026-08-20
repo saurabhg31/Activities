@@ -6,7 +6,7 @@
             <div class="col-sm-4"></div>
             <div class="col-sm-4">
                 <label for="smokeLogDate" style="float: left;">Logs for date:</label>
-                <input class="form-control" name="date" type="date" value="{{$data['forDate']->format('Y-m-d')}}" placeholder="Enter date for which you want smoking logs" id="smokeLogDate" style="width: 130%;" required />
+                <input class="form-control" name="date" type="date" value="{{$data['forDate']->format('Y-m-d')}}" placeholder="Enter date for which you want smoking logs" id="smokeLogDate" required />
             </div>
             <div class="col-sm-4">
                 <button class="btn btn-success" style="margin-top:11.5%;" type="submit">Fetch Records</button>
